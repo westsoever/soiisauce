@@ -1,6 +1,6 @@
 // app/cli/args.ts
 // `soii <command> [args] [options]`. Pure: argv in, a parsed command or an error message out.
-export const COMMANDS = ['install', 'start', 'stop', 'restart', 'status', 'open', 'logs', 'update', 'init', 'check', 'uninstall', 'run', 'help', 'version'] as const
+export const COMMANDS = ['install', 'start', 'stop', 'restart', 'status', 'open', 'logs', 'update', 'init', 'check', 'uninstall', 'run', 'view', 'help', 'version'] as const
 export type Command = (typeof COMMANDS)[number]
 
 export interface Flags {
@@ -12,6 +12,13 @@ export interface Flags {
   /** Install into the vault only: no LaunchAgent, no background process, nothing global (registry, shim). */
   noService: boolean
   help: boolean
+  /** `soii view`: the vault folder, the tab / query / sort as JSON, the type to list fields for, and machine-readable output. */
+  vault?: string
+  tab?: string
+  query?: string
+  sort?: string
+  type?: string
+  json: boolean
 }
 
 export type Parsed = { ok: true; command: Command; positional: string[]; flags: Flags } | { ok: false; error: string }
@@ -33,12 +40,13 @@ const OPTIONS: Record<Command, readonly string[]> = {
   check: [],
   uninstall: [],
   run: [],
+  view: ['--vault', '--tab', '--query', '--sort', '--type', '--json'],
   help: [],
   version: []
 }
 
 export function parseArgs(argv: string[], env: Record<string, string | undefined> = {}): Parsed {
-  const flags: Flags = { follow: false, empty: false, noService: false, help: false }
+  const flags: Flags = { follow: false, empty: false, noService: false, help: false, json: false }
   const [first, ...rest] = argv
   if (first === undefined) return { ok: true, command: 'help', positional: [], flags }
   if (first === '--help' || first === '-h') return { ok: true, command: 'help', positional: [], flags }
@@ -65,6 +73,12 @@ export function parseArgs(argv: string[], env: Record<string, string | undefined
     if (name === '--follow' || name === '-f') flags.follow = true
     else if (name === '--empty') flags.empty = true
     else if (name === '--no-service') flags.noService = true
+    else if (name === '--json') flags.json = true
+    else if (name === '--vault' || name === '--tab' || name === '--query' || name === '--sort' || name === '--type') {
+      const raw = value()
+      if (raw === undefined || raw.startsWith('--')) return { ok: false, error: `${name} needs a value.` }
+      flags[name.slice(2) as 'vault' | 'tab' | 'query' | 'sort' | 'type'] = raw
+    }
     else if (name === '--port') {
       const raw = value()
       const port = raw !== undefined && /^\d+$/.test(raw) ? Number(raw) : NaN
@@ -89,7 +103,7 @@ export function parseArgs(argv: string[], env: Record<string, string | undefined
       if (positional.length === 0) return { ok: false, error: '`soii init` needs a directory, e.g. `soii init ~/my-vault`.' }
       if (positional.length > 1) return { ok: false, error: '`soii init` takes exactly one directory.' }
     }
-    if (command !== 'install' && command !== 'init' && positional.length > 0) return { ok: false, error: `\`soii ${command}\` takes no arguments.` }
+    if (command !== 'install' && command !== 'init' && command !== 'view' && positional.length > 0) return { ok: false, error: `\`soii ${command}\` takes no arguments.` }
   }
   return { ok: true, command, positional, flags }
 }

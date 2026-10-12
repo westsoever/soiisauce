@@ -2,6 +2,13 @@
 
 soii ships with Finance, People and Goals workspaces that work from frontmatter alone (see `docs/frontmatter.md`). To change them, add a `soii.config.yml` at your vault root.
 
+## Adding views without YAML
+
+- **In soii:** the **+** next to a workspace's tabs opens **New view**: a title, a layout (list, table, gallery or board), a filter (which notes are in the view) and a sort (the order they're shown in), with a live preview. The **⋯** next to it changes the current tab's filter or sort, or removes it.
+- **In Claude Code:** `/soii-view` turns a description into a view, and can use every layout and option on this page.
+
+Both write a tab into `soii.config.yml` and make a commit (in your local vault, or on GitHub when soii runs on Vercel). The first change to a built-in workspace (Library, People, Finance, Goals) copies the whole workspace into your config, following the rule below.
+
 **One rule to know:** a workspace in your config with the same `id` as a default **replaces the whole default workspace**. Copy every tab you want to keep, not just the one you change.
 
 Option names are checked. A misspelt key (say `groupby` instead of `groupBy`) shows an inline error naming it on that tab, instead of being ignored.

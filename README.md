@@ -4,6 +4,15 @@
 
 ![Today: daily brief and recent notes](docs/screenshots/today.png)
 
+## Quick start
+
+```bash
+git clone https://github.com/westsoever/soii.git && cd soii
+claude
+```
+
+Then type **`/soii-setup`** in Claude Code. It installs soii, starts a new vault or brings in your existing one, and opens it at http://localhost:5011. (The repo is private: run `gh auth login && gh auth setup-git` once if the clone asks for a login.)
+
 ## What you get
 
 | | |

@@ -1,6 +1,6 @@
 {
   "name": "soii",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "private": true,
   "type": "module",
   "description": "soii: your Obsidian vault as an app, running on your own machine at localhost:5011.",

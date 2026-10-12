@@ -1,8 +1,8 @@
-import { expect, test } from 'bun:test'
+import { describe, expect, test } from 'bun:test'
 import { parseArgs } from './args'
 
 test('a bare command is parsed with no positionals or flags', () => {
-  expect(parseArgs(['status'])).toEqual({ ok: true, command: 'status', positional: [], flags: { follow: false, empty: false, noService: false, help: false } })
+  expect(parseArgs(['status'])).toEqual({ ok: true, command: 'status', positional: [], flags: { follow: false, empty: false, noService: false, help: false, json: false } })
 })
 
 test('no arguments means help', () => {
@@ -87,4 +87,15 @@ test('init takes --title, and it needs a value', () => {
   expect(parseArgs(['init', 'v', '--title=Mine'])).toMatchObject({ ok: true, flags: { title: 'Mine' } })
   expect(parseArgs(['init', 'v', '--title'])).toEqual({ ok: false, error: '--title needs a value, e.g. --title "My vault".' })
   expect(parseArgs(['install', '--title', 'x'])).toEqual({ ok: false, error: 'Unknown option "--title" for `soii install`.' })
+})
+describe('soii view', () => {
+  test('takes a subcommand, positionals and its options', () => {
+    const p = parseArgs(['view', 'add', 'library', '--tab', '{"title":"A"}', '--vault', '/v', '--json'])
+    expect(p).toMatchObject({ ok: true, command: 'view', positional: ['add', 'library'], flags: { tab: '{"title":"A"}', vault: '/v', json: true } })
+    expect(parseArgs(['view', 'filter', 'people', 'network', '--query={"type":"person"}'])).toMatchObject({ ok: true, flags: { query: '{"type":"person"}' } })
+    expect(parseArgs(['view', 'fields', '--type', 'book'])).toMatchObject({ ok: true, flags: { type: 'book' } })
+  })
+  test('other commands still take no options of view', () => {
+    expect(parseArgs(['status', '--json'])).toMatchObject({ ok: false })
+  })
 })

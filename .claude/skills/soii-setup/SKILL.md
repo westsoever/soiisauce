@@ -1,6 +1,6 @@
 ---
 name: soii-setup
-description: Make an Obsidian vault fully readable by soii, or start a new one. Starts a new vault from the template, or imports an existing vault's notes into a soii vault (or sets up in place), proposes which folders are books, people, goals, expenses and so on, then fills in every documented property on a branch (empty keys, plus values that can be worked out safely), adds the tracking sections and templates, and checks the result. Use when someone has just installed soii, says their workspaces are empty or their notes have no properties, or wants to point soii at a new or existing vault.
+description: Make an Obsidian vault fully readable by soii, or start a new one. Starts a new vault from the template, or imports an existing vault's notes into a soii vault (or sets up in place), proposes which folders are books, people, goals, expenses and so on, then fills in every documented property on a branch (empty keys, plus values that can be worked out safely), adds the tracking sections and templates, and checks the result. Use when someone has just cloned or installed soii (the README's Quick start is clone, then /soii-setup), says their workspaces are empty or their notes have no properties, or wants to point soii at a new or existing vault.
 ---
 
 # Set up a vault for soii
@@ -20,11 +20,22 @@ SOII=.soii/soii     # Claude Code opened in a soii vault
 
 `$SOII/docs/frontmatter.md` is the reference for every type and field; `$SOII/template/` is the starter vault.
 
+### Run from a fresh soii clone (Quick start)
+
+The README's Quick start is "clone soii, open Claude Code in the clone, type `/soii-setup`". In that case `SOII=.`, and the `soii` command usually isn't installed yet (`command -v soii` prints nothing). Don't fall back to copying files by hand: run the CLI from the clone, and it installs the `soii` command, the start-at-login service and the skills.
+
+```bash
+SOII_CLI="soii"; command -v soii >/dev/null || SOII_CLI="bun $PWD/bin/soii.ts"
+[ -d node_modules ] || bun install --frozen-lockfile
+```
+
+Use `$SOII_CLI init <folder>` and `$SOII_CLI install` wherever this skill says `soii init` or `soii install`. Ask where the vault should live (suggest `~/soii-vault`, never inside the soii clone). After `init` or `install`, the remaining steps run **in the vault**: `cd` there, and set `SOII=<vault>/.soii/soii` from then on. When you hand over, tell the owner to open Claude Code in the vault next time, not in the clone. The clone can be deleted afterwards; the vault has its own copy of soii.
+
 ## 0. Which path?
 
 Ask, unless it's obvious.
 
-- **A. New vault, no notes yet.** `soii init <folder>` copies the template (sample notes included; add `--empty` to leave Sam's notes out) and installs soii in it. If the `soii` command isn't installed, copy `$SOII/template/` into a new folder by hand, `git init`, commit. Then help them create a **private** GitHub repo if they want one (`gh repo create <name> --private --source . --push`). The template is already complete: skip to step 6.
+- **A. New vault, no notes yet.** `soii init <folder>` copies the template (sample notes included; add `--empty` to leave Sam's notes out) and installs soii in it. (From a fresh clone, use `$SOII_CLI` as above.) Then help them create a **private** GitHub repo if they want one (`gh repo create <name> --private --source . --push`). The template is already complete: skip to step 6.
 - **B. Import an existing vault into a soii vault.** The old vault stays exactly as it is; its notes are copied into a fresh soii vault (`soii init <folder> --empty`) and fixed up there. Best when they want soii's folders, templates and `.soii/` in one place. Do steps 1–7.
 - **C. Set up in place.** soii goes into the existing vault, and its notes are fixed up where they are. Best when the vault is already a git repo they push to (for example one a deploy or another tool reads). Do steps 1 and 3–7.
 

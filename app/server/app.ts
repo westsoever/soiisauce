@@ -18,6 +18,7 @@ import {
 import { createCoverRoute } from './covers/route'
 import { applyDecorators } from './decorate'
 import { editProperty } from './edit-properties'
+import { editViews, parseAddRequest, parseUpdateRequest, type ViewRequest } from './edit-views'
 import { missingEnv, readEnv, signingSecret } from './env'
 import { serveFile } from './files'
 import { authorizeUrl, exchangeCode, fetchGithubUser, type FetchLike } from './github-oauth'
@@ -176,6 +177,22 @@ export function createSoiiApp(opts: AppOptions = {}): Hono<AuthEnv> {
     const { path, via, commitUrl, pulled, warning } = result
     return c.json({ path, via, commitUrl, pulled, warning })
   })
+
+  // ---- views (D101): add, filter/sort, remove a tab in soii.config.yml ----
+  const viewWrite = async (c: Context<AuthEnv>, parsed: { ok: true; req: ViewRequest } | { ok: false; status: 400; error: string; message: string }, created = false) => {
+    if (!parsed.ok) return c.json({ error: parsed.error, message: parsed.message }, 400)
+    const result = await editViews(env, parsed.req, { fetch: fetchImpl, git: opts.git ?? runGit })
+    if (!result.ok) return c.json({ error: result.error, message: result.message }, result.status)
+    const { workspace, tabId, title, via, commitUrl, warning } = result
+    return c.json({ workspace, tabId, title, via, commitUrl, warning }, created ? 201 : 200)
+  }
+  app.post('/api/views', auth, sameOrigin, async c => viewWrite(c, parseAddRequest(await c.req.json().catch(() => null)), true))
+  app.patch('/api/views/:workspace/:tab', auth, sameOrigin, async c =>
+    viewWrite(c, parseUpdateRequest(c.req.param('workspace'), c.req.param('tab'), await c.req.json().catch(() => null)))
+  )
+  app.delete('/api/views/:workspace/:tab', auth, sameOrigin, async c =>
+    viewWrite(c, { ok: true, req: { action: 'remove', workspace: c.req.param('workspace'), tabId: c.req.param('tab') } })
+  )
 
   app.get('/api/search', auth, c => {
     const limit = Math.min(50, Math.max(1, Number(c.req.query('limit') ?? 20) || 20))

@@ -66,6 +66,14 @@ If `$VAULT/.claude/soii-health.local.md` exists, read it and run every check it 
 - The file may name private files (identity or facts notes). Read them to compare, never quote them in the report.
 - No file, no section. Don't create the file; `$SOII/docs/skills.md` says how an owner writes one.
 
+## 3c. Views (report only)
+
+Run `soii view list --json` (from a soii checkout: `bun "$SOII/bin/soii.ts" view list --vault "$VAULT" --json`). Report, never fix. The command already leaves out what isn't the owner's to clean up, so report exactly what it returns: a built-in workspace the vault's `soii.config.yml` doesn't define (an untouched People or Finance) never appears in `empty` or `similar`, and `similar` only pairs tabs with the same layout (a table and a list of the same notes are two ways of looking, not a duplicate).
+- **Empty views:** every entry in `empty` ("Library → Sci-fi board matches no notes").
+- **Near-duplicate views:** every pair in `similar`, with its overlap ("People → Friends and People → Close friends show 92% the same notes").
+Suggest removing one of each pair (`soii view remove <workspace> <tab>` or ⋯ → Remove view in the app). Removing is the owner's decision.
+Leave the **Views** section out of the report when both lists are empty.
+
 ## 4. Fix only what is safe
 
 Create a branch first: `git -C "$VAULT" switch -c soii/health-$(date +%F)`.
@@ -155,6 +163,10 @@ Open a PR against the vault's default branch (use `gh pr create` if it's availab
 - **Orphans:** …
 - **This vault's checks:** one bullet per finding from `.claude/soii-health.local.md`
 - **Missing properties (old notes, counted only):** book 700 (rating, finished, started), person 93 (phone, birthday). Run `/soii-setup` to add them
+
+## Views
+- Empty: …
+- Near-duplicates: …
 
 Checker before: E errors, W warnings · after: E errors, W warnings
 ```

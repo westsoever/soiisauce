@@ -3,6 +3,7 @@
 import { parseArgs, type Command } from './args'
 import * as commands from './commands'
 import { realCtx, type Ctx } from './context'
+import { view } from './view'
 
 export const HELP = `soii: your vault, as an app, on this machine.
 
@@ -16,6 +17,8 @@ Usage: soii <command> [options]
   logs [-f]            Show the log (-f to follow)
   update               Move to the newest release and restart
   check                Check the vault's frontmatter and structure
+  view fields|preview|add|filter|sort|remove|list
+                       Read and change views (tabs) in soii.config.yml; used by /soii-view. --vault <dir>, --json
   uninstall            Stop it, remove the LaunchAgent and the soii command (notes untouched)
 
 Options: --port <n>, --from <tag> (install, init), --title <name> (init), --no-service (install, init, update:
@@ -46,6 +49,7 @@ export async function main(argv: string[], ctx: Ctx = realCtx()): Promise<number
     check: () => commands.check(ctx),
     uninstall: () => commands.uninstall(ctx),
     run: () => commands.run(ctx),
+    view: () => view(ctx, positional, flags),
     version: () => {
       ctx.out(`soii ${commands.cliVersion(ctx)}`)
       return 0
