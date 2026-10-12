@@ -2,6 +2,13 @@
 // The few files soii keeps in a vault's .soii/ folder.
 export const REPO = 'westsoever/soii'
 
+/** Where soii's releases live (git remote). SOII_REMOTE overrides it for tests and forks. */
+export const remoteFromEnv = (env: Record<string, string | undefined>): string => env.SOII_REMOTE?.trim() || `https://github.com/${REPO}.git`
+
+/** The release page for a tag, and the comparison between two. */
+export const releaseUrl = (tag: string): string => `https://github.com/${REPO}/releases/tag/${tag}`
+export const compareUrl = (from: string, to: string): string => `https://github.com/${REPO}/compare/${from}...${to}`
+
 /** `1.2.3` and `v1.2.3` both pin the tag v1.2.3; any other ref (a branch, for testing) is pinned as it is. */
 export const pinSpec = (ref: string): string => `github:${REPO}#${/^\d+\.\d+\.\d+$/.test(ref) ? `v${ref}` : ref}`
 

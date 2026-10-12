@@ -17,6 +17,8 @@ export interface SoiiEnv {
   vaultRef: string
   vaultWriteToken: string | null
   vaultPath: string | null
+  /** The soii release this server runs (set by `soii run` from the installed package.json). */
+  soiiVersion: string | null
   onVercel: boolean
 }
 
@@ -38,6 +40,7 @@ export function readEnv(source: EnvSource = process.env): SoiiEnv {
     vaultRef: value(source.VAULT_REF) ?? 'main',
     vaultWriteToken: value(source.VAULT_WRITE_TOKEN),
     vaultPath: value(source.VAULT_PATH),
+    soiiVersion: value(source.SOII_VERSION),
     onVercel: Boolean(source.VERCEL)
   }
 }

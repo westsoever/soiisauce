@@ -3,6 +3,9 @@
 import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 
+/** Skills for the people who build and release soii, not for a vault that runs it: soii-install guides a first install, soii-release a release. */
+export const NOT_FOR_VAULTS = ['soii-install', 'soii-release']
+
 // What stays when you ask for an empty vault: the machinery, not Sam's notes.
 const KEEP = ['.gitignore', '.obsidian', '.soii', 'Templates', 'soii.config.yml']
 

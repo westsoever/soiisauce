@@ -202,6 +202,32 @@ describe('normaliseVault', () => {
     expect(report.changed.map(c => c.path)).toEqual(['Contacts/Anna.md'])
   })
 
+  test('files limits the run to exactly those notes, and ignores names that are not notes in the vault', async () => {
+    const dir = makeVault(files)
+    const report = await normaliseVault(dir, { ...options, files: ['Reading/Typed.md', 'Contacts/Anna.md', 'Gone/Deleted.md', 'Random/Idea.md'] })
+    expect(report.changed.map(c => c.path).sort()).toEqual(['Contacts/Anna.md', 'Reading/Typed.md'])
+    expect(report.notes).toBe(3)
+  })
+
+  test('files matches names whichever Unicode form git or the disk uses', async () => {
+    const name = 'Reading/Ægir — Café.md'
+    const dir = makeVault({ [name.normalize('NFD')]: '---\ntype: book\n---\n' })
+    const report = await normaliseVault(dir, { today: TODAY, files: [name.normalize('NFC')] })
+    expect(report.changed).toHaveLength(1)
+  })
+
+  test('an empty files list changes nothing (it does not mean "everything")', async () => {
+    const dir = makeVault(files)
+    expect((await normaliseVault(dir, { ...options, files: [] })).changed).toEqual([])
+  })
+
+  test('the CLI reads --files-from, one path per line', () => {
+    const dir = makeVault({ 'A.md': '---\ntype: goal\n---\n', 'B.md': '---\ntype: goal\n---\n', 'list.txt': 'A.md\n\nnope.md\n' })
+    const r = Bun.spawnSync(['bun', join(import.meta.dir, 'vault-normalise.ts'), dir, '--files-from', join(dir, 'list.txt'), '--json'], { stdout: 'pipe', stderr: 'pipe' })
+    expect(r.exitCode).toBe(0)
+    expect(JSON.parse(r.stdout.toString()).changed.map((c: { path: string }) => c.path)).toEqual(['A.md'])
+  })
+
   test('takes created from the vault history when it is a git repo', async () => {
     const dir = makeVault({ 'Goals/Run.md': '---\ntype: goal\n---\n' })
     const git = (...args: string[]) => Bun.spawnSync(['git', '-C', dir, '-c', 'user.name=t', '-c', 'user.email=t@t', ...args], { env: { ...process.env, GIT_AUTHOR_DATE: '2025-03-04T10:00:00', GIT_COMMITTER_DATE: '2025-03-04T10:00:00' } })

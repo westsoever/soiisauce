@@ -2,7 +2,7 @@ import { afterEach, expect, test } from 'bun:test'
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { copyTemplate, syncSkills } from './copy'
+import { copyTemplate, NOT_FOR_VAULTS, syncSkills } from './copy'
 
 const dirs: string[] = []
 const tmp = () => {
@@ -142,4 +142,16 @@ test('a skill that was excluded and is in the old manifest is cleaned up', () =>
   const r = syncSkills(src, dest, manifest, ['soii-install'])
   expect(r.removed).toEqual(['soii-install'])
   expect(existsSync(join(dest, 'soii-install'))).toBe(false)
+})
+
+test('maintainer skills are never installed into a vault: soii-install and soii-release', () => {
+  expect(NOT_FOR_VAULTS).toEqual(['soii-install', 'soii-release'])
+  const src = tmp()
+  put(src, 'soii-install/SKILL.md')
+  put(src, 'soii-release/SKILL.md')
+  put(src, 'soii-health/SKILL.md')
+  const dest = join(tmp(), 'skills')
+  const r = syncSkills(src, dest, join(tmp(), 'skills.json'), NOT_FOR_VAULTS)
+  expect(r.installed).toEqual(['soii-health'])
+  expect(existsSync(join(dest, 'soii-release'))).toBe(false)
 })

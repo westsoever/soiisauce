@@ -11,7 +11,10 @@
 // note is renamed in Obsidian. Dry run unless `--write`. It does not commit; commit per folder with `--only`.
 //
 //   bun scripts/vault-normalise.ts <vaultDir> [--write] [--type <folder/>=<type>]... [--only <folder/>]
-//                                  [--sections] [--history <dir>] [--json]
+//                                  [--files-from <file|->] [--sections] [--history <dir>] [--json]
+//
+// `--files-from` limits the run to the notes named in a file (or stdin, `-`), one vault-relative path per
+// line: the weekly /soii-health run feeds it the notes git says were added or changed since last time.
 import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { ConfigError } from '../app/lib/config-schema'
@@ -149,6 +152,8 @@ export interface NormaliseOptions {
   typeMap?: [string, string][]
   /** Only notes under this folder prefix. */
   only?: string
+  /** Only exactly these notes (vault-relative). Names that aren't notes in the vault are ignored; an empty list means none. */
+  files?: string[]
   sections?: boolean
   /** Repo to read first-commit dates from (default: the vault itself). */
   historyDir?: string
@@ -178,11 +183,13 @@ export async function normaliseVault(root: string, options: NormaliseOptions = {
   const typeMap = [...(options.typeMap ?? [])].map(([p, t]) => [withSlash(p), t] as const).sort((a, b) => b[0].length - a[0].length)
   const created = gitCreatedDates(options.historyDir ?? root)
   const only = options.only ? withSlash(options.only) : ''
+  const files = options.files ? new Set(options.files.map(f => f.normalize('NFC'))) : null
 
   const { markdown, fsPaths } = walkVault(root, config.exclude)
   const report: NormaliseReport = { written: Boolean(options.write), notes: 0, changed: [], skipped: [] }
   for (const path of markdown) {
     if (only && !path.startsWith(only)) continue
+    if (files && !files.has(path)) continue
     report.notes++
     const file = join(root, fsPaths.get(path) ?? path)
     const source = readFileSync(file, 'utf8')
@@ -225,10 +232,10 @@ function summarise(report: NormaliseReport): string {
 if (import.meta.main) {
   const args = process.argv.slice(2)
   const value = (flag: string) => args.flatMap((a, i) => (a === flag && args[i + 1] ? [args[i + 1]] : []))
-  const flagValues = new Set(['--type', '--only', '--history'].flatMap(f => value(f)))
+  const flagValues = new Set(['--type', '--only', '--history', '--files-from'].flatMap(f => value(f)))
   const vaultDir = args.find(a => !a.startsWith('--') && !flagValues.has(a))
   if (!vaultDir) {
-    console.error('Usage: bun scripts/vault-normalise.ts <vaultDir> [--write] [--type <folder/>=<type>]... [--only <folder/>] [--sections] [--history <dir>] [--json]')
+    console.error('Usage: bun scripts/vault-normalise.ts <vaultDir> [--write] [--type <folder/>=<type>]... [--only <folder/>] [--files-from <file|->] [--sections] [--history <dir>] [--json]')
     process.exit(2)
   }
   if (!existsSync(vaultDir) || !statSync(vaultDir).isDirectory()) {
@@ -243,7 +250,10 @@ if (import.meta.main) {
     }
     return [v.slice(0, i), v.slice(i + 1)] as [string, string]
   })
+  const filesFrom = value('--files-from')[0]
+  const files = filesFrom === undefined ? undefined : (filesFrom === '-' ? await Bun.stdin.text() : readFileSync(filesFrom, 'utf8')).split('\n').map(l => l.trim()).filter(Boolean)
   const report = await normaliseVault(vaultDir, {
+    files,
     write: args.includes('--write'),
     typeMap,
     only: value('--only')[0],

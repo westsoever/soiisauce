@@ -10,6 +10,7 @@ import { useCapabilities, useMe } from '../lib/queries'
 import { navigate, useRoute, workspacePath } from '../lib/router'
 import { toast } from '../lib/toast'
 import { cn } from '../ui/utils'
+import { UpdateNoticeRow } from '../update/UpdateNotice'
 import { openSearch } from './SearchPalette'
 
 function NavRow({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
@@ -105,6 +106,7 @@ export function Sidebar({ index }: { index: VaultIndex }) {
           <kbd className="font-mono text-xs text-muted-foreground">⌘K</kbd>
         </NavRow>
         {capabilities.data?.sync && <SyncButton />}
+        <UpdateNoticeRow />
         <div className="mt-2 flex h-8 items-center gap-2 px-2 text-xs text-muted-foreground">
           {me.data?.avatarUrl ? <img src={me.data.avatarUrl} alt="" className="size-5 rounded-full" referrerPolicy="no-referrer" /> : null}
           <span className="min-w-0 flex-1 truncate">{me.data ? `@${me.data.login}` : ''}</span>

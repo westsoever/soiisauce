@@ -5,10 +5,10 @@
 import { existsSync, readFileSync, renameSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import type { Ctx } from './context'
-import { REPO } from './vault-files'
+import { remoteFromEnv } from './vault-files'
 import { parseTag } from './version'
 
-export const remoteUrl = (ctx: Ctx): string => ctx.env.SOII_REMOTE?.trim() || `https://github.com/${REPO}.git`
+export const remoteUrl = (ctx: Ctx): string => remoteFromEnv(ctx.env)
 export const soiiCheckout = (vault: string): string => join(vault, '.soii', 'soii')
 
 /** The tag the checkout is exactly at, or null (a branch, or no checkout). */

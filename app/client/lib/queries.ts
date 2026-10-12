@@ -3,13 +3,14 @@
 // a new deploy is picked up on reload (spec §17).
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { noteApiPath } from '../../lib/paths'
-import type { Me, NoteDoc, NoteId, SearchResult, VaultIndex } from '../../lib/types'
+import type { Me, NoteDoc, NoteId, SearchResult, VaultIndex, VersionInfo } from '../../lib/types'
 import { api } from './http'
 
 export const keys = {
   me: ['me'] as const,
   vault: ['vault'] as const,
   capabilities: ['capabilities'] as const,
+  version: ['version'] as const,
   note: (id: NoteId) => ['note', id] as const,
   search: (q: string) => ['search', q] as const
 }
@@ -50,4 +51,20 @@ export interface Capabilities {
 
 export function useCapabilities() {
   return useQuery({ queryKey: keys.capabilities, queryFn: () => api<Capabilities>('/api/capabilities'), staleTime: Infinity, retry: false })
+}
+
+const HALF_HOUR = 30 * 60_000
+
+/**
+ * Is there a newer soii? The server checks GitHub at startup and every six hours and caches; this asks the server. Right after
+ * the server starts it may not know yet, so an empty answer is asked again soon. A failure is just "no notice".
+ */
+export function useVersion() {
+  return useQuery({
+    queryKey: keys.version,
+    queryFn: () => api<VersionInfo>('/api/version'),
+    staleTime: 5 * 60_000,
+    retry: false,
+    refetchInterval: query => (query.state.data?.latest ? HALF_HOUR : 30_000)
+  })
 }

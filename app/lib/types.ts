@@ -43,6 +43,14 @@ export interface FolderNode {
   notes: NoteId[]
 }
 
+/** GET /api/version (local mode): the release this soii runs and the newest one on GitHub. */
+export interface VersionInfo {
+  installed: string | null
+  latest: string | null
+  updateAvailable: boolean
+  releaseUrl: string | null
+}
+
 /** One Claude Code skill from the vault's `.claude/skills/<id>/SKILL.md`: just its frontmatter, never the body. */
 export interface SkillMeta {
   /** The folder name. */

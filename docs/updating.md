@@ -13,6 +13,10 @@ Every soii install runs the **same code**. What makes yours yours lives somewher
 
 If you want soii to look or behave differently, change `soii.config.yml` rather than the code in `.soii/soii/`: that folder is replaced on every update.
 
+## Knowing there is one
+
+soii checks GitHub for a newer release when it starts and every six hours (`git ls-remote --tags`, with your git login), and remembers the answer. When one exists, an **Update available** line appears under **Sync** in the sidebar (in the **More** menu on a phone). Hover it, focus it or tap it: it says which version is available and which you have, with a button that copies `/soii-update` and a link to the release notes. `soii status` says the same in the terminal. Offline, or without git access to the repo, nothing shows and nothing breaks. Up to date, nothing shows.
+
 ## Update
 
 ```bash
@@ -22,13 +26,13 @@ soii update
 It looks for the newest release tag on GitHub, and if yours is older:
 
 1. fetches that release into `.soii/soii/` with git and installs its packages,
-2. shows **what's new** (the new entries of soii's `DECISIONS.md`, one line each),
+2. shows **what's new** (the new entries of soii's `DECISIONS.md`, one line each) with the links to the release notes on GitHub and to what changed since your version,
 3. moves the pin in `.soii/package.json`,
 4. rebuilds, refreshes the skills, commits what it changed in your vault (`soii: update to v0.1.1`: the pin, `.soii/skills.json` and the skill folders, nothing else) and restarts soii.
 
 If the fetch fails, the working install stays as it was. `soii status` shows your version and the newest one. The vault stays clean after an update; push it when you like.
 
-Ask Claude instead? Run `/soii-update` in Claude Code from your vault: it runs the same command and explains what's new in plain words.
+`/soii-update` in Claude Code, from your vault, is the one to reach for: it runs the same command, explains what's new in plain words, and checks that soii came back. `soii update` is for people who prefer the terminal.
 
 ## Skills
 
@@ -57,4 +61,4 @@ See [deploy-vercel.md](deploy-vercel.md).
 
 ## For the soii maintainer
 
-A release is a tag `vX.Y.Z` on `main` whose `package.json` says the same version. Keep `main` releasable: merge only with `bun test app scripts` and `bun run typecheck` green, add a `DECISIONS.md` entry for anything an owner will notice, and mention any new setting in `.env.example` and [setup.md](setup.md).
+A release is a tag `vX.Y.Z` on `main` whose `package.json` says the same version. Keep `main` releasable: merge only with `bun test app scripts` and `bun run typecheck` green, add a `DECISIONS.md` entry for anything an owner will notice, and mention any new setting in `.env.example` and [setup.md](setup.md). The full release flow, with the commands, is in [releasing.md](releasing.md).

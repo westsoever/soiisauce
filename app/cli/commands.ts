@@ -5,8 +5,9 @@ import { basename, join, resolve } from 'node:path'
 import type { Flags } from './args'
 import { checkoutSoii, remoteUrl, soiiCheckout } from './checkout'
 import type { Ctx } from './context'
-import { copyTemplate, syncSkills } from './copy'
+import { copyTemplate, NOT_FOR_VAULTS, syncSkills } from './copy'
 import { newDecisions } from './decisions'
+import { versionLine, updateLinks } from './messages'
 import { commitSoiiFiles } from './vault-commit'
 import { chooseShimDir, logPath, renderShim } from './paths'
 import { configDir, DEFAULT_PORT, readRegistry, removeRegistry, writeRegistry, type Registry } from './registry'
@@ -101,8 +102,8 @@ export async function install(ctx: Ctx, vaultArg: string | undefined, flags: Fla
     if (previous && previous.vault !== vault) ctx.out(`This machine served ${previous.vault}; it now serves ${vault}.`)
     installShim(ctx, vault)
   }
-  // soii-install is for a machine that has no soii yet, so it is pointless inside a vault that does.
-  const skills = syncSkills(join(root, '.claude', 'skills'), join(vault, '.claude', 'skills'), join(here, 'skills.json'), ['soii-install'])
+  // soii-install (a machine with no soii yet) and soii-release (the maintainer) are pointless inside a vault that runs soii.
+  const skills = syncSkills(join(root, '.claude', 'skills'), join(vault, '.claude', 'skills'), join(here, 'skills.json'), NOT_FOR_VAULTS)
   if (skills.installed.length) ctx.out(`Skills: ${skills.installed.join(', ')} → ${join(vault, '.claude', 'skills')}`)
   if (skills.removed.length) ctx.out(`Removed skills soii no longer ships: ${skills.removed.join(', ')}`)
 
@@ -250,8 +251,7 @@ export async function status(ctx: Ctx): Promise<number> {
   ctx.out(`  url      http://localhost:${reg.port}`)
   ctx.out(`  pid      ${pid ?? '-'}`)
   ctx.out(`  vault    ${reg.vault}`)
-  const version = installed ? `v${installed}` : 'unknown'
-  ctx.out(`  version  ${version}${latest ? (isNewer(installed, latest) ? `   (${latest} is available: \`soii update\`)` : '   (latest)') : '   (latest unknown: could not reach GitHub)'}`)
+  ctx.out(`  version  ${versionLine(installed, latest)}`)
   ctx.out(`  boot     ${ctx.platform === 'darwin' ? (bootAtLogin(ctx) ? 'LaunchAgent installed: starts at login, restarts if it stops' : 'no LaunchAgent') : 'background process only'}`)
   ctx.out(`  log      ${logPath(ctx.platform, ctx.home)}`)
   return up ? 0 : 1
@@ -314,7 +314,8 @@ export async function update(ctx: Ctx, flags: Flags): Promise<number> {
   }
   writeFileSync(pkgFile, setPin(readFileSync(pkgFile, 'utf8'), pinSpec(latest)))
   const news = newDecisions(before, read(decisionsFile(installedRoot(reg.vault))))
-  if (news.length) ctx.out(`\nWhat's new:\n${news.map(n => `  - ${n}`).join('\n')}\n`)
+  if (news.length) ctx.out(`\nWhat's new:\n${news.map(n => `  - ${n}`).join('\n')}`)
+  ctx.out(`\n${updateLinks(installed, latest).join('\n')}\n`)
   // The new version rebuilds, refreshes the skills and restarts: its own install knows how.
   return ctx.stream(ctx.bun, [vaultCli(reg.vault), 'install', reg.vault, ...(flags.noService ? ['--no-service'] : [])], { env: { SOII_UPDATE: '1' } })
 }

@@ -47,6 +47,27 @@ describe('docs/skills.md', () => {
     expect(learn).toMatch(/\(learn\)/)
     expect(learn).not.toMatch(/nothing to drill/)
   })
+  test('the release flow is wired together: doc, script, skill, cheatsheet row, link from updating.md', () => {
+    const doc = readFileSync(join(root, 'docs', 'releasing.md'), 'utf8')
+    const skill = readFileSync(join(skillsDir, 'soii-release', 'SKILL.md'), 'utf8')
+    for (const text of [doc, skill]) {
+      expect(text).toContain('scripts/release-notes.ts')
+      expect(text).toContain('gh release create')
+      expect(text).toContain('git tag -a')
+    }
+    expect(existsSync(join(root, 'scripts', 'release-notes.ts'))).toBe(true)
+    expect(skill).toContain('docs/releasing.md')
+    expect(readFileSync(join(root, 'docs', 'updating.md'), 'utf8')).toContain('releasing.md')
+    expect(cheatsheet).toMatch(/\| `\/soii-release` \| \*\*Maintainers only, not in your vault\.\*\*/)
+  })
+  test('soii-health fills only new and changed notes, with the script option that does it', () => {
+    const health = readFileSync(join(skillsDir, 'soii-health', 'SKILL.md'), 'utf8')
+    expect(health).toContain('--files-from')
+    expect(health).toContain('Filled properties')
+    expect(health).toContain('git -C "$VAULT" fetch --unshallow')
+    expect(health).toContain('--diff-filter=AM')
+    expect(health).toMatch(/7 days/)
+  })
   test('each skill names itself in its frontmatter', () => {
     for (const name of shipped) {
       expect(readFileSync(join(skillsDir, name, 'SKILL.md'), 'utf8')).toMatch(new RegExp(`^---\\nname: ${name}\\n`))

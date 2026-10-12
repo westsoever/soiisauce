@@ -1,11 +1,11 @@
 ---
 name: soii-health
-description: Weekly vault check-up for soii. Finds notes soii can't read properly (broken frontmatter, unknown types, bad dates or values, broken links, missing properties, stale Inbox), fixes the safe mechanical ones on a branch, and opens a pull request on the vault repo with a report of everything else. Use when the owner asks for a vault health check, a frontmatter fix-up, or when a scheduled cloud routine runs it.
+description: Weekly vault check-up for soii. Finds notes soii can't read properly (broken frontmatter, unknown types, bad dates or values, broken links, missing properties, stale Inbox), fixes the safe mechanical ones on a branch, fills in the documented properties on notes added or changed since the last check, and opens a pull request on the vault repo with a report of everything else. Use when the owner asks for a vault health check, a frontmatter fix-up, or when a scheduled cloud routine runs it.
 ---
 
 # Vault health
 
-You check the owner's Obsidian vault against what soii understands, fix what is safe to fix, and hand the rest back as a report. You work on a **branch** and, when the vault has a GitHub remote, open a **pull request**. You never push to the vault's main branch: that's the owner's to decide, and these are their private notes. (A vault on the owner's own computer may have no remote at all: see step 5.)
+You check the owner's Obsidian vault against what soii understands, fix what is safe to fix, keep the newest notes complete, and hand the rest back as a report. You work on a **branch** and, when the vault has a GitHub remote, open a **pull request**. You never push to the vault's main branch: that's the owner's to decide, and these are their private notes. (A vault on the owner's own computer may have no remote at all: see step 5.)
 
 ## 1. Find soii's scripts and the vault
 
@@ -48,13 +48,13 @@ bun "$SOII/scripts/check-vault.ts" "$VAULT"            # the readable version
 
 The checker is read-only and uses soii's own parser, so its findings are exactly what soii trips over. `$SOII/docs/frontmatter.md` is the reference for every type and field.
 
-The readable version ends with a **Missing properties** table: how many notes of each type lack keys the docs list for that type, and which keys most often. That is the `missing-field` info rule. Don't fix these in a health run (a vault with hundreds of notes would get a hundred-file pull request); report the table and point to `/soii-setup`, which adds them as empty keys in reviewable commits.
+The readable version ends with a **Missing properties** table: how many notes of each type lack keys the docs list for that type, and which keys most often. That is the `missing-field` info rule, and the table counts **every** note, old ones included. Don't bulk-fix old gaps in a health run (a vault with hundreds of notes would get a hundred-file pull request); report the table and point to `/soii-setup`, which adds them as empty keys in reviewable commits. Only the notes added or changed since the last check are filled in, in step 4b.
 
 ## 3. Also look for (report only, do all four every run)
 
 - **Inbox backlog:** notes in the inbox folder (`00-Inbox/` or whatever the vault uses) older than 14 days, by last commit date: `git -C "$VAULT" log -1 --format=%cs -- <file>`. Cloud checkouts are shallow: run `git -C "$VAULT" fetch --unshallow` first, or fall back to the note's `created:` date.
 - **Orphans:** notes with **no `type`** that nothing links to and that aren't daily notes, briefs, or templates. Typed notes (books, people, goals…) show up in soii's workspaces, so they're never orphans. Cap the list at 20 and give the total.
-- **Missing properties:** the checker's table, as is: type, note count, most-missed keys. One line per type, never one per note.
+- **Missing properties:** the checker's table, as is: type, note count, most-missed keys. One line per type, never one per note. Old gaps are only counted; the owner decides when to run `/soii-setup`.
 - **Stale people:** if the People workspace is used, persons whose `last_contact` is far past their `cadence`. One line each; the owner decides.
 
 ## 3b. This vault's own checks (report only)
@@ -88,13 +88,39 @@ Create a branch first: `git -C "$VAULT" switch -c soii/health-$(date +%F)`.
 - Edit `.obsidian/`, `.github/`, `.soii/`, or `soii.config.yml`.
 - Decode base64-encoded notes. Report them; the owner fixes those by hand.
 
-After fixing, run the checker again and confirm the error count went down and nothing new appeared.
+## 4b. Fill in properties on new and changed notes
+
+Each week, keep the newest notes complete: add the documented properties (empty keys) and the values that can be worked out safely, **only on notes added or changed since the previous run**. Old notes are left alone (their gaps stay in the count).
+
+**1. When "since" is.** The date of the previous health run: the newest of the dates in the names of `soii/health-*` branches (local and remote: `git -C "$VAULT" for-each-ref --format='%(refname:short)' 'refs/heads/soii/health-*' 'refs/remotes/origin/soii/health-*'`) and in the titles of pull requests and issues called `Vault health — YYYY-MM-DD` (`gh pr list --state all --search 'Vault health in:title'`, the same for `gh issue list`). Ignore today's own branch. If there is none, use 7 days ago (`date -v-7d +%F` on macOS, `date -d '7 days ago' +%F` on Linux). Call it `SINCE`.
+
+**2. Which notes.** Cloud checkouts are shallow, so first `git -C "$VAULT" fetch --unshallow` (it fails harmlessly when the clone is complete):
+
+```bash
+git -C "$VAULT" -c core.quotepath=off log --since="$SINCE" --diff-filter=AM --name-only --format= -- '*.md' | sort -u > /tmp/health-changed.txt
+wc -l < /tmp/health-changed.txt
+```
+
+Added or modified Markdown files only, on the branch you're on (the vault's default branch, plus the fixes from step 4). The script ignores names that no longer exist, hidden notes and Templates.
+
+**3. Fill them.**
+
+```bash
+bun "$SOII/scripts/vault-normalise.ts" "$VAULT" --files-from /tmp/health-changed.txt --json > /tmp/health-filled.json   # dry run: what would change
+bun "$SOII/scripts/vault-normalise.ts" "$VAULT" --files-from /tmp/health-changed.txt --write
+```
+
+It adds each documented key the note lacks as an empty key, and fills only what is safely derivable (`author` from a `Title — Author` file name, `last_contact` from the newest dated line, `cadence` from the relationship, `created` from git). It never overwrites a value, never guesses a status, rating, amount or date, never types an untyped note (that's `missing-type` and the owner's call), never touches body text, and skips hidden notes and notes it can't parse (those stay in the report). Running it twice changes nothing. An empty list is fine: nothing to fill.
+
+Commit it on its own, so the pull request shows it separately: `git -C "$VAULT" add -A && git -C "$VAULT" commit -m "soii: fill properties on new notes ($(date +%F))"`. From `/tmp/health-filled.json` take the changed **paths** and which keys were added, for the report's **Filled properties** section.
+
+After fixing and filling, run the checker again and confirm the error count went down and nothing new appeared. The `missing-field` count drops by the notes you filled; the rest are old gaps.
 
 ## 5. Report: a pull request, an issue, or nothing
 
-| You fixed something | Something to report | Do |
+| You fixed or filled something | Something to report | Do |
 |---|---|---|
-| yes | either | **Pull request** with the fixes and the full report (below) |
+| yes | either | **Pull request** with the fixes, the filled properties and the full report (below) |
 | no | yes | **Issue** on the vault repo, same title and body (there's no commit to put a PR on) |
 | no | no | Nothing. Say "Vault is healthy" with the checker's summary line |
 
@@ -117,6 +143,10 @@ Open a PR against the vault's default branch (use `gh pr create` if it's availab
 - `path/to/note.md`: status `Reading` → `reading`
 …
 
+## Filled properties (N notes, added or changed since YYYY-MM-DD)
+- `path/to/new-note.md`: author (from the file name), 9 empty keys
+…
+
 ## Needs you
 - **Broken frontmatter I didn't touch:** …
 - **Unknown types:** `type: recipe` in 4 notes (add it to soii.config.yml, or rename)
@@ -124,12 +154,12 @@ Open a PR against the vault's default branch (use `gh pr create` if it's availab
 - **Inbox older than 14 days:** …
 - **Orphans:** …
 - **This vault's checks:** one bullet per finding from `.claude/soii-health.local.md`
-- **Missing properties:** book 700 (rating, finished, started), person 93 (phone, birthday) — run `/soii-setup` to add them
+- **Missing properties (old notes, counted only):** book 700 (rating, finished, started), person 93 (phone, birthday). Run `/soii-setup` to add them
 
 Checker before: E errors, W warnings · after: E errors, W warnings
 ```
 
-Show at most the note **paths** and the property values involved. Don't paste note contents into the PR or issue. In an issue, leave out the "Fixed" section.
+Show at most the note **paths**, key names and the property values involved. Don't paste note contents into the PR or issue. In an issue, leave out the "Fixed" and "Filled properties" sections. Leave "Filled properties" out too when nothing was filled.
 
 ## 6. Finish
 
@@ -139,6 +169,6 @@ Reply with the PR or issue link (or the branch name when there's no remote, or "
 
 From a Claude Code session in soii (or in your vault), run `/schedule` and ask for a weekly routine with **both** the soii repo and the vault repo as sources, using this prompt:
 
-> Run the soii-health skill from the soii repo (`.claude/skills/soii-health/SKILL.md`) against the vault repo checked out next to it. Follow it exactly: fix only the safe items on a branch, report through one pull request or issue on the vault repo, never push to main.
+> Run the soii-health skill from the soii repo (`.claude/skills/soii-health/SKILL.md`) against the vault repo checked out next to it. Follow it exactly: fix only the safe items and fill the documented properties on notes added or changed since the last run, on a branch; count old gaps without touching them; report through one pull request or issue on the vault repo, never push to main.
 
 The routine needs GitHub access to the vault repo to push the branch and open the PR.

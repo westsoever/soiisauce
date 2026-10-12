@@ -14,7 +14,7 @@ soii status
 git status -sb        # in the vault
 ```
 
-- `soii status` says `latest`: tell them they're up to date. Stop.
+- `soii status` says `latest`: tell them they're up to date. Stop. (When a newer release exists, soii's sidebar shows **Update available** below Sync, and `soii status` says to run `/soii-update`.)
 - `soii status` isn't found or says soii isn't installed: use **/soii-install** instead.
 - If the vault has uncommitted changes, that's fine for soii: an update only touches `.soii/` and soii's skill folders, and its commit includes only those.
 - If you are in the soii repo itself (a development checkout, no `.soii/`), this isn't the flow: `git pull --ff-only` and stop.
@@ -25,7 +25,12 @@ git status -sb        # in the vault
 soii update
 ```
 
-It fetches the newest release with git, prints **What's new** (the new `DECISIONS.md` entries), moves the pin, rebuilds, refreshes the skills, commits them and restarts. Summarise what's new for the owner in plain words, one line per entry, and say which workspaces or skills it touches.
+It fetches the newest release with git, prints **What's new** (the new `DECISIONS.md` entries) and two links, moves the pin, rebuilds, refreshes the skills, commits them and restarts. Summarise what's new for the owner in plain words, one line per entry, and say which workspaces or skills it touches. Then give them the two links the command printed:
+
+- **Release notes:** `https://github.com/westsoever/soii/releases/tag/vX.Y.Z`
+- **What changed:** `https://github.com/westsoever/soii/compare/vOLD...vNEW`
+
+If an older `soii update` didn't print them, build them from the old and new versions in `soii status`.
 
 If it fails: "git could not fetch" is GitHub access (`gh auth login`, `gh auth setup-git`); anything else, read the message, and `soii logs`. A failed fetch leaves the working install as it was.
 

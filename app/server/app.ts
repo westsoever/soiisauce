@@ -23,6 +23,8 @@ import { serveFile } from './files'
 import { authorizeUrl, exchangeCode, fetchGithubUser, type FetchLike } from './github-oauth'
 import { logNote } from './log-note'
 import { canSync, runGit, syncVault, type RunGit } from './sync'
+import { createVersionChecker, gitLsRemote, type VersionChecker } from './version'
+import { remoteFromEnv } from '../cli/vault-files'
 import { hostHeaderAllowed } from './local'
 import { createVaultStore, defaultGeneratedDir, VaultNotBuiltError, type VaultStore } from './vault-store'
 import { writeNote, writeTarget } from './write-note'
@@ -34,6 +36,8 @@ export interface AppOptions {
   fetch?: FetchLike
   now?: () => number
   git?: RunGit
+  /** Replaces the release check (tests). By default local mode checks soii's remote for a newer tag. */
+  version?: VersionChecker
 }
 
 /** The decoded rest of the raw (still percent-encoded) path after `prefix`, or null. */
@@ -51,6 +55,8 @@ export function createSoiiApp(opts: AppOptions = {}): Hono<AuthEnv> {
   const fetchImpl: FetchLike = opts.fetch ?? ((input, init) => fetch(input, init))
   const store = opts.store ?? createVaultStore(opts.generatedDir ?? defaultGeneratedDir(source))
   const auth = requireUser(env, now)
+  const version =
+    opts.version ?? (env.local ? createVersionChecker({ installed: env.soiiVersion, lsRemote: gitLsRemote(remoteFromEnv(source), opts.git ?? runGit) }) : null)
   const app = new Hono<AuthEnv>()
   if (env.local && !env.localForce) {
     app.use('*', async (c, next) => (hostHeaderAllowed(c.req.header('host')) ? next() : c.json({ error: 'bad_host' }, 403)))
@@ -104,6 +110,14 @@ export function createSoiiApp(opts: AppOptions = {}): Hono<AuthEnv> {
   })
 
   app.get('/api/me', auth, c => c.json(c.get('user')))
+
+  // The installed and the newest release, for the sidebar's "Update available". Only an installed (local mode) soii has
+  // anything to update from; asking starts the checks, and serve.ts asks once at startup.
+  app.get('/api/version', auth, c => {
+    if (!env.local || !version) return c.json({ installed: null, latest: null, updateAvailable: false, releaseUrl: null })
+    version.ensureStarted()
+    return c.json(version.info())
+  })
 
   // ---- vault ----
   app.get('/api/vault', auth, c => {

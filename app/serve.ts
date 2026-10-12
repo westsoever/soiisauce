@@ -45,6 +45,9 @@ function staticFile(pathname: string): Response | null {
   })
 }
 
+// Start the release check now rather than at the first page view (local mode only; elsewhere this answers at once and does nothing).
+void app.fetch(new Request('http://127.0.0.1/api/version', { headers: { Host: '127.0.0.1' } }))
+
 Bun.serve({
   port,
   hostname: host,

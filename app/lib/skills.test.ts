@@ -151,6 +151,12 @@ describe('groupSkills', () => {
     ])
   })
 
+  test('the maintainer skill soii-release has a group of its own, so it never falls into More', () => {
+    const groups = groupSkills([skill('soii-health'), skill('soii-release')])
+    expect(groups.map(g => g.title)).toEqual(['Keep healthy', 'Maintain soii'])
+    expect(ids(groups[1])).toEqual(['soii-release'])
+  })
+
   test('empty groups are left out', () => {
     expect(groupSkills([skill('soii-health')]).map(g => g.title)).toEqual(['Keep healthy'])
   })

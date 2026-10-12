@@ -2,7 +2,7 @@
 // `soii run`: what the LaunchAgent runs. Builds soii for the registered vault, serves it on 127.0.0.1,
 // and recompiles the vault (not the app) when notes change, so edits made in Obsidian, Claude Code or soii itself show up.
 // If the server dies, this exits so launchd (KeepAlive) starts everything again.
-import { watch } from 'node:fs'
+import { readFileSync, watch } from 'node:fs'
 import { join } from 'node:path'
 import type { Subprocess } from 'bun'
 import { isIgnoredVaultPath } from './watch'
@@ -19,10 +19,19 @@ export interface RunOptions {
   host?: string
 }
 
+/** The release the code in `soiiRoot` is (its package.json), so the app can tell when a newer one exists. */
+function installedVersion(soiiRoot: string): string {
+  try {
+    return (JSON.parse(readFileSync(join(soiiRoot, 'package.json'), 'utf8')) as { version?: string }).version ?? ''
+  } catch {
+    return ''
+  }
+}
+
 export function runEnv(o: RunOptions): Record<string, string> {
   const env: Record<string, string> = {}
   for (const [k, v] of Object.entries(process.env)) if (v !== undefined) env[k] = v
-  return { ...env, SOII_LOCAL: '1', VAULT_PATH: o.vault, PORT: String(o.port), HOST: o.host ?? '127.0.0.1', SOII_OUT_DIR: o.outDir }
+  return { ...env, SOII_LOCAL: '1', VAULT_PATH: o.vault, PORT: String(o.port), HOST: o.host ?? '127.0.0.1', SOII_OUT_DIR: o.outDir, SOII_VERSION: installedVersion(o.soiiRoot) }
 }
 
 export async function runSupervisor(o: RunOptions): Promise<void> {

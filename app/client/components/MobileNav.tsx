@@ -1,13 +1,15 @@
 // app/client/components/MobileNav.tsx
 // Below md: the bottom bar. The first three workspaces, a raised Log button in the middle, and
-// More (other workspaces, Skills, Vault, Search, Sign out). Padded for the iPhone home indicator.
+// More (an update notice when there is one, other workspaces, Skills, Vault, Search, Sign out). Padded for the iPhone home indicator.
 import { IconDots, IconPlus } from '@tabler/icons-react'
 import type { VaultIndex, WorkspaceConfig } from '../../lib/types'
 import { signOut } from '../lib/http'
 import { iconFor } from '../lib/icons'
 import { logPath, navigate, useRoute, workspacePath } from '../lib/router'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '../ui/dropdown-menu'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '../ui/dropdown-menu'
 import { cn } from '../ui/utils'
+import { UpdateActions, useAvailableUpdate } from '../update/UpdateNotice'
+import { updateMessage } from '../update/messages'
 import { openSearch } from './SearchPalette'
 
 const ITEM = 'flex h-14 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 text-[11px] font-medium transition-colors'
@@ -33,6 +35,7 @@ export function MobileNav({ index }: { index: VaultIndex }) {
   const [first, second, third] = workspaces
   const rest = workspaces.slice(3)
   const current = route.page === 'workspace' ? route.workspace : null
+  const update = useAvailableUpdate()
   const moreActive = route.page === 'vault' || route.page === 'skills' || (current !== null && rest.some(w => w.id === current))
   return (
     <nav aria-label="Main" className="flex shrink-0 items-stretch border-t bg-background pb-[env(safe-area-inset-bottom)] md:hidden">
@@ -51,10 +54,22 @@ export function MobileNav({ index }: { index: VaultIndex }) {
       {third && <WorkspaceItem workspace={third} active={current === third.id} />}
       <DropdownMenu>
         <DropdownMenuTrigger render={<button type="button" className={cn(ITEM, moreActive ? 'text-foreground' : 'text-muted-foreground')} />}>
-          <IconDots size={22} stroke={1.75} />
+          <span className="relative">
+            <IconDots size={22} stroke={1.75} />
+            {update && <span aria-hidden className="absolute -top-0.5 -right-1 size-2 rounded-full bg-primary" />}
+          </span>
           <span>More</span>
         </DropdownMenuTrigger>
         <DropdownMenuContent side="top" align="end" className="w-56">
+          {update && (
+            <>
+              <DropdownMenuGroup>
+                <DropdownMenuLabel className="text-sm whitespace-normal text-popover-foreground">{updateMessage(update)}</DropdownMenuLabel>
+              </DropdownMenuGroup>
+              <UpdateActions info={update} />
+              <DropdownMenuSeparator />
+            </>
+          )}
           {rest.map(ws => (
             <DropdownMenuItem key={ws.id} className="min-h-11" onClick={() => navigate(workspacePath(ws.id))}>
               {ws.title}
