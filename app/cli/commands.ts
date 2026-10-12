@@ -66,6 +66,18 @@ function prepareSoiiDir(ctx: Ctx, vault: string, flags: Flags): string {
 }
 
 
+/**
+ * Install the packages of the checkout at `root`. A fresh checkout has no node_modules, and the CLI in it can't even
+ * start without them, so anything that runs a newly fetched checkout must call this first.
+ * The lockfile in the tag is the lock: every install of v0.1.0 gets the same packages.
+ */
+export async function installDeps(ctx: Ctx, root: string): Promise<boolean> {
+  let deps = await ctx.stream('bun', ['install', '--frozen-lockfile'], { cwd: root })
+  if (deps !== 0) deps = await ctx.stream('bun', ['install'], { cwd: root })
+  if (deps !== 0) ctx.err(`soii: \`bun install\` failed in ${root}.`)
+  return deps === 0
+}
+
 export async function install(ctx: Ctx, vaultArg: string | undefined, flags: Flags): Promise<number> {
   const vault = resolve(ctx.cwd, expandHome(ctx, vaultArg ?? ctx.cwd))
   if (!existsSync(vault) || !statSync(vault).isDirectory()) throw new Error(`${vault} is not a folder.`)
@@ -80,13 +92,7 @@ export async function install(ctx: Ctx, vaultArg: string | undefined, flags: Fla
     return 1
   }
   const root = installedRoot(vault)
-  // The lockfile in the tag is the lock: every install of v0.1.0 gets the same packages.
-  let deps = await ctx.stream('bun', ['install', '--frozen-lockfile'], { cwd: root })
-  if (deps !== 0) deps = await ctx.stream('bun', ['install'], { cwd: root })
-  if (deps !== 0) {
-    ctx.err(`soii: \`bun install\` failed in ${root}.`)
-    return 1
-  }
+  if (!(await installDeps(ctx, root))) return 1
 
   const previous = readRegistry(configDir(ctx.env))
   const port = flags.port ?? (previous && previous.vault === vault ? previous.port : DEFAULT_PORT)
@@ -323,6 +329,8 @@ export async function update(ctx: Ctx, flags: Flags): Promise<number> {
     ctx.err(`soii: ${fetched.message}\n${AUTH_HINT}`)
     return 1
   }
+  // The new checkout has no node_modules yet, and the CLI run below can't start without them.
+  if (!(await installDeps(ctx, installedRoot(reg.vault)))) return 1
   writeFileSync(pkgFile, setPin(readFileSync(pkgFile, 'utf8'), pinSpec(latest)))
   const news = newDecisions(before, read(decisionsFile(installedRoot(reg.vault))))
   if (news.length) ctx.out(`\nWhat's new:\n${news.map(n => `  - ${n}`).join('\n')}`)
