@@ -14,5 +14,5 @@ export function updateLinks(oldVersion: string | null, newTag: string): string[]
 export function versionLine(installed: string | null, latest: string | null): string {
   const have = installed ? `v${installed.replace(/^v/, '')}` : 'unknown'
   if (!latest) return `${have}   (latest unknown: could not reach GitHub)`
-  return isNewer(installed, latest) ? `${have}   (${latest} is available: run /soii-update in Claude Code, or \`soii update\`)` : `${have}   (latest)`
+  return isNewer(installed, latest) ? `${have}   (${latest} is available: run \`soii update\`)` : `${have}   (latest)`
 }

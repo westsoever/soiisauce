@@ -63,7 +63,7 @@ VAULT_PATH=$PWD/template SOII_DEV_AUTH=1 bun run dev   # http://localhost:13390
 
 ## Skills
 
-soii ships with Claude Code skills for the jobs around it: preparing your vault (`/soii-setup`), a weekly health check that opens a pull request (`/soii-health`), fixing a failed sync (`/soii-sync-fix`), updating soii, and more. `soii install` and `soii update` copy them into your vault's `.claude/skills/`. The **Skills** page in the sidebar lists every skill in your vault, including ones you make with `/skillfactory`, with the command to type in Claude Code and a copy button. See also the **[skills cheatsheet](docs/skills.md)**.
+soii ships with Claude Code skills for the jobs around it: preparing your vault (`/soii-setup`), a weekly health check that opens a pull request (`/soii-health`), fixing a failed sync (`/soii-sync-fix`), and more. `soii install` and `soii update` copy them into your vault's `.claude/skills/`. The **Skills** page in the sidebar lists every skill in your vault, including ones you make with `/skillfactory`, with the command to type in Claude Code and a copy button. See also the **[skills cheatsheet](docs/skills.md)**.
 
 ## Docs
 

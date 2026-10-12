@@ -17,15 +17,15 @@ function render(ui: ReactNode, info: VersionInfo | undefined): string {
 
 describe('updateMessage', () => {
   test('names both versions and the one thing to do', () => {
-    expect(updateMessage(NEWER)).toBe('soii v0.1.3 is available (you have v0.1.2). Run /soii-update in Claude Code.')
+    expect(updateMessage(NEWER)).toBe('soii v0.1.3 is available (you have v0.1.2). Run soii update in a terminal.')
   })
 
   test('without a known installed version it still says what is available', () => {
-    expect(updateMessage({ ...NEWER, installed: null })).toBe('soii v0.1.3 is available. Run /soii-update in Claude Code.')
+    expect(updateMessage({ ...NEWER, installed: null })).toBe('soii v0.1.3 is available. Run soii update in a terminal.')
   })
 
-  test('the command to copy is /soii-update', () => {
-    expect(UPDATE_COMMAND).toBe('/soii-update')
+  test('the command to copy is `soii update`, the one way to update', () => {
+    expect(UPDATE_COMMAND).toBe('soii update')
   })
 })
 

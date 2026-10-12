@@ -1,6 +1,6 @@
 // app/server/version.ts
 // "Is there a newer soii?" for local mode: `git ls-remote --tags` against soii's remote (what `soii update` uses), checked
-// when the server starts, every hour, and right after a Sync (the moment you'd ask "anything new?"), cached, and served at /api/version. Offline or without git credentials
+// when the server starts, every six hours, and right after a Sync (the moment you'd ask "anything new?"), cached, and served at /api/version. Offline or without git credentials
 // it fails silently and keeps what it knew; nothing is shown until a check has found a newer release.
 import { newestTag, isNewer } from '../cli/version'
 import { releaseUrl } from '../cli/vault-files'
@@ -30,7 +30,7 @@ export function gitLsRemote(remote: string, git: RunGit, cwd = process.cwd()): (
   }
 }
 
-const ONE_HOUR = 60 * 60 * 1000
+const SIX_HOURS = 6 * 60 * 60 * 1000
 const THIRTY_MINUTES = 30 * 60 * 1000
 
 export function createVersionChecker(o: {
@@ -65,7 +65,7 @@ export function createVersionChecker(o: {
       const out = await o.lsRemote()
       if (out !== null) latest = newestTag(out) ?? latest
       // A failed check is retried sooner than a good one is repeated.
-      if (started) schedule(out !== null ? (o.refreshMs ?? ONE_HOUR) : (o.retryMs ?? THIRTY_MINUTES))
+      if (started) schedule(out !== null ? (o.refreshMs ?? SIX_HOURS) : (o.retryMs ?? THIRTY_MINUTES))
     })().finally(() => {
       inflight = null
     })

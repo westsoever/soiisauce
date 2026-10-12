@@ -73,7 +73,7 @@ done
 
 Group them by job and print each as `/name: <first sentence of its description, shortened>`. Group by what the skill does, using these headings (drop empty ones; put anything unrecognised under "Other"):
 
-- **Set up and keep tidy:** `soii-setup`, `soii-health`, `soii-sync-fix`, `soii-install`, `soii-update`
+- **Set up and keep tidy:** `soii-setup`, `soii-health`, `soii-sync-fix`, `soii-install`
 - **Capture:** `soii-capture`, `soii-save`, `soii-wrap`
 - **Thinking:** `soii-synthesize`, `soii-panel`, `soii-chat`
 - **Learning:** `soii-learn`, `soii-explore`
@@ -102,7 +102,7 @@ Then the commands, one line each:
 | `soii status` | running or not, version, newest version |
 | `soii logs [-f]` | show or follow the log |
 | `soii check` | list notes soii can't read properly (in the vault soii serves) |
-| `soii update` | move to the newest release and refresh these skills |
+| `soii update` | move to the newest release and refresh these skills. It is the one way to update; when a newer release exists, soii shows an **Update available** line under Sync and `soii status` says so |
 | `soii init <dir>` / `soii install [vault]` | new vault from the template / install into a vault |
 
 Checkpoint.

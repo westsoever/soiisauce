@@ -16,8 +16,8 @@ test('a v-prefixed old version is not doubled', () => {
   expect(updateLinks('v0.1.2', 'v0.1.3')[1]).toContain('/compare/v0.1.2...v0.1.3')
 })
 
-test('status says "run /soii-update" when a newer release exists', () => {
-  expect(versionLine('0.1.2', 'v0.1.3')).toBe('v0.1.2   (v0.1.3 is available: run /soii-update in Claude Code, or `soii update`)')
+test('status says "run soii update" when a newer release exists', () => {
+  expect(versionLine('0.1.2', 'v0.1.3')).toBe('v0.1.2   (v0.1.3 is available: run `soii update`)')
 })
 
 test('status says latest when up to date, and unknown when GitHub could not be reached', () => {

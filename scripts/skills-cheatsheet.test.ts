@@ -67,6 +67,21 @@ describe('docs/skills.md', () => {
     expect(readFileSync(join(root, 'docs', 'updating.md'), 'utf8')).toContain('releasing.md')
     expect(cheatsheet).toMatch(/\| `\/soii-release` \| \*\*Maintainers only, not in your vault\.\*\*/)
   })
+  test('the release is cut from a clean worktree on origin/main, never from a shared checkout\'s main', () => {
+    const doc = readFileSync(join(root, 'docs', 'releasing.md'), 'utf8')
+    const skill = readFileSync(join(skillsDir, 'soii-release', 'SKILL.md'), 'utf8')
+    for (const text of [doc, skill]) {
+      expect(text).toContain('git worktree add --detach')
+      expect(text).toContain('git push origin HEAD:main')
+      expect(text).not.toMatch(/git push origin main\b/)
+      expect(text).not.toMatch(/git switch main && git pull/)
+    }
+    // The skill accepts a detached HEAD that equals origin/main as "on main", and refuses anything else.
+    expect(skill).toMatch(/detached/i)
+    expect(skill).toContain('git rev-parse origin/main')
+    expect(skill).toMatch(/ahead|unpushed/i)
+    expect(skill).not.toMatch(/^- \*\*Only in a clone of the soii repo, on `main`\./m)
+  })
   test('soii-health fills only new and changed notes, with the script option that does it', () => {
     const health = readFileSync(join(skillsDir, 'soii-health', 'SKILL.md'), 'utf8')
     expect(health).toContain('--files-from')

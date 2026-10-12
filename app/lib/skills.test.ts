@@ -138,11 +138,11 @@ describe('groupSkills', () => {
   const ids = (g: { skills: { id: string }[] }) => g.skills.map(s => s.id)
 
   test('soii skills fall into their jobs, in the planned order', () => {
-    const all = ['soii-wrap', 'skillfactory', 'soii-learn', 'soii-chat', 'soii-health', 'soii-sync-fix', 'soii-setup', 'soii-intro', 'soii-update', 'soii-panel', 'soii-synthesize', 'soii-capture', 'soii-save', 'soii-explore'].map(id => skill(id))
+    const all = ['soii-wrap', 'skillfactory', 'soii-learn', 'soii-chat', 'soii-health', 'soii-sync-fix', 'soii-setup', 'soii-intro', 'soii-panel', 'soii-synthesize', 'soii-capture', 'soii-save', 'soii-explore'].map(id => skill(id))
     const groups = groupSkills(all)
     expect(groups.map(g => g.title)).toEqual(['Start & setup', 'Keep healthy', 'Capture & save', 'Think & connect', 'Learn & explore', 'Make your own'])
     expect(groups.map(ids)).toEqual([
-      ['soii-intro', 'soii-setup', 'soii-update', 'soii-sync-fix'],
+      ['soii-intro', 'soii-setup', 'soii-sync-fix'],
       ['soii-health'],
       ['soii-capture', 'soii-save', 'soii-wrap'],
       ['soii-chat', 'soii-synthesize', 'soii-panel'],
@@ -210,6 +210,10 @@ describe('the skills soii ships', () => {
       expect(typeof parsed.description).toBe('string')
       expect(parsed.description?.length).toBeGreaterThan(20)
     }
+  })
+
+  test('there is no /soii-update skill: `soii update` in a terminal is the one way to update (D105)', () => {
+    expect(names).not.toContain('soii-update')
   })
 
   test('every one of them lands in a named group, not only in More', () => {

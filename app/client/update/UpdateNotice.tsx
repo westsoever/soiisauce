@@ -1,7 +1,7 @@
 // app/client/update/UpdateNotice.tsx
 // "Update available", shown only when the server has found a newer soii release (local mode). A menu rather than a bare
 // tooltip, so hover, keyboard focus and a tap on a phone all reach the same thing: what is available, a copy button for
-// /soii-update, and the release page on GitHub.
+// `soii update`, and the release page on GitHub.
 import { IconCircleArrowUp, IconCopy, IconExternalLink } from '@tabler/icons-react'
 import type { VersionInfo } from '../../lib/types'
 import { useVersion } from '../lib/queries'
@@ -12,7 +12,7 @@ import { UPDATE_COMMAND, updateMessage } from './messages'
 export async function copyUpdateCommand(): Promise<void> {
   try {
     await navigator.clipboard.writeText(UPDATE_COMMAND)
-    toast(`Copied ${UPDATE_COMMAND}. Paste it in Claude Code, inside your vault.`, 'success')
+    toast(`Copied ${UPDATE_COMMAND}. Paste it in a terminal.`, 'success')
   } catch {
     toast("Couldn't copy.", 'error')
   }

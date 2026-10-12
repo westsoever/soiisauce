@@ -92,7 +92,7 @@ export interface SkillGroup {
 
 // soii's own skills by job, in the order the page shows them. A new skill soii ships lands in "More" until it is placed here.
 const JOBS: { id: string; title: string; skills: string[] }[] = [
-  { id: 'start', title: 'Start & setup', skills: ['soii-intro', 'soii-setup', 'soii-update', 'soii-sync-fix', 'soii-install'] },
+  { id: 'start', title: 'Start & setup', skills: ['soii-intro', 'soii-setup', 'soii-sync-fix', 'soii-install'] },
   { id: 'health', title: 'Keep healthy', skills: ['soii-health'] },
   { id: 'capture', title: 'Capture & save', skills: ['soii-capture', 'soii-save', 'soii-wrap'] },
   { id: 'think', title: 'Think & connect', skills: ['soii-chat', 'soii-synthesize', 'soii-panel'] },

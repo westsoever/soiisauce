@@ -15,7 +15,7 @@ If you want soii to look or behave differently, change `soii.config.yml` rather 
 
 ## Knowing there is one
 
-soii checks GitHub for a newer release when it starts, every hour, and right after you press **Sync** (`git ls-remote --tags`, with your git login), and remembers the answer. When one exists, an **Update available** line appears under **Sync** in the sidebar (in the **More** menu on a phone). Hover it, focus it or tap it: it says which version is available and which you have, with a button that copies `/soii-update` and a link to the release notes. `soii status` says the same in the terminal. Offline, or without git access to the repo, nothing shows and nothing breaks. Up to date, nothing shows.
+soii checks GitHub for a newer release when it starts, every six hours, and right after you press **Sync** (`git ls-remote --tags`, with your git login), and remembers the answer. When one exists, an **Update available** line appears under **Sync** in the sidebar (in the **More** menu on a phone). Hover it, focus it or tap it: it says which version is available and which you have, with a button that copies `soii update` and a link to the release notes. `soii status` says the same in the terminal. `soii restart` checks at once. Offline, or without git access to the repo, nothing shows and nothing breaks. Up to date, nothing shows.
 
 ## Update
 
@@ -32,7 +32,7 @@ It looks for the newest release tag on GitHub, and if yours is older:
 
 If the fetch fails, the working install stays as it was. `soii status` shows your version and the newest one. The vault stays clean after an update; push it when you like.
 
-`/soii-update` in Claude Code, from your vault, is the one to reach for: it runs the same command, explains what's new in plain words, and checks that soii came back. `soii update` is for people who prefer the terminal.
+`soii update` in a terminal is the one way to update: it prints what's new and the links, rebuilds, and restarts, and `soii status` then shows the new version.
 
 ## Skills
 

@@ -7,7 +7,7 @@ description: Walk a new owner through installing soii on their own computer, fro
 
 soii runs on the owner's own computer, inside their vault, at `http://localhost:5011`. `docs/setup.md` is the source of truth. Your job is to run it with them, one step at a time, and check each step worked. Allow about 10 minutes.
 
-This skill lives in the soii repo (the installer clone). It is not copied into vaults: once soii is installed, `/soii-intro` is the tour and `/soii-update` keeps it current.
+This skill lives in the soii repo (the installer clone). It is not copied into vaults: once soii is installed, `/soii-intro` is the tour and `soii update` in a terminal keeps it current.
 
 ## Before you start
 
@@ -20,7 +20,7 @@ soii status 2>&1 | head -3        # already installed?
 ```
 
 - No Bun: `curl -fsSL https://bun.sh/install | bash`, then open a new terminal.
-- `soii status` already shows a vault: soii is installed. Ask what they want (update: `/soii-update`; a second vault: `soii install` inside it switches this machine to that vault, so confirm first).
+- `soii status` already shows a vault: soii is installed. Ask what they want (update: `soii update` in a terminal; a second vault: `soii install` inside it switches this machine to that vault, so confirm first).
 - Not signed in to GitHub: `gh auth login`, then `gh auth setup-git`. soii's repo is private, and git reads it with that login. If `git ls-remote https://github.com/westsoever/soii.git` prints tags, access works.
 
 Ask one thing: **do they already have a vault?** (an Obsidian folder of notes)
