@@ -14,6 +14,7 @@ import { Button } from '../ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog'
 import { Input } from '../ui/input'
 import { parseBrowse } from '../views/gallery/browse'
+import { localAddedMessage } from './added-message'
 import { ListCombobox } from './ListCombobox'
 
 const SELECT_CLASS =
@@ -58,13 +59,13 @@ function AddNoteForm({ spec, notes, onDone }: { spec: NewNoteSpec; notes: NoteMe
   async function save() {
     setSaving(true)
     try {
-      const saved = await api<{ path: string; via: 'github' | 'local' }>('/api/notes', { method: 'POST', body: { type: spec.type, values } })
+      const saved = await api<{ path: string; via: 'github' | 'local'; warning?: string | null }>('/api/notes', { method: 'POST', body: { type: spec.type, values } })
       toast(
         saved.via === 'github'
           ? capabilities?.sync
             ? `Committed ${saved.path} to main. Press Sync to pull it in.`
             : `Committed ${saved.path} to main. It shows up after the next deploy (about 2 minutes).`
-          : `Saved ${saved.path}.`,
+          : localAddedMessage(saved.path, saved.warning, Boolean(capabilities?.sync)),
         'success'
       )
       onDone()

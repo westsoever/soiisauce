@@ -120,7 +120,7 @@ describe('the app in local mode', () => {
       const res = await a.request(`http://${host}/api/sync`, { method: 'POST', headers: { Host: host, Origin: `http://${host}` } })
       return { status: res.status, calls }
     }
-    expect(await run({ SOII_LOCAL: '1' }, 'localhost:5011')).toEqual({ status: 200, calls: ['pull', 'rev-list', 'push'] })
+    expect(await run({ SOII_LOCAL: '1' }, 'localhost:5011')).toEqual({ status: 200, calls: ['pull', 'rev-list', 'push', 'ls-remote'] }) // the last one: Sync also looks for a newer soii release
     expect(await run({ SOII_DEV_AUTH: '1' }, 'localhost:13390')).toEqual({ status: 200, calls: ['pull'] })
   })
 })

@@ -55,6 +55,13 @@ describe('docs/skills.md', () => {
       expect(text).toContain('gh release create')
       expect(text).toContain('git tag -a')
     }
+    for (const text of [doc, skill]) {
+      expect(text).toContain('merge-base --is-ancestor origin/main HEAD')
+      expect(text).toContain('TODO-LEAD')
+      expect(text).toContain('--lead')
+      expect(text).toMatch(/renumber the (entry|one) that has not shipped/i)
+      expect(text).not.toMatch(/newer: v/)
+    }
     expect(existsSync(join(root, 'scripts', 'release-notes.ts'))).toBe(true)
     expect(skill).toContain('docs/releasing.md')
     expect(readFileSync(join(root, 'docs', 'updating.md'), 'utf8')).toContain('releasing.md')

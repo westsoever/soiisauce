@@ -56,7 +56,7 @@ describe('writeNote to GitHub', () => {
       return new Response(JSON.stringify({ commit: { html_url: 'https://github.com/me/vault/commit/abc' } }), { status: 201 })
     }
     const r = await writeNote(readEnv(GH), { type: 'book', values: { title: 'Wait... what', author: 'Frank Herbert' }, path: 'evil/x.md' }, fetchImpl)
-    expect(r).toEqual({ ok: true, path: '04-Resources/Library/Books/Wait... what.md', via: 'github', commitUrl: 'https://github.com/me/vault/commit/abc' })
+    expect(r).toEqual({ ok: true, path: '04-Resources/Library/Books/Wait... what.md', via: 'github', commitUrl: 'https://github.com/me/vault/commit/abc', warning: null })
     expect(call!.url).toBe('https://api.github.com/repos/me/vault/contents/04-Resources/Library/Books/Wait...%20what.md')
     const sent = JSON.parse(call!.init.body as string)
     expect(sent.branch).toBe('main')
@@ -92,7 +92,7 @@ describe('writeNote to local disk', () => {
     const env = readEnv({ VAULT_PATH: root })
     const body = { type: 'book', values: { title: 'Dune', author: 'Frank Herbert', status: 'want' } }
     const first = await writeNote(env, body, noFetch)
-    expect(first).toEqual({ ok: true, path: '04-Resources/Library/Books/Dune.md', via: 'local', commitUrl: null })
+    expect(first).toEqual({ ok: true, path: '04-Resources/Library/Books/Dune.md', via: 'local', commitUrl: null, warning: expect.stringContaining('not a git repository') })
     const text = readFileSync(join(root, '04-Resources/Library/Books/Dune.md'), 'utf8')
     expect(text).toMatch(/^---\ntype: book\ntitle: Dune\nauthor: Frank Herbert\nisbn:\ncover:\nstatus: want\n/)
     expect(text).toMatch(/\ncreated: \d{4}-\d{2}-\d{2}\n/)

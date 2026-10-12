@@ -144,14 +144,20 @@ export function createSoiiApp(opts: AppOptions = {}): Hono<AuthEnv> {
 
   app.post('/api/notes', auth, sameOrigin, async c => {
     const body = await c.req.json().catch(() => null)
-    const result = await writeNote(env, body, fetchImpl)
+    const result = await writeNote(env, body, fetchImpl, opts.git)
     if (!result.ok) return c.json({ error: result.error, message: result.message }, result.status)
-    return c.json({ path: result.path, via: result.via, commitUrl: result.commitUrl }, 201)
+    return c.json({ path: result.path, via: result.via, commitUrl: result.commitUrl, warning: result.warning }, 201)
   })
 
   app.post('/api/sync', auth, sameOrigin, async c => {
     const result = await syncVault(env, opts.git, { push: env.local })
     if (!result.ok) return c.json({ error: result.error, message: result.message }, result.status)
+    // Sync is when you'd ask "anything new?": look for a newer soii release too, so the notice is current when this answers.
+    // The check is a single git call; a slow one is left to finish in the background rather than hold Sync up.
+    if (env.local && version) {
+      version.ensureStarted()
+      await Promise.race([version.refresh(), new Promise(resolve => setTimeout(resolve, 3000))])
+    }
     return c.json({ changed: result.changed, summary: result.summary })
   })
 

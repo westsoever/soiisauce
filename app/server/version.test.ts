@@ -15,8 +15,8 @@ function rig(opts: { installed?: string | null; answers: (string | null)[]; refr
       calls++
       return answers.length > 1 ? answers.shift()! : answers[0]
     },
-    refreshMs: opts.refreshMs ?? 6 * 60 * 60 * 1000,
-    retryMs: opts.retryMs ?? 30 * 60 * 1000,
+    refreshMs: opts.refreshMs,
+    retryMs: opts.retryMs,
     setTimer: (fn, ms) => {
       const t = { fn, ms, cleared: false }
       timers.push(t)
@@ -102,11 +102,11 @@ describe('createVersionChecker', () => {
     expect(r.calls()).toBe(1)
   })
 
-  test('after a good check the next one is in six hours, after a failed one in thirty minutes', async () => {
+  test('after a good check the next one is in an hour, after a failed one in thirty minutes', async () => {
     const good = rig({ answers: [TAGS('v0.1.3')] })
     good.checker.ensureStarted()
     await good.checker.refresh()
-    expect(good.timers.at(-1)?.ms).toBe(6 * 60 * 60 * 1000)
+    expect(good.timers.at(-1)?.ms).toBe(60 * 60 * 1000)
     const bad = rig({ answers: [null] })
     bad.checker.ensureStarted()
     await bad.checker.refresh()

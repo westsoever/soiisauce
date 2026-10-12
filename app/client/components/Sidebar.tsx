@@ -2,11 +2,12 @@
 // The left rail (miso's Sidebar layout): soii. wordmark, workspaces from config,
 // Log, Skills, Vault, Search (⌘K), and the signed-in user with sign-out. Hidden below md.
 import { IconFolder, IconLogout, IconPencilPlus, IconRefresh, IconSearch, IconSparkles } from '@tabler/icons-react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import type { VaultIndex, WorkspaceConfig } from '../../lib/types'
 import { api, signOut } from '../lib/http'
 import { iconFor } from '../lib/icons'
-import { useCapabilities, useMe } from '../lib/queries'
+import { keys, useCapabilities, useMe } from '../lib/queries'
 import { navigate, useRoute, workspacePath } from '../lib/router'
 import { toast } from '../lib/toast'
 import { cn } from '../ui/utils'
@@ -45,6 +46,7 @@ function WorkspaceIcon({ workspace }: { workspace: WorkspaceConfig }) {
 }
 
 function SyncButton() {
+  const queryClient = useQueryClient()
   const [busy, setBusy] = useState(false)
   async function run() {
     setBusy(true)
@@ -52,6 +54,8 @@ function SyncButton() {
       // The server pulls; the dev server rebuilds; useFreshVault then reloads the open page.
       const result = await api<{ summary: string }>('/api/sync', { method: 'POST', body: {} })
       toast(result.summary, 'success')
+      // The server also looked for a newer soii while syncing: show the notice now, not at the next poll.
+      void queryClient.invalidateQueries({ queryKey: keys.version })
     } catch (err) {
       toast(err instanceof Error ? err.message : "Couldn't sync.", 'error')
     } finally {

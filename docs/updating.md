@@ -15,7 +15,7 @@ If you want soii to look or behave differently, change `soii.config.yml` rather 
 
 ## Knowing there is one
 
-soii checks GitHub for a newer release when it starts and every six hours (`git ls-remote --tags`, with your git login), and remembers the answer. When one exists, an **Update available** line appears under **Sync** in the sidebar (in the **More** menu on a phone). Hover it, focus it or tap it: it says which version is available and which you have, with a button that copies `/soii-update` and a link to the release notes. `soii status` says the same in the terminal. Offline, or without git access to the repo, nothing shows and nothing breaks. Up to date, nothing shows.
+soii checks GitHub for a newer release when it starts, every hour, and right after you press **Sync** (`git ls-remote --tags`, with your git login), and remembers the answer. When one exists, an **Update available** line appears under **Sync** in the sidebar (in the **More** menu on a phone). Hover it, focus it or tap it: it says which version is available and which you have, with a button that copies `/soii-update` and a link to the release notes. `soii status` says the same in the terminal. Offline, or without git access to the repo, nothing shows and nothing breaks. Up to date, nothing shows.
 
 ## Update
 

@@ -56,7 +56,7 @@ export function useCapabilities() {
 const HALF_HOUR = 30 * 60_000
 
 /**
- * Is there a newer soii? The server checks GitHub at startup and every six hours and caches; this asks the server. Right after
+ * Is there a newer soii? The server checks GitHub at startup and every hour (and right after a Sync) and caches; this asks the server. Right after
  * the server starts it may not know yet, so an empty answer is asked again soon. A failure is just "no notice".
  */
 export function useVersion() {

@@ -35,7 +35,8 @@ describe('write routes', () => {
     expect(await (await app.fetch(new Request('http://localhost/api/capabilities'))).json()).toEqual({ write: true, writeVia: 'local', sync: true })
     const res = await app.fetch(post('/api/notes', { type: 'book', values: { title: 'Dune' } }))
     expect(res.status).toBe(201)
-    expect(await res.json()).toEqual({ path: '04-Resources/Library/Books/Dune.md', via: 'local', commitUrl: null })
+    // A temp folder is not a git repo, so the file is saved and the response says nothing was committed.
+    expect(await res.json()).toEqual({ path: '04-Resources/Library/Books/Dune.md', via: 'local', commitUrl: null, warning: expect.stringContaining('not a git repository') })
     expect((await app.fetch(post('/api/notes', { type: 'book', values: { title: 'Dune' } }))).status).toBe(409)
   })
 
