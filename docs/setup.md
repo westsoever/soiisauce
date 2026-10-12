@@ -41,6 +41,28 @@ bun ~/soii-installer/bin/soii.ts install
 
 Your notes aren't touched. soii adds a `.soii/` folder (its code, build and settings) and a `.claude/skills/` folder (its Claude Code skills). If the notes lack properties soii reads, run `/soii-setup` in Claude Code from inside the vault: it fills them in on a branch.
 
+## Set up without AI
+
+You don't need Claude Code. In a terminal, `soii install` with no vault named asks a few plain questions and does the rest. From a fresh clone (after step 1):
+
+```bash
+git clone --depth 1 https://github.com/westsoever/soii.git ~/soii-installer
+cd ~/soii-installer && bun bin/soii.ts install
+```
+
+It checks first that Bun, git and GitHub access to the soii repo work, and prints the exact fix if not. Then, with the answer in `[brackets]` if you press Enter:
+
+1. **New vault or existing?** [new]
+2. New: the **folder** [`~`] and the **name** [`soii-vault`], then the full path to confirm (it must not exist yet, or be empty), and whether to add the sample notes [Y].
+3. Existing: the path to your notes, then **in place** (soii adds `.soii/` and `.claude/skills/`; your notes aren't moved) or **copy** (your notes are copied into a new soii vault and the old one is never touched; the default, unless the folder already runs soii).
+4. In place with no git yet: start a repository? [Y]
+5. Start soii at login? [Y] (macOS) If no, run `soii start` whenever you want it.
+6. Existing notes: a one-line summary of what `soii check` finds, then fill in the missing properties on notes that already have a `type`? [Y] It works on a branch `soii/setup`, shows the counts, and merges only after you say y. A value you wrote is never replaced.
+7. Folders whose notes have no `type`: the biggest ones are listed, and for each you can pick a type from a numbered list or skip [skip]. Only notes without a `type` get one.
+8. Open http://localhost:5011 now? [Y]
+
+Before anything is written you see a recap and answer **Go ahead? [y/N]**. Ctrl-C at any question, or the end of the input, stops with nothing changed. `soii setup` asks the same questions even when the answers are piped in; `--no-service` installs into the vault only (no login question, nothing started); `soii install <vault>` and `soii install --yes` never ask and work as before.
+
 ## 4. What `install` does
 
 1. Creates `<vault>/.soii/` with `package.json` (pins which soii release this vault uses) and a `.gitignore`.

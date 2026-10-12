@@ -8,6 +8,8 @@ export const DEFAULT_PORT = 5011
 export interface Registry {
   vault: string
   port: number
+  /** `false`: the owner chose not to start soii at login. It runs as a plain background process, with no LaunchAgent. Absent means at login. */
+  boot?: false
 }
 
 export function configDir(env: Record<string, string | undefined> = process.env): string {
@@ -25,9 +27,9 @@ export function readRegistry(dir: string): Registry | null {
   } catch {
     throw new Error(`${path} isn't valid JSON. Fix it or delete it, then run \`soii install\` again.`)
   }
-  const { vault, port } = (raw ?? {}) as { vault?: unknown; port?: unknown }
+  const { vault, port, boot } = (raw ?? {}) as { vault?: unknown; port?: unknown; boot?: unknown }
   if (typeof vault !== 'string' || !vault) throw new Error(`${path} has no "vault". Run \`soii install\` in your vault.`)
-  return { vault, port: typeof port === 'number' && Number.isInteger(port) && port > 0 && port < 65536 ? port : DEFAULT_PORT }
+  return { vault, port: typeof port === 'number' && Number.isInteger(port) && port > 0 && port < 65536 ? port : DEFAULT_PORT, ...(boot === false ? { boot: false as const } : {}) }
 }
 
 export function writeRegistry(dir: string, registry: Registry): void {

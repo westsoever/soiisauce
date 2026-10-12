@@ -51,6 +51,8 @@ export interface PlanInput {
   created?: string | null
   /** Append the empty tracking heading. */
   sections?: boolean
+  /** Only give untyped notes of a mapped folder their `type`; add no other property. */
+  typeOnly?: boolean
 }
 
 export type Plan = { content: string; changes: Change[] } | { unchanged: true } | { skipped: string }
@@ -96,13 +98,13 @@ export function planNote(input: PlanInput): Plan {
 
   const wanted: Change[] = []
   if (mapped) wanted.push({ key: 'type', value: input.mapType!, how: 'mapped' })
-  for (const key of expectedFields(type)) {
+  for (const key of input.typeOnly ? [] : expectedFields(type)) {
     const derived = isBlank(data[key]) ? derive(key, type, data, input) : null
     if (derived !== null) wanted.push({ key, value: derived, how: 'derived' })
     else if (!(key in data) && !wanted.some(c => c.key === key)) wanted.push({ key, value: null, how: 'empty' })
   }
   const tracked = expectedFields(type).length > 0
-  if (tracked && input.created && !('created' in data)) wanted.push({ key: 'created', value: input.created, how: 'derived' })
+  if (tracked && !input.typeOnly && input.created && !('created' in data)) wanted.push({ key: 'created', value: input.created, how: 'derived' })
 
   let content = source
   for (const change of wanted) {
@@ -155,6 +157,8 @@ export interface NormaliseOptions {
   /** Only exactly these notes (vault-relative). Names that aren't notes in the vault are ignored; an empty list means none. */
   files?: string[]
   sections?: boolean
+  /** Only add `type` to untyped notes in the mapped folders; nothing else (the install wizard's "which folder holds what" step). */
+  typeOnly?: boolean
   /** Repo to read first-commit dates from (default: the vault itself). */
   historyDir?: string
   today?: string
@@ -201,7 +205,8 @@ export async function normaliseVault(root: string, options: NormaliseOptions = {
       today,
       mapType: typeMap.find(([prefix]) => path.startsWith(prefix))?.[1],
       created: created.get(path) ?? null,
-      sections: options.sections
+      sections: options.sections,
+      typeOnly: options.typeOnly
     })
     if ('skipped' in plan) report.skipped.push({ path, reason: plan.skipped })
     else if ('content' in plan) {

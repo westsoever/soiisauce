@@ -90,6 +90,8 @@ export async function install(ctx: Ctx, vaultArg: string | undefined, flags: Fla
 
   const previous = readRegistry(configDir(ctx.env))
   const port = flags.port ?? (previous && previous.vault === vault ? previous.port : DEFAULT_PORT)
+  // At login unless the owner said no (the wizard asks); a re-install or update keeps what this vault had.
+  const boot = flags.boot ?? !(previous && previous.vault === vault && previous.boot === false)
   const buildEnv = { SOII_LOCAL: '1', VAULT_PATH: vault, SOII_OUT_DIR: outDir(vault) }
   ctx.out('Building …')
   if ((await ctx.stream(ctx.bun, [join(installedRoot(vault), 'app', 'build.ts')], { cwd: here, env: buildEnv })) !== 0) {
@@ -98,11 +100,11 @@ export async function install(ctx: Ctx, vaultArg: string | undefined, flags: Fla
   }
 
   if (!flags.noService) {
-    writeRegistry(configDir(ctx.env), { vault, port })
+    writeRegistry(configDir(ctx.env), { vault, port, ...(boot ? {} : { boot: false as const }) })
     if (previous && previous.vault !== vault) ctx.out(`This machine served ${previous.vault}; it now serves ${vault}.`)
     installShim(ctx, vault)
   }
-  // soii-install (a machine with no soii yet) and soii-release (the maintainer) are pointless inside a vault that runs soii.
+  // soii-release (the maintainer's skill) is pointless inside a vault that runs soii.
   const skills = syncSkills(join(root, '.claude', 'skills'), join(vault, '.claude', 'skills'), join(here, 'skills.json'), NOT_FOR_VAULTS)
   if (skills.installed.length) ctx.out(`Skills: ${skills.installed.join(', ')} → ${join(vault, '.claude', 'skills')}`)
   if (skills.removed.length) ctx.out(`Removed skills soii no longer ships: ${skills.removed.join(', ')}`)
@@ -117,6 +119,7 @@ export async function install(ctx: Ctx, vaultArg: string | undefined, flags: Fla
     ctx.out(`\nsoii ${ref} is installed in ${vault}. --no-service: no service was started and nothing outside the vault was changed (no \`soii\` command, no LaunchAgent, no registry).`)
     return 0
   }
+  if (!boot) await removeAgent(ctx) // no LaunchAgent: soii runs now, and `soii start` runs it again later
   if (!(await servicePid(ctx)) && (await ctx.healthy(port))) {
     ctx.err(`soii: something else already answers on port ${port} (an old \`bun app/serve.ts\`?). Stop it, then run \`soii start\`.`)
     return 1
@@ -131,7 +134,13 @@ export async function install(ctx: Ctx, vaultArg: string | undefined, flags: Fla
     return 1
   }
   ctx.out(`\nsoii is running: http://localhost:${port}`)
-  ctx.out(ctx.platform === 'darwin' ? 'It starts at login and restarts if it stops. `soii status` shows how it is doing.' : 'It runs in the background. `soii status` shows how it is doing.')
+  ctx.out(
+    ctx.platform === 'darwin' && boot
+      ? 'It starts at login and restarts if it stops. `soii status` shows how it is doing.'
+      : ctx.platform === 'darwin'
+        ? 'It runs in the background for now and does not start at login: after a restart, run `soii start`. `soii status` shows how it is doing.'
+        : 'It runs in the background. `soii status` shows how it is doing.'
+  )
   return 0
 }
 
@@ -171,7 +180,8 @@ function installShim(ctx: Ctx, vault: string): void {
 
 // ---- init ----
 
-export async function init(ctx: Ctx, dirArg: string, flags: Flags): Promise<number> {
+/** `beforeCommit` runs after the starter is copied and before the first commit (the wizard copies an old vault's notes in there). */
+export async function init(ctx: Ctx, dirArg: string, flags: Flags, beforeCommit?: (dest: string) => void | Promise<void>): Promise<number> {
   const dest = resolve(ctx.cwd, expandHome(ctx, dirArg))
   const template = join(ctx.pkgRoot, 'template')
   if (!existsSync(template)) throw new Error(`This soii package has no template/ folder (looked in ${template}).`)
@@ -179,6 +189,7 @@ export async function init(ctx: Ctx, dirArg: string, flags: Flags): Promise<numb
   // The template pins a tag; point it at the version running now, and ignore soii's own folders, before the first commit.
   prepareSoiiDir(ctx, dest, { ...flags, from: flags.from ?? packageVersion(ctx.pkgRoot) ?? undefined })
   ctx.out(`New vault in ${dest}${flags.empty ? ' (empty)' : ''}.`)
+  if (beforeCommit) await beforeCommit(dest)
 
   if (!existsSync(join(dest, '.git'))) {
     const git = await ctx.exec('git', ['init', '-b', 'main'], { cwd: dest })
@@ -216,7 +227,7 @@ export async function start(ctx: Ctx): Promise<number> {
 export async function stop(ctx: Ctx): Promise<number> {
   needRegistry(ctx)
   await stopService(ctx)
-  ctx.out(ctx.platform === 'darwin' ? 'soii stopped. It starts again at your next login, or with `soii start`.' : 'soii stopped.')
+  ctx.out(bootAtLogin(ctx) ? 'soii stopped. It starts again at your next login, or with `soii start`.' : 'soii stopped. `soii start` runs it again.')
   return 0
 }
 
@@ -252,7 +263,7 @@ export async function status(ctx: Ctx): Promise<number> {
   ctx.out(`  pid      ${pid ?? '-'}`)
   ctx.out(`  vault    ${reg.vault}`)
   ctx.out(`  version  ${versionLine(installed, latest)}`)
-  ctx.out(`  boot     ${ctx.platform === 'darwin' ? (bootAtLogin(ctx) ? 'LaunchAgent installed: starts at login, restarts if it stops' : 'no LaunchAgent') : 'background process only'}`)
+  ctx.out(`  boot     ${ctx.platform === 'darwin' ? (bootAtLogin(ctx) ? 'LaunchAgent installed: starts at login, restarts if it stops' : 'no LaunchAgent: does not start at login (`soii start`)') : 'background process only'}`)
   ctx.out(`  log      ${logPath(ctx.platform, ctx.home)}`)
   return up ? 0 : 1
 }

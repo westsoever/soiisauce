@@ -27,8 +27,8 @@ describe('parseSkillMd', () => {
   })
 
   test('a description that is not valid YAML (an unquoted ": ") is read line by line instead of dropped', () => {
-    const md = '---\nname: soii-install\ndescription: Walk through it end to end: GitHub access, then the rest. Use when asked.\n---\n'
-    expect(parseSkillMd(md, 'soii-install')).toEqual({ name: 'soii-install', description: 'Walk through it end to end: GitHub access, then the rest. Use when asked.' })
+    const md = '---\nname: soii-demo\ndescription: Walk through it end to end: GitHub access, then the rest. Use when asked.\n---\n'
+    expect(parseSkillMd(md, 'soii-demo')).toEqual({ name: 'soii-demo', description: 'Walk through it end to end: GitHub access, then the rest. Use when asked.' })
   })
 
   test('CRLF files parse', () => {

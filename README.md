@@ -13,6 +13,8 @@ claude
 
 Then type **`/soii-setup`** in Claude Code. It installs soii, starts a new vault or brings in your existing one, and opens it at http://localhost:5011. (The repo is private: run `gh auth login && gh auth setup-git` once if the clone asks for a login.)
 
+No AI? Run `bun bin/soii.ts install` in the clone instead: it asks a few questions and sets everything up.
+
 ## What you get
 
 | | |

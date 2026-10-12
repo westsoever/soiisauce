@@ -13,6 +13,11 @@ const listed = [...cheatsheet.matchAll(/^\| `\/([a-z0-9-]+)` \|/gm)].map(m => m[
 const scripts = [...cheatsheet.matchAll(/`bun scripts\/([a-z0-9-]+\.ts)/g)].map(m => m[1])
 
 describe('docs/skills.md', () => {
+  test('soii-install is gone: /soii-setup is the one setup skill, and the wizard (`soii install`) covers people without AI', () => {
+    expect(shipped).not.toContain('soii-install')
+    expect(existsSync(join(skillsDir, 'soii-install'))).toBe(false)
+    expect(shipped).toContain('soii-setup')
+  })
   test('lists every shipped skill', () => {
     expect(shipped.filter(name => !listed.includes(name))).toEqual([])
   })
@@ -24,7 +29,7 @@ describe('docs/skills.md', () => {
     expect(scripts.filter(name => !existsSync(join(root, 'scripts', name)))).toEqual([])
   })
   test('no stale skill names or the old install path in the skills or the cheatsheet', () => {
-    const stale = /vault-(health|setup|sync-fix)|node_modules\/soii/
+    const stale = /vault-(health|setup|sync-fix)|node_modules\/soii|soii-install/
     const files = [join(root, 'docs', 'skills.md'), ...shipped.map(name => join(skillsDir, name, 'SKILL.md'))]
     expect(files.filter(f => stale.test(readFileSync(f, 'utf8'))).map(f => f.replace(root, ''))).toEqual([])
   })

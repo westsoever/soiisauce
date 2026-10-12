@@ -36,7 +36,7 @@ If the fetch fails, the working install stays as it was. `soii status` shows you
 
 ## Skills
 
-Every folder in soii's `.claude/skills/` is copied into your vault's `.claude/skills/`, except `soii-install` (it's for machines that don't have soii yet). `.soii/skills.json` lists what soii installed. When a release renames or drops a skill, the next update removes the old folder, and **only** folders listed there: a skill you wrote yourself, or one you copied in, is never touched. If you edit a soii skill, keep a copy under another name: updates overwrite it.
+Every folder in soii's `.claude/skills/` is copied into your vault's `.claude/skills/`, except `soii-release` (it's for the people who maintain soii). `.soii/skills.json` lists what soii installed. When a release renames or drops a skill, the next update removes the old folder, and **only** folders listed there: a skill you wrote yourself, or one you copied in, is never touched. If you edit a soii skill, keep a copy under another name: updates overwrite it.
 
 ## Pinning and going back
 

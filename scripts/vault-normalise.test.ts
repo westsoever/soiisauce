@@ -113,6 +113,13 @@ describe('planNote', () => {
     expect(String(fm(has.content).created)).toContain('2024-01-01')
   })
 
+  test('typeOnly: an untyped note gets its type and nothing else; typed notes are left alone', () => {
+    const plan = changed(planNote({ ...base, source: '# Dune\n\nGreat.\n', path: 'Reading/Dune.md', mapType: 'book', typeOnly: true, created: '2025-03-04' }))
+    expect(plan.content).toBe('---\ntype: book\n---\n\n# Dune\n\nGreat.\n')
+    expect(plan.changes.map(c => c.key)).toEqual(['type'])
+    expect(planNote({ ...base, source: '---\ntype: book\n---\n', path: 'Reading/Dune.md', mapType: 'book', typeOnly: true })).toEqual({ unchanged: true })
+  })
+
   test('types an untyped note from the folder mapping and fills it; an existing type wins over the mapping', () => {
     const plan = changed(planNote({ ...base, source: '# Dune\n\nGreat.\n', path: 'Reading/Dune.md', mapType: 'book' }))
     expect(plan.content.startsWith('---\ntype: book\n')).toBe(true)

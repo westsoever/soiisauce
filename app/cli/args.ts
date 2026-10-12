@@ -1,6 +1,6 @@
 // app/cli/args.ts
 // `soii <command> [args] [options]`. Pure: argv in, a parsed command or an error message out.
-export const COMMANDS = ['install', 'start', 'stop', 'restart', 'status', 'open', 'logs', 'update', 'init', 'check', 'uninstall', 'run', 'view', 'help', 'version'] as const
+export const COMMANDS = ['install', 'setup', 'start', 'stop', 'restart', 'status', 'open', 'logs', 'update', 'init', 'check', 'uninstall', 'run', 'view', 'help', 'version'] as const
 export type Command = (typeof COMMANDS)[number]
 
 export interface Flags {
@@ -11,6 +11,10 @@ export interface Flags {
   empty: boolean
   /** Install into the vault only: no LaunchAgent, no background process, nothing global (registry, shim). */
   noService: boolean
+  /** `soii install --yes`: never ask anything, even in a terminal (today's behaviour). */
+  yes?: boolean
+  /** Set by the install wizard, not by an option: false = run in the background but not at login; undefined = keep what the machine has. */
+  boot?: boolean
   help: boolean
   /** `soii view`: the vault folder, the tab / query / sort as JSON, the type to list fields for, and machine-readable output. */
   vault?: string
@@ -28,7 +32,8 @@ const isCommand = (s: string): s is Command => (COMMANDS as readonly string[]).i
 
 // Options each command accepts (besides --help).
 const OPTIONS: Record<Command, readonly string[]> = {
-  install: ['--port', '--from', '--no-service'],
+  install: ['--port', '--from', '--no-service', '--yes', '-y'],
+  setup: ['--port', '--from', '--no-service'],
   init: ['--empty', '--port', '--from', '--title', '--no-service'],
   logs: ['--follow', '-f'],
   start: [],
@@ -73,6 +78,7 @@ export function parseArgs(argv: string[], env: Record<string, string | undefined
     if (name === '--follow' || name === '-f') flags.follow = true
     else if (name === '--empty') flags.empty = true
     else if (name === '--no-service') flags.noService = true
+    else if (name === '--yes' || name === '-y') flags.yes = true
     else if (name === '--json') flags.json = true
     else if (name === '--vault' || name === '--tab' || name === '--query' || name === '--sort' || name === '--type') {
       const raw = value()
@@ -95,7 +101,7 @@ export function parseArgs(argv: string[], env: Record<string, string | undefined
     }
   }
 
-  if (env.SOII_NO_SERVICE === '1' && ['install', 'init', 'update'].includes(command)) flags.noService = true
+  if (env.SOII_NO_SERVICE === '1' && ['install', 'setup', 'init', 'update'].includes(command)) flags.noService = true
 
   if (!flags.help) {
     if (command === 'install' && positional.length > 1) return { ok: false, error: '`soii install` takes at most one vault path.' }

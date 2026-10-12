@@ -3,7 +3,7 @@
 import { spawn } from 'node:child_process'
 import { existsSync, mkdirSync, openSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import { configDir } from './registry'
+import { configDir, readRegistry } from './registry'
 import type { Ctx } from './context'
 import { parseLaunchctlPrint, type LaunchState } from './launchd'
 import { LABEL, generatePlist } from './plist'
@@ -20,6 +20,16 @@ export function servicePath(ctx: Ctx): string {
 }
 
 const target = (ctx: Ctx) => `gui/${ctx.uid}/${LABEL}`
+
+/** macOS runs soii as a LaunchAgent (at login, restarted if it stops), unless the owner chose not to start it at login. */
+function useLaunchd(ctx: Ctx): boolean {
+  if (ctx.platform !== 'darwin') return false
+  try {
+    return readRegistry(configDir(ctx.env))?.boot !== false
+  } catch {
+    return true
+  }
+}
 
 // ---- macOS: launchd ----
 
@@ -79,7 +89,7 @@ function spawnBackground(ctx: Ctx, vault: string): void {
 // ---- the same operations on both ----
 
 export async function servicePid(ctx: Ctx): Promise<number | null> {
-  if (ctx.platform === 'darwin') return (await launchState(ctx))?.pid ?? null
+  if (useLaunchd(ctx)) return (await launchState(ctx))?.pid ?? null
   return readPid(ctx)
 }
 
@@ -87,7 +97,7 @@ export const bootAtLogin = (ctx: Ctx): boolean => ctx.platform === 'darwin' && e
 
 /** Make sure the service is running; leaves a running one alone. */
 export async function startService(ctx: Ctx, vault: string): Promise<{ ok: boolean; message: string }> {
-  if (ctx.platform === 'darwin') {
+  if (useLaunchd(ctx)) {
     if (!existsSync(plistPath(ctx.home))) writeAgent(ctx, vault)
     if (await launchState(ctx)) return { ok: true, message: '' }
     return bootstrap(ctx)
@@ -97,15 +107,21 @@ export async function startService(ctx: Ctx, vault: string): Promise<{ ok: boole
   return { ok: true, message: '' }
 }
 
-export async function stopService(ctx: Ctx): Promise<void> {
-  if (ctx.platform === 'darwin') return bootout(ctx)
+/** Stop the plain background process (the one used off macOS, or when soii isn't started at login), if there is one. */
+export async function stopBackground(ctx: Ctx): Promise<void> {
   const pid = readPid(ctx)
   if (pid) process.kill(pid, 'SIGTERM')
   rmSync(pidFile(ctx), { force: true })
 }
 
+export async function stopService(ctx: Ctx): Promise<void> {
+  if (useLaunchd(ctx)) return bootout(ctx)
+  return stopBackground(ctx)
+}
+
 export async function restartService(ctx: Ctx, vault: string): Promise<{ ok: boolean; message: string }> {
-  if (ctx.platform === 'darwin') {
+  if (useLaunchd(ctx)) {
+    await stopBackground(ctx) // a process left from "not at login" would hold the port
     writeAgent(ctx, vault) // the paths in the plist follow the registered vault
     await bootout(ctx)
     return bootstrap(ctx)
@@ -128,7 +144,6 @@ export async function removeAgent(ctx: Ctx): Promise<void> {
   if (ctx.platform === 'darwin') {
     await bootout(ctx)
     rmSync(plistPath(ctx.home), { force: true })
-  } else {
-    await stopService(ctx)
   }
+  await stopBackground(ctx)
 }

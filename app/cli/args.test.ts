@@ -99,3 +99,14 @@ describe('soii view', () => {
     expect(parseArgs(['status', '--json'])).toMatchObject({ ok: false })
   })
 })
+
+test('install takes --yes (and -y); setup takes the install options but no vault and no --yes', () => {
+  expect(parseArgs(['install', '--yes'])).toMatchObject({ ok: true, command: 'install', flags: { yes: true } })
+  expect(parseArgs(['install', '-y'])).toMatchObject({ ok: true, flags: { yes: true } })
+  expect(parseArgs(['install'])).toMatchObject({ ok: true, flags: {} })
+  expect(parseArgs(['setup', '--no-service', '--port', '5099'])).toMatchObject({ ok: true, command: 'setup', positional: [], flags: { noService: true, port: 5099 } })
+  expect(parseArgs(['setup', '~/v'])).toEqual({ ok: false, error: '`soii setup` takes no arguments.' })
+  expect(parseArgs(['setup', '--yes'])).toEqual({ ok: false, error: 'Unknown option "--yes" for `soii setup`.' })
+  const env = parseArgs(['setup'], { SOII_NO_SERVICE: '1' })
+  expect(env.ok && env.flags.noService).toBe(true)
+})

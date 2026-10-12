@@ -59,3 +59,14 @@ test('removeRegistry deletes only config.json', () => {
   expect(existsSync(join(dir, 'config.json'))).toBe(false)
   expect(() => removeRegistry(dir)).not.toThrow()
 })
+
+test('"not at login" is kept in the registry and read back; the default leaves no trace', () => {
+  const dir = tmp()
+  writeRegistry(dir, { vault: '/v', port: 5011, boot: false })
+  expect(readRegistry(dir)).toEqual({ vault: '/v', port: 5011, boot: false })
+  writeRegistry(dir, { vault: '/v', port: 5011 })
+  expect(readRegistry(dir)).toEqual({ vault: '/v', port: 5011 })
+  expect(readFileSync(join(dir, 'config.json'), 'utf8')).not.toContain('boot')
+  writeFileSync(join(dir, 'config.json'), JSON.stringify({ vault: '/v', port: 5011, boot: 'nope' }))
+  expect(readRegistry(dir)).toEqual({ vault: '/v', port: 5011 })
+})
