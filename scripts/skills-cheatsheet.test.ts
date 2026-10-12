@@ -1,0 +1,36 @@
+// Every skill that ships in .claude/skills/ must be listed in docs/skills.md, and the
+// cheatsheet must not list skills that no longer exist. Keeps the cheatsheet honest.
+import { describe, expect, test } from 'bun:test'
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
+
+const root = join(import.meta.dir, '..')
+const skillsDir = join(root, '.claude', 'skills')
+const shipped = readdirSync(skillsDir).filter(name => existsSync(join(skillsDir, name, 'SKILL.md')))
+const cheatsheet = readFileSync(join(root, 'docs', 'skills.md'), 'utf8')
+const listed = [...cheatsheet.matchAll(/^\| `\/([a-z0-9-]+)` \|/gm)].map(m => m[1])
+
+const scripts = [...cheatsheet.matchAll(/`bun scripts\/([a-z0-9-]+\.ts)/g)].map(m => m[1])
+
+describe('docs/skills.md', () => {
+  test('lists every shipped skill', () => {
+    expect(shipped.filter(name => !listed.includes(name))).toEqual([])
+  })
+  test('lists only skills that exist', () => {
+    expect(listed.filter(name => !shipped.includes(name))).toEqual([])
+  })
+  test('lists the vault scripts, and only scripts that exist', () => {
+    for (const name of ['check-vault.ts', 'vault-normalise.ts', 'vault-import.ts', 'find-base64-notes.ts', 'fill-book-meta.ts']) expect(scripts).toContain(name)
+    expect(scripts.filter(name => !existsSync(join(root, 'scripts', name)))).toEqual([])
+  })
+  test('no stale skill names or the old install path in the skills or the cheatsheet', () => {
+    const stale = /vault-(health|setup|sync-fix)|node_modules\/soii/
+    const files = [join(root, 'docs', 'skills.md'), ...shipped.map(name => join(skillsDir, name, 'SKILL.md'))]
+    expect(files.filter(f => stale.test(readFileSync(f, 'utf8'))).map(f => f.replace(root, ''))).toEqual([])
+  })
+  test('each skill names itself in its frontmatter', () => {
+    for (const name of shipped) {
+      expect(readFileSync(join(skillsDir, name, 'SKILL.md'), 'utf8')).toMatch(new RegExp(`^---\\nname: ${name}\\n`))
+    }
+  })
+})

@@ -1,0 +1,238 @@
+/* Host CSS variables, matching miso's client/index.css. A space's theme
+   (font, color, radius) overrides these on <html> at runtime — see theme.ts. */
+:root {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: var(--foreground);
+  --popover: oklch(1 0 0);
+  --popover-foreground: var(--foreground);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.64 0 0);
+  --accent: oklch(0 0 0 / 0.06);
+  --accent-foreground: var(--foreground);
+  --success: oklch(0.527 0.154 150.069);
+  /* Obsidian's default accent (its app.css: hsl(258 88% 66%)), for "Open in Obsidian" only. Same in dark, like Obsidian. */
+  --obsidian: hsl(258 88% 66%);
+  --destructive: oklch(0.58 0.22 27);
+  --border: oklch(0 0 0 / 0.07);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --secondary: var(--accent);
+  --secondary-foreground: var(--accent-foreground);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --radius: 0.625rem;
+  --default-sans: ui-sans-serif, system-ui, sans-serif;
+  --sans: var(--default-sans);
+  --default-mono: 'Geist Mono', ui-monospace, monospace;
+  --mono: var(--default-mono);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --popover: oklch(0.205 0 0);
+  --primary: oklch(0.985 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(1 0 0 / 0.1);
+  --success: oklch(0.627 0.194 149.214);
+  --border: oklch(1 0 0 / 0.1);
+  --input: oklch(0.35 0 0);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-muted font-sans text-foreground;
+  }
+}
+
+/* ---- soii: note reader (spec §5, §7.3). Semantic tokens only. ---- */
+@utility prose-inherit {
+  --tw-prose-body: inherit;
+  --tw-prose-headings: inherit;
+  --tw-prose-lead: inherit;
+  --tw-prose-links: inherit;
+  --tw-prose-bold: inherit;
+  --tw-prose-counters: inherit;
+  --tw-prose-bullets: inherit;
+}
+
+.soii-note a.wikilink {
+  color: var(--foreground);
+  text-decoration: none;
+  border-bottom: 1px solid color-mix(in oklch, var(--foreground) 25%, transparent);
+}
+.soii-note a.wikilink:hover {
+  border-bottom-color: var(--foreground);
+}
+.soii-note .wikilink-missing {
+  color: var(--muted-foreground);
+  border-bottom: 1px dashed currentColor;
+  cursor: help;
+}
+.soii-note .tag {
+  border-radius: calc(var(--radius) * 0.6);
+  background: var(--accent);
+  padding: 0.05em 0.35em;
+  font-size: 0.85em;
+  color: var(--muted-foreground);
+}
+.soii-note .callout {
+  margin: 1.25em 0;
+  border-radius: var(--radius);
+  background: var(--muted);
+  padding: 0.75em 1em;
+  box-shadow: var(--shadow-xs);
+}
+.soii-note .callout > :last-child {
+  margin-bottom: 0;
+}
+.soii-note .callout-title {
+  margin-bottom: 0.25em;
+  font-weight: 500;
+}
+.soii-note .callout:is([data-callout='warning'], [data-callout='caution'], [data-callout='danger'], [data-callout='bug']) {
+  background: color-mix(in oklch, var(--destructive) 8%, var(--background));
+}
+.soii-note .plugin-block {
+  margin: 1.25em 0;
+}
+.soii-note .plugin-label {
+  margin: 0 0 0.25em;
+  font-size: 0.8em;
+  color: var(--muted-foreground);
+}
+.soii-note .embed-note {
+  display: block;
+  margin: 1em 0;
+  border-radius: var(--radius);
+  background: var(--background);
+  padding: 0.75em 1em;
+  text-decoration: none;
+  box-shadow: var(--shadow-xs);
+}
+.soii-note .embed-note-title {
+  display: block;
+  font-weight: 500;
+}
+.soii-note .embed-note-excerpt {
+  display: block;
+  font-size: 0.9em;
+  color: var(--muted-foreground);
+}
+.soii-note .file-too-large {
+  color: var(--muted-foreground);
+}
+.soii-note img {
+  border-radius: var(--radius);
+}
+.soii-note pre {
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: var(--foreground);
+}
+.soii-hide-first-h1 > h1:first-child {
+  display: none;
+}
+
+/* Native scrollbars and form controls follow the theme that theme-init.js picks. */
+:root {
+  color-scheme: light;
+}
+.dark {
+  color-scheme: dark;
+}
+
+/* ---- soii: overlay scrollbars, app-wide (lib/scrollbars.ts). No track; the
+   thumb only shows while its element scrolls. In @layer base so utilities like
+   [scrollbar-width:none] still win. Safari lacks scrollbar-color, so it gets
+   the ::-webkit-scrollbar version. ---- */
+@layer base {
+  @supports (scrollbar-color: auto) {
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: transparent transparent;
+    }
+    [data-scrolling] {
+      scrollbar-color: color-mix(in oklch, var(--foreground) 25%, transparent) transparent;
+    }
+  }
+  @supports not (scrollbar-color: auto) {
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb,
+    ::-webkit-scrollbar-corner {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      border-radius: 9999px;
+    }
+    [data-scrolling]::-webkit-scrollbar-thumb {
+      background: color-mix(in oklch, var(--foreground) 25%, transparent);
+    }
+  }
+}
+
+/* ---- soii: folder tabs. The active tab flares into the sheet below with
+   concave bottom corners, like a file folder tab. Its edge continues the
+   sheet's 1px ring (the first layer of --shadow-xs), drawn opaque so it
+   doesn't double up where it meets that ring. ---- */
+.soii-folder-tab {
+  --tab-r: var(--radius-lg);
+  --sheet-edge: color-mix(in srgb, var(--muted), black 6%);
+}
+.soii-folder-tab::before,
+.soii-folder-tab::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  width: var(--tab-r);
+  height: var(--tab-r);
+  pointer-events: none;
+  --flare: transparent calc(var(--tab-r) - 1.5px), var(--sheet-edge) calc(var(--tab-r) - 1px),
+    var(--sheet-edge) calc(var(--tab-r) - 0.5px), var(--background) var(--tab-r);
+}
+.soii-folder-tab::before {
+  right: 100%;
+  background: radial-gradient(circle at 0 0, var(--flare));
+}
+.soii-folder-tab::after {
+  left: 100%;
+  background: radial-gradient(circle at 100% 0, var(--flare));
+}
+/* Top and sides, stopping where the flares take over. */
+.soii-folder-tab-edge {
+  position: absolute;
+  inset: -1px -1px var(--tab-r);
+  border: 1px solid var(--sheet-edge);
+  border-bottom: 0;
+  border-radius: calc(var(--tab-r) + 1px) calc(var(--tab-r) + 1px) 0 0;
+  pointer-events: none;
+}

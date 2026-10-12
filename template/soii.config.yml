@@ -1,0 +1,58 @@
+# soii config for this vault. Everything here is optional: delete this file and
+# soii falls back to its built-in workspaces (Today, Library, People, Finance, Goals).
+# A workspace listed here with the same id as a built-in one replaces it whole;
+# a new id adds a workspace after the built-ins. Reference: docs/frontmatter.md
+# and docs/workspaces.md in the soii repo.
+title: Sam's vault
+home: today
+
+exclude:
+  - "**/Templates/**"
+  - README.md
+
+types:
+  # Daily notes (`type: daily`) read as journal entries, so they get their own
+  # tab instead of mixing with the agent-written briefs.
+  journal: [journal, daily]
+
+workspaces:
+  - id: today
+    title: Today
+    icon: sun
+    tabs:
+      - id: brief
+        title: Daily brief
+        view: feed
+        query:
+          - { type: daily-brief }
+          - { path: "**/daily_report/**" }
+      - id: weekly
+        title: Weekly review
+        view: feed
+        query:
+          - { type: weekly-review }
+          - { path: "**/week_report/**" }
+      - id: journal
+        title: Journal
+        view: feed
+        query:
+          - { type: journal }
+          - { path: "01-Daily/20??-??-??.md" }
+
+  - id: projects
+    title: Projects
+    icon: briefcase
+    tabs:
+      - id: board
+        title: Board
+        view: board
+        query: { type: project }
+        options: { groupBy: status, groups: [idea, active, done], subtitle: area }
+      - id: inbox
+        title: Inbox
+        view: list
+        query: { path: "00-Inbox/**" }
+      - id: knowledge
+        title: Knowledge
+        view: list
+        query: { path: "05-Knowledge/Topics/**" }

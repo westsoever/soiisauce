@@ -1,0 +1,20 @@
+{
+  "kind": "books#volumes",
+  "totalItems": 1,
+  "items": [
+    {
+      "kind": "books#volume",
+      "id": "9jA9AQAAIAAJ",
+      "volumeInfo": {
+        "title": "The Dispossessed",
+        "authors": ["Ursula K. Le Guin"],
+        "publishedDate": "1974",
+        "industryIdentifiers": [{ "type": "ISBN_13", "identifier": "9780060512750" }],
+        "imageLinks": {
+          "smallThumbnail": "http://books.google.com/books/content?id=9jA9AQAAIAAJ&printsec=frontcover&img=1&zoom=5&edge=curl&source=gbs_api",
+          "thumbnail": "http://books.google.com/books/content?id=9jA9AQAAIAAJ&printsec=frontcover&img=1&zoom=1&edge=curl&source=gbs_api"
+        }
+      }
+    }
+  ]
+}

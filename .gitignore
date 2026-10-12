@@ -1,0 +1,10 @@
+node_modules
+dist/
+.vault/
+api/_generated/
+app/.generated/
+.env.local
+.env*.local
+.vercel
+.artifacts/
+.DS_Store

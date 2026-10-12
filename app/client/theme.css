@@ -1,0 +1,184 @@
+/*
+ * Theme tokens and texture utilities, copied from miso (client/theme.css) so
+ * space views and widgets render with the same utilities here as in local
+ * miso. The CSS variables themselves are declared in base.css.
+ */
+
+@theme inline {
+  --font-sans: var(--sans);
+  --font-mono: var(--mono);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-success: var(--success);
+  --color-obsidian: var(--obsidian);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* shadcn compatibility: secondary surfaces and chart palettes. */
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --radius-xs: calc(var(--radius) * 0.4);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.4);
+  --radius-4xl: calc(var(--radius) * 2.8);
+
+  --shadow-xs:
+    0px 0px 0px 1px rgba(0, 0, 0, 0.06), 0px 1px 2px -1px rgba(0, 0, 0, 0.06),
+    0px 2px 4px 0px rgba(0, 0, 0, 0.04);
+  --shadow-sm:
+    0px 0px 0px 1px rgba(0, 0, 0, 0.08), 0px 1px 2px -1px rgba(0, 0, 0, 0.08),
+    0px 2px 4px 0px rgba(0, 0, 0, 0.06);
+  --shadow-md:
+    0px 0px 0px 1px rgba(0, 0, 0, 0.06), 0px 2px 4px -1px rgba(0, 0, 0, 0.08),
+    0px 6px 12px -2px rgba(0, 0, 0, 0.06);
+  --shadow-lg:
+    0px 0px 0px 1px rgba(0, 0, 0, 0.05), 0px 3px 6px -1px rgba(0, 0, 0, 0.08),
+    0px 10px 20px -4px rgba(0, 0, 0, 0.08);
+  --shadow-xl:
+    0px 0px 0px 1px rgba(0, 0, 0, 0.04), 0px 4px 8px -2px rgba(0, 0, 0, 0.08),
+    0px 16px 32px -6px rgba(0, 0, 0, 0.1);
+  --shadow-2xl:
+    0px 0px 0px 1px rgba(0, 0, 0, 0.04), 0px 6px 12px -2px rgba(0, 0, 0, 0.08),
+    0px 24px 48px -8px rgba(0, 0, 0, 0.12);
+}
+
+@theme {
+  --animate-glow: glow 5s ease-in-out infinite;
+
+  @keyframes glow {
+    0%,
+    100% {
+      opacity: 1;
+    }
+
+    50% {
+      opacity: 0.85;
+    }
+  }
+}
+
+/* Texture utilities leave background-color untouched so components keep an
+ * opaque semantic base underneath them. */
+
+@utility texture-checker {
+  --texture-checker-fill: color-mix(in oklch, var(--primary) 2%, var(--foreground) 4%);
+
+  background-image: repeating-conic-gradient(transparent 0 25%, var(--texture-checker-fill) 0 50%);
+  background-position: 50% 50%;
+  background-repeat: repeat;
+  background-size: 32px 32px;
+
+  @variant dark-or-vivid {
+    --texture-checker-fill: color-mix(in oklch, currentColor 8%, transparent);
+  }
+}
+
+@utility texture-checker-* {
+  --texture-checker-fill: color-mix(in oklch, var(--primary) 2%, var(--foreground) 4%);
+
+  background-image: repeating-conic-gradient(transparent 0 25%, var(--texture-checker-fill) 0 50%);
+  background-position: 50% 50%;
+  background-repeat: repeat;
+  background-size: calc(--value(number) * var(--spacing)) calc(--value(number) * var(--spacing));
+
+  @variant dark-or-vivid {
+    --texture-checker-fill: color-mix(in oklch, currentColor 8%, transparent);
+  }
+}
+
+@utility texture-grid {
+  --texture-grid-line: color-mix(in oklch, var(--primary) 3%, var(--foreground) 3%);
+
+  background-image:
+    linear-gradient(to right, var(--texture-grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--texture-grid-line) 1px, transparent 1px);
+  background-position: 50% 50%;
+  background-repeat: repeat;
+  background-size: 24px 24px;
+
+  @variant dark-or-vivid {
+    --texture-grid-line: color-mix(in oklch, currentColor 10%, transparent);
+  }
+}
+
+@utility texture-noise {
+  background-image: url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 1 1%22 width=%22160%22 height=%22160%22 color=%22black%22%3E%3Cdefs%3E%3Cfilter id=%22noise%22 x=%220%22 y=%220%22 width=%221%22 height=%221%22 filterUnits=%22userSpaceOnUse%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%22128%22 numOctaves=%2210%22 result=%22turbulence%22/%3E%3CfeColorMatrix in=%22turbulence%22 type=%22luminanceToAlpha%22 result=%22alpha%22/%3E%3CfeComponentTransfer in=%22alpha%22 result=%22threshold%22%3E%3CfeFuncA type=%22linear%22 slope=%222.4%22 intercept=%22-1.12%22/%3E%3C/feComponentTransfer%3E%3CfeFlood flood-color=%22currentColor%22 flood-opacity=%220.1%22 result=%22color%22/%3E%3CfeComposite in=%22color%22 in2=%22threshold%22 operator=%22in%22/%3E%3C/filter%3E%3C/defs%3E%3Crect width=%221%22 height=%221%22 filter=%22url(%23noise)%22/%3E%3C/svg%3E');
+  background-blend-mode: hard-light;
+  background-position: 0 0;
+  background-repeat: repeat;
+  background-size: 160px 160px;
+
+  @variant dark-or-vivid {
+    background-image: url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 1 1%22 width=%22160%22 height=%22160%22 color=%22white%22%3E%3Cdefs%3E%3Cfilter id=%22noise%22 x=%220%22 y=%220%22 width=%221%22 height=%221%22 filterUnits=%22userSpaceOnUse%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%22128%22 numOctaves=%2210%22 result=%22turbulence%22/%3E%3CfeColorMatrix in=%22turbulence%22 type=%22luminanceToAlpha%22 result=%22alpha%22/%3E%3CfeComponentTransfer in=%22alpha%22 result=%22threshold%22%3E%3CfeFuncA type=%22linear%22 slope=%223.2%22 intercept=%22-1.44%22/%3E%3C/feComponentTransfer%3E%3CfeFlood flood-color=%22currentColor%22 flood-opacity=%220.1%22 result=%22color%22/%3E%3CfeComposite in=%22color%22 in2=%22threshold%22 operator=%22in%22/%3E%3C/filter%3E%3C/defs%3E%3Crect width=%221%22 height=%221%22 filter=%22url(%23noise)%22/%3E%3C/svg%3E');
+  }
+}
+
+@utility texture-gradient-linear {
+  background-image: linear-gradient(
+    to bottom,
+    transparent 25%,
+    color-mix(in oklch, var(--primary) 4%, transparent) 80%,
+    color-mix(in oklch, var(--primary) 8%, transparent) 100%
+  );
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+
+  @variant dark-or-vivid {
+    background-image: linear-gradient(
+      to bottom,
+      transparent 25%,
+      color-mix(in oklch, var(--primary) 10%, transparent) 80%,
+      color-mix(in oklch, var(--primary) 20%, transparent) 100%
+    );
+  }
+}
+
+@utility texture-inset-shadow {
+  box-shadow: inset 0 0 32px 24px color-mix(in oklch, var(--primary) 4%, transparent);
+
+  @variant dark-or-vivid {
+    box-shadow: inset 0 0 32px 24px color-mix(in oklch, var(--primary) 10%, transparent);
+  }
+
+  @media (width < 48rem) {
+    box-shadow: inset 0 0 16px 16px color-mix(in oklch, var(--primary) 4%, transparent);
+
+    @variant dark-or-vivid {
+      box-shadow: inset 0 0 16px 16px color-mix(in oklch, var(--primary) 10%, transparent);
+    }
+  }
+}
+
+@utility texture-inset-shadow-* {
+  box-shadow: inset 0 0 32px 24px
+    color-mix(in oklch, var(--primary) --value(percentage), transparent);
+
+  @media (width < 48rem) {
+    box-shadow: inset 0 0 16px 16px
+      color-mix(in oklch, var(--primary) --value(percentage), transparent);
+  }
+}

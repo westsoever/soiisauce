@@ -1,0 +1,18 @@
+{
+  "kind": "books#volumes",
+  "totalItems": 2,
+  "items": [
+    { "kind": "books#volume", "id": "noCover01", "volumeInfo": { "title": "Piranesi (Study Guide)", "authors": ["Anon"] } },
+    {
+      "kind": "books#volume",
+      "id": "pIr4n3s1",
+      "volumeInfo": {
+        "title": "Piranesi",
+        "authors": ["Susanna Clarke"],
+        "imageLinks": {
+          "thumbnail": "https://books.google.com/books/content?id=pIr4n3s1&printsec=frontcover&img=1&zoom=1&source=gbs_api"
+        }
+      }
+    }
+  ]
+}
