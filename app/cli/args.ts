@@ -6,8 +6,11 @@ export type Command = (typeof COMMANDS)[number]
 export interface Flags {
   port?: number
   from?: string
+  title?: string
   follow: boolean
   empty: boolean
+  /** Install into the vault only: no LaunchAgent, no background process, nothing global (registry, shim). */
+  noService: boolean
   help: boolean
 }
 
@@ -18,15 +21,15 @@ const isCommand = (s: string): s is Command => (COMMANDS as readonly string[]).i
 
 // Options each command accepts (besides --help).
 const OPTIONS: Record<Command, readonly string[]> = {
-  install: ['--port', '--from'],
-  init: ['--empty', '--port', '--from'],
+  install: ['--port', '--from', '--no-service'],
+  init: ['--empty', '--port', '--from', '--title', '--no-service'],
   logs: ['--follow', '-f'],
   start: [],
   stop: [],
   restart: [],
   status: [],
   open: [],
-  update: [],
+  update: ['--no-service'],
   check: [],
   uninstall: [],
   run: [],
@@ -34,8 +37,8 @@ const OPTIONS: Record<Command, readonly string[]> = {
   version: []
 }
 
-export function parseArgs(argv: string[]): Parsed {
-  const flags: Flags = { follow: false, empty: false, help: false }
+export function parseArgs(argv: string[], env: Record<string, string | undefined> = {}): Parsed {
+  const flags: Flags = { follow: false, empty: false, noService: false, help: false }
   const [first, ...rest] = argv
   if (first === undefined) return { ok: true, command: 'help', positional: [], flags }
   if (first === '--help' || first === '-h') return { ok: true, command: 'help', positional: [], flags }
@@ -61,17 +64,24 @@ export function parseArgs(argv: string[]): Parsed {
     const value = () => (inline !== undefined ? inline : rest[++i])
     if (name === '--follow' || name === '-f') flags.follow = true
     else if (name === '--empty') flags.empty = true
+    else if (name === '--no-service') flags.noService = true
     else if (name === '--port') {
       const raw = value()
       const port = raw !== undefined && /^\d+$/.test(raw) ? Number(raw) : NaN
       if (!(port >= 1 && port <= 65535)) return { ok: false, error: PORT_ERROR }
       flags.port = port
+    } else if (name === '--title') {
+      const raw = value()
+      if (!raw || raw.startsWith('--')) return { ok: false, error: '--title needs a value, e.g. --title "My vault".' }
+      flags.title = raw
     } else if (name === '--from') {
       const raw = value()
       if (!raw || raw.startsWith('--')) return { ok: false, error: '--from needs a value, e.g. github:westsoever/soii#v0.1.0.' }
       flags.from = raw
     }
   }
+
+  if (env.SOII_NO_SERVICE === '1' && ['install', 'init', 'update'].includes(command)) flags.noService = true
 
   if (!flags.help) {
     if (command === 'install' && positional.length > 1) return { ok: false, error: '`soii install` takes at most one vault path.' }

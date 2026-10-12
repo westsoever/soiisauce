@@ -108,6 +108,12 @@ export function planNote(input: PlanInput): Plan {
     content = result.content
   }
 
+  // A note that had no properties block now starts with one; keep a blank line between it and the body.
+  if (splitFrontmatter(source).yaml === null && content !== source) {
+    const eol = content.includes('\r\n') ? '\r\n' : '\n'
+    content = content.replace(/^(\uFEFF?---\r?\n(?:[\s\S]*?\r?\n)?---\r?\n)(?![\r\n]|$)/, `$1${eol}`)
+  }
+
   const changes = [...wanted]
   if (input.sections && tracked) {
     const heading = type === 'person' ? '## Notes & dated interactions' : '## Log'

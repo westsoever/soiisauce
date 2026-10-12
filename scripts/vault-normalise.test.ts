@@ -124,6 +124,13 @@ describe('planNote', () => {
     expect('isbn' in fm(typed.content)).toBe(false)
   })
 
+  test('a note that had no properties block gets a blank line between it and the body', () => {
+    const plan = changed(planNote({ ...base, source: '# Dune\n\nGreat.\n', path: 'Reading/Dune.md', mapType: 'book' }))
+    expect(plan.content).toMatch(/\n---\n\n# Dune\n\nGreat\.\n$/)
+    const again = planNote({ ...base, source: plan.content, path: 'Reading/Dune.md', mapType: 'book' })
+    expect(again).toEqual({ unchanged: true })
+  })
+
   test('leaves types without a field table, hidden, unreadable and base64 notes alone, and says why', () => {
     expect(planNote({ ...base, source: '---\ntype: project\n---\n', path: 'P.md' })).toEqual({ unchanged: true })
     expect(planNote({ ...base, source: '---\nsoii: hidden\ntype: book\n---\n', path: 'H.md' })).toEqual({ skipped: 'hidden' })

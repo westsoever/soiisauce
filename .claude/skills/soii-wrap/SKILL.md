@@ -49,7 +49,7 @@ Don't guess paths. Search:
 
 ```bash
 find . -iname '*<name>*.md' -not -path './.*' | head
-grep -rIl --include='*.md' -i '<project or person>' . 2>/dev/null | grep -v '^\./\.' | head
+grep -rIl --exclude-dir=.soii --exclude-dir=.claude --exclude-dir=.trash --exclude-dir=Templates --include='*.md' -i '<project or person>' . 2>/dev/null | grep -v '^\./\.' | head
 ```
 
 Read the matching note's frontmatter and its tracking section before planning an edit. The conventions (from `docs/frontmatter.md`):

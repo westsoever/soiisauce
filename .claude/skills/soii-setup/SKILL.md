@@ -37,7 +37,7 @@ git -C "$VAULT" status -sb
 ```
 
 - Not a git repo: `git init` and commit everything as-is first, so every later change is reviewable and undoable.
-- Uncommitted changes: ask the owner to commit or stash them first. Don't mix your edits with theirs.
+- Uncommitted changes: ask the owner to commit or stash them first. Don't mix your edits with theirs. The exception is right after `soii init` or `soii install`: `.claude/skills/` and `.soii/skills.json` show as untracked, and those are soii's own files, not the owner's. Commit just those (`git add .claude/skills .soii/skills.json && git commit -m "soii: install skills"`) and carry on.
 
 Then branch: `git -C "$VAULT" switch -c soii/setup`.
 
@@ -144,4 +144,4 @@ Then ask how they want to land it: merge the branch locally (and push if the vau
 - These are someone's private notes. Show paths, key names and property values, not note contents.
 - Never delete, move or rename a note. Never `git push --force`, `reset --hard`, or `clean`. Never write to the vault you're importing from.
 - When unsure whether a folder is one kind of thing, leave it out and say so. A half-typed folder is worse than an untyped one.
-- Afterwards, suggest scheduling the weekly **soii-health** check (see `docs/skills.md`).
+- Afterwards, suggest scheduling the weekly **soii-health** check (see `$SOII/docs/skills.md`).

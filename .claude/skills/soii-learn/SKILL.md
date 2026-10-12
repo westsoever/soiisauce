@@ -19,8 +19,10 @@ Find the vault (current directory; in soii's repo ask whether to use `template/`
 
 - **Note:** find it (`find . -iname '*name*.md' -not -path './.*'`), read it. Ask if two match.
 - **PDF:** `find . -iname '*.pdf' -not -path './.*'`; read it a section at a time with `Read` and `pages` (up to 20 pages per read). For a long PDF, ask which chapter or pages to start with. The Log line goes on the note that wraps or links the PDF if there is one; else ask where it should go, or skip logging.
-- **Collection of links:** a note listing links. Read it, then for each link look for a clipped note in the vault (`grep -rIl --include='*.md' '<url or title>' .`, and `[[links]]`). Drill only the clipped ones (a `## Clipped` section or an embedded PDF counts). Tell the owner which links have no content in the vault, in one line, and offer `/soii-explore` for them.
-- **Topic:** `grep -rIl -i --include='*.md' '<topic>' .`, rank by relevance, show the top five titles, and let the owner pick which to include (default: all of them, capped at about eight).
+- **Collection of links:** a note listing links. Read it, then for each link look for a clipped note in the vault (`grep -rIl --exclude-dir=.soii --exclude-dir=.claude --exclude-dir=.trash --exclude-dir=Templates --include='*.md' '<url or title>' .`, and `[[links]]`). Drill only the clipped ones (a `## Clipped` section or an embedded PDF counts). Tell the owner which links have no content in the vault, in one line, and offer `/soii-explore` for them.
+- **Topic:** `grep -rIl -i --exclude-dir=.soii --exclude-dir=.claude --exclude-dir=.trash --exclude-dir=Templates --include='*.md' '<topic>' .`, rank by relevance, show the top five titles, and let the owner pick which to include (default: all of them, capped at about eight).
+
+Keep the `--exclude-dir` flags on every recursive grep: macOS's recursive grep descends into dot folders, so without them it also matches soii's own sample notes and docs in `.soii/`, and the Templates.
 
 If the material is very thin (a title and a link), say so and stop: there's nothing to drill. Suggest `/soii-explore`.
 
@@ -35,7 +37,7 @@ Repeat, one concept at a time. Keep it short: a terminal, not a lecture.
 3. **Wait** for the owner's answer. Don't give hints before they try. "Don't know" is a valid answer: treat it as a miss.
 4. **Check** against the note. Say right, partly right, or not yet, and show the line from the note in a short quote. Credit what was right. Score it internally: 1 right, 0.5 partly, 0 miss.
 5. **Go deeper on a miss**: re-explain it in a different way (an example from the notes, or a contrast with a related concept), then ask a fresh question on the same concept. Put weak concepts back in the queue to return later in the session.
-6. **Connect** every few concepts: ask how two concepts relate, especially across **linked notes** (`[[links]]` and backlinks: `grep -rIl '\[\[Note title' .`). Only connections the notes themselves support. If the owner finds a connection the notes don't make, say that's their own idea and offer to note it in the Log line.
+6. **Connect** every few concepts: ask how two concepts relate, especially across **linked notes** (`[[links]]` and backlinks: `grep -rIl --exclude-dir=.soii --exclude-dir=.claude --exclude-dir=.trash --exclude-dir=Templates '\[\[Note title' .`). Only connections the notes themselves support. If the owner finds a connection the notes don't make, say that's their own idea and offer to note it in the Log line.
 
 Every few questions, give a one-line check-in with AskUserQuestion: **Keep going**, **Harder questions**, **Review what I missed**, **Stop here**. Stop when they choose it, or when they've nailed every concept twice.
 

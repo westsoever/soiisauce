@@ -13,7 +13,7 @@ What topic, time range or folder? Ask once if it isn't clear from the request. A
 
 ## 2. Gather
 
-Search the vault for the topic, by words, tags, `type` or folder. Leave out `.obsidian/`, `.claude/`, `.soii/`, `Templates/`, anything excluded in `soii.config.yml`, and notes marked `soii: hidden` or `publish: false` (the owner keeps those out of soii on purpose). Read every note that matches. If there are more than about 30, show the owner the list and let them narrow it before you read on.
+Search the vault for the topic, by words, tags, `type` or folder. Leave out `.obsidian/`, `.claude/`, `.soii/`, `Templates/`, anything excluded in `soii.config.yml`, and notes marked `soii: hidden` or `publish: false` (the owner keeps those out of soii on purpose). If you search with `grep -r`, add `--exclude-dir=.soii --exclude-dir=.claude --exclude-dir=.trash --exclude-dir=Templates`: macOS's grep descends into dot folders and would match soii's own sample notes in `.soii/`. Read every note that matches. If there are more than about 30, show the owner the list and let them narrow it before you read on.
 
 ## 3. Find patterns
 

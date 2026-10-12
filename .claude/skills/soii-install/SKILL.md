@@ -28,12 +28,12 @@ Ask one thing: **do they already have a vault?** (an Obsidian folder of notes)
 ## The steps
 
 1. **The installer.** If this folder isn't already the soii repo, `git clone --depth 1 https://github.com/westsoever/soii.git ~/soii-installer`. Use the path of the clone you are in below (`$SOII`).
-2. **New vault:** `bun $SOII/bin/soii.ts init ~/my-vault` (ask where; add `--empty` if they want no sample notes). It copies the starter, makes the first git commit, and installs soii.
+2. **New vault:** `bun $SOII/bin/soii.ts init ~/my-vault` (ask where; add `--empty` if they want no sample notes, `--title "…"` for a title other than the folder name). It copies the starter, makes the first git commit, and installs soii.
    **Existing vault:** `cd <vault> && bun $SOII/bin/soii.ts install`. Their notes aren't touched; soii adds `.soii/` and `.claude/skills/`.
 3. **Check:** `soii status` shows `running`, the vault, the version. If the `soii` command isn't found, the install output named a folder to add to PATH: give them the `export PATH=…` line for their shell profile.
 4. **Look:** `soii open`. For a new vault they should see the sample notes; for an existing one, their notes, possibly with empty workspaces.
 5. **Existing vault with empty workspaces or notes lacking properties:** run **/soii-setup** from inside the vault. It fills in the properties on a branch.
-6. **Commit `.soii/`** in the vault repo (`git add .soii .claude && git commit`): the `.gitignore` inside `.soii/` keeps the checkout, build and keys out.
+6. **Commit:** install already committed `.soii/package.json`, `.soii/.gitignore`, `.soii/skills.json` and the skills (`soii: install v…`) if the vault is a git repo, so `git status` starts clean. Check with `git -C <vault> log -1 --stat`. A vault that isn't a git repo: suggest `git init` and a first commit.
 7. **Covers (optional):** put `GOOGLE_BOOKS_API_KEY=…` in `<vault>/.soii/.env.local` (never in a command line or a commit), then `soii restart`.
 
 ## If something fails

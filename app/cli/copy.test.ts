@@ -43,7 +43,21 @@ test('copyTemplate copies everything, dotfiles included', () => {
     '.gitignore', '.obsidian/app.json', '.soii/.gitignore', '.soii/package.json', '00-Inbox/Idea.md', '05-Knowledge/People/Ida.md',
     'Attachments/covers/a.svg', 'Home.md', 'README.md', 'Templates/Book.md', 'soii.config.yml'
   ])
-  expect(readFileSync(join(dest, 'soii.config.yml'), 'utf8')).toContain("title: Sam's vault")
+  // The title is the new vault's, never Sam's, whether or not the sample notes come along.
+  expect(readFileSync(join(dest, 'soii.config.yml'), 'utf8')).toBe('title: vault\nhome: today\n')
+})
+
+test('copyTemplate quotes a title YAML would misread', () => {
+  const read = (title: string) => {
+    const dest = join(tmp(), 'v')
+    copyTemplate(fakeTemplate(), dest, { empty: false, title })
+    return readFileSync(join(dest, 'soii.config.yml'), 'utf8').split('\n')[0]
+  }
+  expect(read("Ana's notes")).toBe('title: Ana\'s notes')
+  expect(read('Work: 2026')).toBe('title: "Work: 2026"')
+  expect(read('# mine')).toBe('title: "# mine"')
+  expect(read('- list')).toBe('title: "- list"')
+  expect(read(' padded ')).toBe('title: " padded "')
 })
 
 test('copyTemplate --empty keeps the machinery and drops Sam, leaving the folders ready', () => {

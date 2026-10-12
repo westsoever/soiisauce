@@ -28,8 +28,8 @@ test -d .soii && echo "soii installed here"
 ## 1. What soii is (3 lines, then checkpoint)
 
 Say, in your own words:
-- soii is a visual front end for this Obsidian vault. It reads your notes and shows them as a library, people, goals, a daily feed. It runs on your computer at http://localhost:5011 and never uploads your notes.
-- Your notes stay plain Markdown files. Obsidian still edits them; soii only reads, plus two buttons (**Log** and **Add**) that write one line or one note.
+- soii is a visual front end for this Obsidian vault. It reads your notes and shows them as a library, people, goals, a daily feed. It runs on your computer (usually at http://localhost:5011; `soii status` shows the port) and never uploads your notes.
+- Your notes stay plain Markdown files. Obsidian still edits them; soii mostly reads, and only its **Log**, **Add** and property-edit buttons write: one line, one note or one property, each as a local commit.
 - Claude Code (what you're talking to now) does the thinking work through skills that live in this vault.
 
 ## 2. Your vault (read it, don't recite it)
@@ -52,10 +52,10 @@ Then, only for what exists:
 One-line health summary, so step 6 can hand off:
 
 ```bash
-soii check 2>/dev/null | tail -15 || bun "$SOII/scripts/check-vault.ts" . | tail -15
+bun "$SOII/scripts/check-vault.ts" . | tail -15
 ```
 
-Report only the counts (errors, warnings, and the "missing properties" total if shown). If neither command works, say you couldn't run the checker and move on.
+Report only the counts (errors, warnings, and the "missing properties" total if shown). If it doesn't run (no Bun, say), say you couldn't run the checker and move on.
 
 Checkpoint.
 
@@ -101,7 +101,7 @@ Then the commands, one line each:
 | `soii start` / `stop` / `restart` | control the background service |
 | `soii status` | running or not, version, newest version |
 | `soii logs [-f]` | show or follow the log |
-| `soii check` | list notes soii can't read properly |
+| `soii check` | list notes soii can't read properly (in the vault soii serves) |
 | `soii update` | move to the newest release and refresh these skills |
 | `soii init <dir>` / `soii install [vault]` | new vault from the template / install into a vault |
 

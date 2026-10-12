@@ -247,6 +247,12 @@ describe('missing-field', () => {
     expect(report).toMatch(/\d+ info\./) // still counted in the summary line
   })
 
+  test('the summary reads right for one note and for several', () => {
+    const one = formatReport({ findings: findings.filter(f => f.path === 'Books/Partial.md'), notes: 1 })
+    expect(one).toContain('1 note lacks some of the properties')
+    expect(formatReport({ findings, notes: 11 })).toMatch(/\d+ notes lack some of the properties/)
+  })
+
   test('no finding for types without a field table, untyped, unreadable or hidden notes', () => {
     for (const p of ['Other/Project.md', 'Other/Plain.md', 'Other/Hidden.md']) expect(missingOf(findings, p)).toBeUndefined()
     expect(missingOf(findings, 'Other/Broken.md')).toBeUndefined()

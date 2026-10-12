@@ -28,6 +28,8 @@ bun ~/soii-installer/bin/soii.ts init ~/my-vault           # with sample notes, 
 bun ~/soii-installer/bin/soii.ts init ~/my-vault --empty   # or empty, with the structure and templates
 ```
 
+The vault's title in `soii.config.yml` is the folder's name; `--title "Ana's notes"` sets another.
+
 This copies the starter vault, makes it a git repository with a first commit, and installs soii in it (step 4 happens by itself). When it finishes, soii is running.
 
 ## 3b. Already have a vault
@@ -46,9 +48,12 @@ Your notes aren't touched. soii adds a `.soii/` folder (its code, build and sett
 3. Builds soii for your vault into `.soii/build/`.
 4. Registers the vault in `~/.config/soii/config.json` and puts a `soii` command on your PATH (`~/.bun/bin` or `~/.local/bin`; it tells you if that folder isn't on PATH).
 5. Copies soii's Claude Code skills into `<vault>/.claude/skills/`. Skills you made yourself are never touched.
-6. On a Mac, installs a LaunchAgent (`~/Library/LaunchAgents/com.soii.server.plist`) and starts it.
+6. If the vault is a git repository, **commits what it wrote** (`soii: install v0.1.1`): `.soii/package.json`, `.soii/.gitignore`, `.soii/skills.json` and the skill folders it installed. Nothing else is staged, so your own uncommitted work stays as it is, and the vault starts clean. The `.gitignore` inside `.soii/` keeps the checkout, build and secrets out.
+7. On a Mac, installs a LaunchAgent (`~/Library/LaunchAgents/com.soii.server.plist`) and starts it. If nothing answers within 15 seconds it says so and prints the end of the log.
 
-It is safe to run again. Commit `.soii/` to your vault repo: the `.gitignore` inside it keeps the checkout, build and secrets out.
+It is safe to run again.
+
+**`--no-service`** (or `SOII_NO_SERVICE=1`), on `install`, `init` and `update`, installs into the vault only: no service, nothing in the background, and nothing outside the vault changed (no `soii` command, no LaunchAgent, no registry entry). For trying out a second vault or for tests. To run it later, `soii install` there without the flag.
 
 Open it:
 

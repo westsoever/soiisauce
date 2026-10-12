@@ -2,7 +2,7 @@ import { expect, test } from 'bun:test'
 import { parseArgs } from './args'
 
 test('a bare command is parsed with no positionals or flags', () => {
-  expect(parseArgs(['status'])).toEqual({ ok: true, command: 'status', positional: [], flags: { follow: false, empty: false, help: false } })
+  expect(parseArgs(['status'])).toEqual({ ok: true, command: 'status', positional: [], flags: { follow: false, empty: false, noService: false, help: false } })
 })
 
 test('no arguments means help', () => {
@@ -62,4 +62,29 @@ test('too many positionals is an error', () => {
 
 test('init requires a directory', () => {
   expect(parseArgs(['init'])).toEqual({ ok: false, error: '`soii init` needs a directory, e.g. `soii init ~/my-vault`.' })
+})
+
+test('--no-service is accepted by install, init and update', () => {
+  for (const argv of [['install', '--no-service'], ['init', 'v', '--no-service'], ['update', '--no-service']]) {
+    const r = parseArgs(argv)
+    expect(r.ok && r.flags.noService).toBe(true)
+  }
+  expect(parseArgs(['status', '--no-service'])).toEqual({ ok: false, error: 'Unknown option "--no-service" for `soii status`.' })
+})
+
+test('SOII_NO_SERVICE=1 means the same as --no-service', () => {
+  const r = parseArgs(['install'], { SOII_NO_SERVICE: '1' })
+  expect(r.ok && r.flags.noService).toBe(true)
+  const off = parseArgs(['install'], { SOII_NO_SERVICE: '0' })
+  expect(off.ok && off.flags.noService).toBe(false)
+  const other = parseArgs(['status'], { SOII_NO_SERVICE: '1' })
+  expect(other.ok && other.flags.noService).toBe(false)
+})
+
+test('init takes --title, and it needs a value', () => {
+  const r = parseArgs(['init', 'v', '--title', "Ana's notes"])
+  expect(r).toMatchObject({ ok: true, flags: { title: "Ana's notes" } })
+  expect(parseArgs(['init', 'v', '--title=Mine'])).toMatchObject({ ok: true, flags: { title: 'Mine' } })
+  expect(parseArgs(['init', 'v', '--title'])).toEqual({ ok: false, error: '--title needs a value, e.g. --title "My vault".' })
+  expect(parseArgs(['install', '--title', 'x'])).toEqual({ ok: false, error: 'Unknown option "--title" for `soii install`.' })
 })

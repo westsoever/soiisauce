@@ -24,9 +24,9 @@ It looks for the newest release tag on GitHub, and if yours is older:
 1. fetches that release into `.soii/soii/` with git and installs its packages,
 2. shows **what's new** (the new entries of soii's `DECISIONS.md`, one line each),
 3. moves the pin in `.soii/package.json`,
-4. rebuilds, refreshes the skills, and restarts soii.
+4. rebuilds, refreshes the skills, commits what it changed in your vault (`soii: update to v0.1.1`: the pin, `.soii/skills.json` and the skill folders, nothing else) and restarts soii.
 
-If the fetch fails, the working install stays as it was. `soii status` shows your version and the newest one; the pin in `.soii/package.json` is a change in your vault, so commit it (`git add .soii/package.json .soii/skills.json`).
+If the fetch fails, the working install stays as it was. `soii status` shows your version and the newest one. The vault stays clean after an update; push it when you like.
 
 Ask Claude instead? Run `/soii-update` in Claude Code from your vault: it runs the same command and explains what's new in plain words.
 

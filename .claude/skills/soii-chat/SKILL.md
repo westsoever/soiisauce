@@ -31,10 +31,12 @@ Use grep and glob (the shell or your search tools), not memory:
 # titles and file names first
 find . -iname '*term*.md' -not -path './.*' -not -path './node_modules/*'
 # then contents, files only
-grep -rIl -i --include='*.md' 'term' . | grep -v '^\./\.' | head -40
+grep -rIl -i --exclude-dir=.soii --exclude-dir=.claude --exclude-dir=.trash --exclude-dir=Templates --include='*.md' 'term' . | grep -v '^\./\.' | head -40
 # properties: which notes are a given type, status or tag
-grep -rIl -E '^type: *book' --include='*.md' .
+grep -rIl -E --exclude-dir=.soii --exclude-dir=.claude --exclude-dir=.trash --exclude-dir=Templates '^type: *book' --include='*.md' .
 ```
+
+Keep the `--exclude-dir` flags on every recursive grep: macOS's recursive grep descends into dot folders, so without them it also matches soii's own sample notes and docs in `.soii/`, and the Templates.
 
 Rank the hits: file name and heading matches first, then notes with several hits, then single mentions. Read the best five to ten notes (frontmatter plus body), and follow `[[links]]` one hop when a note clearly continues elsewhere. For a PDF in the vault, read the relevant pages only (`Read` with `pages`). Dated `## Log` lines are good evidence for "when" and "what happened"; use them.
 

@@ -18,11 +18,12 @@ Usage: soii <command> [options]
   check                Check the vault's frontmatter and structure
   uninstall            Stop it, remove the LaunchAgent and the soii command (notes untouched)
 
-Options: --port <n> (install, init), --from <spec> (install, init; a pin like github:westsoever/soii#v0.1.0), --help, --version
+Options: --port <n>, --from <tag> (install, init), --title <name> (init), --no-service (install, init, update:
+  install into the vault only, with no service and nothing outside the vault; SOII_NO_SERVICE=1 does the same), --help, --version
 It listens on http://localhost:5011 only.`
 
 export async function main(argv: string[], ctx: Ctx = realCtx()): Promise<number> {
-  const parsed = parseArgs(argv)
+  const parsed = parseArgs(argv, ctx.env)
   if (!parsed.ok) {
     ctx.err(`soii: ${parsed.error}`)
     return 2
@@ -41,7 +42,7 @@ export async function main(argv: string[], ctx: Ctx = realCtx()): Promise<number
     status: () => commands.status(ctx),
     open: () => commands.open(ctx),
     logs: () => commands.logs(ctx, flags.follow),
-    update: () => commands.update(ctx),
+    update: () => commands.update(ctx, flags),
     check: () => commands.check(ctx),
     uninstall: () => commands.uninstall(ctx),
     run: () => commands.run(ctx),

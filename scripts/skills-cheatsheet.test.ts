@@ -28,6 +28,15 @@ describe('docs/skills.md', () => {
     const files = [join(root, 'docs', 'skills.md'), ...shipped.map(name => join(skillsDir, name, 'SKILL.md'))]
     expect(files.filter(f => stale.test(readFileSync(f, 'utf8'))).map(f => f.replace(root, ''))).toEqual([])
   })
+  test('every recursive grep in a skill skips soii\'s own folders (macOS grep descends into .soii/)', () => {
+    const bad = shipped.flatMap(name =>
+      readFileSync(join(skillsDir, name, 'SKILL.md'), 'utf8')
+        .split('\n')
+        .filter(line => /grep -[a-zA-Z]*r/.test(line) && !/--exclude-dir=\.soii/.test(line))
+        .map(line => `${name}: ${line.trim().slice(0, 80)}`)
+    )
+    expect(bad).toEqual([])
+  })
   test('each skill names itself in its frontmatter', () => {
     for (const name of shipped) {
       expect(readFileSync(join(skillsDir, name, 'SKILL.md'), 'utf8')).toMatch(new RegExp(`^---\\nname: ${name}\\n`))

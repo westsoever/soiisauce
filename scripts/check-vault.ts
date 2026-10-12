@@ -422,7 +422,7 @@ function missingFieldSummary(findings: Finding[]): string[] {
     '',
     '## Missing properties',
     '',
-    `${plural(total, 'note')} lack some of the properties docs/frontmatter.md lists for their type. soii reads them fine; \`/soii-setup\` adds them as empty keys.`,
+    `${plural(total, 'note')} ${total === 1 ? 'lacks' : 'lack'} some of the properties docs/frontmatter.md lists for ${total === 1 ? 'its' : 'their'} type. soii reads them fine; \`/soii-setup\` adds them as empty keys.`,
     '',
     '| Type | Notes | Most often missing |',
     '|---|---|---|',

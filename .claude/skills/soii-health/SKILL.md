@@ -5,7 +5,7 @@ description: Weekly vault check-up for soii. Finds notes soii can't read properl
 
 # Vault health
 
-You check the owner's Obsidian vault against what soii understands, fix what is safe to fix, and hand the rest back as a report. You work on a **branch** and open a **pull request**. You never push to the vault's main branch: every push there redeploys soii, and these are the owner's private notes.
+You check the owner's Obsidian vault against what soii understands, fix what is safe to fix, and hand the rest back as a report. You work on a **branch** and, when the vault has a GitHub remote, open a **pull request**. You never push to the vault's main branch: that's the owner's to decide, and these are their private notes. (A vault on the owner's own computer may have no remote at all: see step 5.)
 
 ## 1. Find soii's scripts and the vault
 
@@ -35,7 +35,7 @@ git -C "$VAULT" status -sb        # must be clean
 git -C "$VAULT" log --oneline -3
 ```
 
-If the vault has uncommitted changes, stop and report: someone is mid-edit.
+If the vault has uncommitted changes, stop and report: someone is mid-edit. One exception: right after `soii init` or `soii install`, `.claude/skills/` and `.soii/skills.json` show as untracked. Those are soii's own files, not the owner's edits. Commit just those (`git add .claude/skills .soii/skills.json && git commit -m "soii: install skills"`) and carry on.
 
 ## 2. Run the checker
 
@@ -46,7 +46,7 @@ bun "$SOII/scripts/check-vault.ts" "$VAULT" --json > /tmp/vault-findings.json
 bun "$SOII/scripts/check-vault.ts" "$VAULT"            # the readable version
 ```
 
-The checker is read-only and uses soii's own parser, so its findings are exactly what soii trips over. `docs/frontmatter.md` is the reference for every type and field.
+The checker is read-only and uses soii's own parser, so its findings are exactly what soii trips over. `$SOII/docs/frontmatter.md` is the reference for every type and field.
 
 The readable version ends with a **Missing properties** table: how many notes of each type lack keys the docs list for that type, and which keys most often. That is the `missing-field` info rule. Don't fix these in a health run (a vault with hundreds of notes would get a hundred-file pull request); report the table and point to `/soii-setup`, which adds them as empty keys in reviewable commits.
 
@@ -64,7 +64,7 @@ If `$VAULT/.claude/soii-health.local.md` exists, read it and run every check it 
 - **Report only.** Whatever the file says, don't edit notes for these checks. Their findings go in the same report, under their own heading: **This vault's checks**, one bullet per finding, paths and a short reason.
 - A check you can't run (a file it names is missing, an instruction is unclear) is reported as "couldn't run: <check>, <why>". Don't improvise a replacement.
 - The file may name private files (identity or facts notes). Read them to compare, never quote them in the report.
-- No file, no section. Don't create the file; `docs/skills.md` says how an owner writes one.
+- No file, no section. Don't create the file; `$SOII/docs/skills.md` says how an owner writes one.
 
 ## 4. Fix only what is safe
 
@@ -97,6 +97,8 @@ After fixing, run the checker again and confirm the error count went down and no
 | yes | either | **Pull request** with the fixes and the full report (below) |
 | no | yes | **Issue** on the vault repo, same title and body (there's no commit to put a PR on) |
 | no | no | Nothing. Say "Vault is healthy" with the checker's summary line |
+
+**No GitHub remote** (`git -C "$VAULT" remote` prints nothing, or `gh` isn't set up): a vault that lives only on the owner's computer. Don't push and don't try to open anything. If you fixed something, commit it on the branch (`git -C "$VAULT" add -A && git -C "$VAULT" commit -m "soii: vault health $(date +%F)"`), switch back to the branch the owner was on, and give them the report in your reply, with the branch name and `git merge soii/health-<date>` as the way to take the fixes. If you fixed nothing, the reply is the report. Skip the rest of this step.
 
 Before creating either, look for an open PR **or** issue titled `Vault health — …`. If one exists, comment on it with this week's report instead of opening another, and don't stack fixes on top of unmerged ones. If the findings are identical to the last report, say so in one line ("unchanged since last week") rather than repeating the full list.
 
@@ -131,7 +133,7 @@ Show at most the note **paths** and the property values involved. Don't paste no
 
 ## 6. Finish
 
-Reply with the PR or issue link (or "Vault is healthy") and the before/after checker counts.
+Reply with the PR or issue link (or the branch name when there's no remote, or "Vault is healthy") and the before/after checker counts.
 
 ## Schedule it weekly
 

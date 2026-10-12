@@ -7,6 +7,7 @@ import { checkoutSoii, remoteUrl, soiiCheckout } from './checkout'
 import type { Ctx } from './context'
 import { copyTemplate, syncSkills } from './copy'
 import { newDecisions } from './decisions'
+import { commitSoiiFiles } from './vault-commit'
 import { chooseShimDir, logPath, renderShim } from './paths'
 import { configDir, DEFAULT_PORT, readRegistry, removeRegistry, writeRegistry, type Registry } from './registry'
 import { runSupervisor } from './run'
@@ -15,6 +16,8 @@ import { ensureLines, parsePin, pinSpec, renderSoiiPackageJson, setPin, SOII_GIT
 import { isNewer, newestTag } from './version'
 
 const SHIM_MARKER = '# soii shim'
+/** How long to wait for the service to answer before saying it didn't. Starting it takes a few seconds. */
+const HEALTH_WAIT_MS = 15_000
 const AUTH_HINT = 'The soii repo is private. Run `gh auth login` and then `gh auth setup-git` once so git can read it, then try again.'
 
 const expandHome = (ctx: Ctx, p: string) => (p === '~' ? ctx.home : p.startsWith('~/') ? join(ctx.home, p.slice(2)) : p)
@@ -93,15 +96,26 @@ export async function install(ctx: Ctx, vaultArg: string | undefined, flags: Fla
     return 1
   }
 
-  writeRegistry(configDir(ctx.env), { vault, port })
-  if (previous && previous.vault !== vault) ctx.out(`This machine served ${previous.vault}; it now serves ${vault}.`)
-
-  installShim(ctx, vault)
+  if (!flags.noService) {
+    writeRegistry(configDir(ctx.env), { vault, port })
+    if (previous && previous.vault !== vault) ctx.out(`This machine served ${previous.vault}; it now serves ${vault}.`)
+    installShim(ctx, vault)
+  }
   // soii-install is for a machine that has no soii yet, so it is pointless inside a vault that does.
   const skills = syncSkills(join(root, '.claude', 'skills'), join(vault, '.claude', 'skills'), join(here, 'skills.json'), ['soii-install'])
   if (skills.installed.length) ctx.out(`Skills: ${skills.installed.join(', ')} → ${join(vault, '.claude', 'skills')}`)
   if (skills.removed.length) ctx.out(`Removed skills soii no longer ships: ${skills.removed.join(', ')}`)
 
+  // What soii just wrote goes in one commit, so the vault starts clean: /soii-health and /soii-setup stop on a dirty tree.
+  const message = `soii: ${ctx.env.SOII_UPDATE === '1' ? 'update to' : 'install'} ${ref}`
+  const committed = await commitSoiiFiles(ctx, vault, { skills: skills.installed, removed: skills.removed, message })
+  if (committed.committed) ctx.out(`Committed soii's files in the vault (${message}).`)
+  else if (committed.reason && committed.reason !== 'not a git repository') ctx.err(`soii: the vault was not committed (${committed.reason}). Commit .soii/package.json, .soii/.gitignore, .soii/skills.json and .claude/skills yourself.`)
+
+  if (flags.noService) {
+    ctx.out(`\nsoii ${ref} is installed in ${vault}. --no-service: no service was started and nothing outside the vault was changed (no \`soii\` command, no LaunchAgent, no registry).`)
+    return 0
+  }
   if (!(await servicePid(ctx)) && (await ctx.healthy(port))) {
     ctx.err(`soii: something else already answers on port ${port} (an old \`bun app/serve.ts\`?). Stop it, then run \`soii start\`.`)
     return 1
@@ -111,13 +125,25 @@ export async function install(ctx: Ctx, vaultArg: string | undefined, flags: Fla
     ctx.err(`soii: could not start the service: ${started.message}`)
     return 1
   }
-  if (!(await waitHealthy(ctx, port))) {
-    ctx.err(`soii: the service started but nothing answers on port ${port} yet. See \`soii logs\`.`)
+  if (!(await waitHealthy(ctx, port, HEALTH_WAIT_MS))) {
+    ctx.err(notAnswering(ctx, port, 'started'))
     return 1
   }
   ctx.out(`\nsoii is running: http://localhost:${port}`)
   ctx.out(ctx.platform === 'darwin' ? 'It starts at login and restarts if it stops. `soii status` shows how it is doing.' : 'It runs in the background. `soii status` shows how it is doing.')
   return 0
+}
+
+/** "Started, but nothing answers" with the end of the log, so the reason is on screen. */
+export function notAnswering(ctx: Ctx, port: number, what: string): string {
+  const file = logPath(ctx.platform, ctx.home)
+  let tail = ''
+  try {
+    tail = readFileSync(file, 'utf8').trimEnd().split('\n').slice(-20).join('\n')
+  } catch {
+    // no log yet
+  }
+  return `soii: ${what}, but nothing answers on port ${port} after ${HEALTH_WAIT_MS / 1000} seconds.${tail ? `\nLast lines of ${file}:\n${tail.replace(/^/gm, '  ')}` : `\nNo log at ${file} yet.`}\nMore with \`soii logs\`.`
 }
 
 function installShim(ctx: Ctx, vault: string): void {
@@ -148,7 +174,7 @@ export async function init(ctx: Ctx, dirArg: string, flags: Flags): Promise<numb
   const dest = resolve(ctx.cwd, expandHome(ctx, dirArg))
   const template = join(ctx.pkgRoot, 'template')
   if (!existsSync(template)) throw new Error(`This soii package has no template/ folder (looked in ${template}).`)
-  copyTemplate(template, dest, { empty: flags.empty, title: basename(dest) })
+  copyTemplate(template, dest, { empty: flags.empty, title: flags.title ?? basename(dest) })
   // The template pins a tag; point it at the version running now, and ignore soii's own folders, before the first commit.
   prepareSoiiDir(ctx, dest, { ...flags, from: flags.from ?? packageVersion(ctx.pkgRoot) ?? undefined })
   ctx.out(`New vault in ${dest}${flags.empty ? ' (empty)' : ''}.`)
@@ -178,8 +204,8 @@ export async function start(ctx: Ctx): Promise<number> {
     ctx.err(`soii: could not start: ${r.message}`)
     return 1
   }
-  if (!(await waitHealthy(ctx, reg.port))) {
-    ctx.err(`soii: started, but nothing answers on port ${reg.port} yet. See \`soii logs\`.`)
+  if (!(await waitHealthy(ctx, reg.port, HEALTH_WAIT_MS))) {
+    ctx.err(notAnswering(ctx, reg.port, 'started'))
     return 1
   }
   ctx.out(`soii is running: http://localhost:${reg.port}`)
@@ -200,8 +226,8 @@ export async function restart(ctx: Ctx): Promise<number> {
     ctx.err(`soii: could not restart: ${r.message}`)
     return 1
   }
-  if (!(await waitHealthy(ctx, reg.port))) {
-    ctx.err(`soii: restarted, but nothing answers on port ${reg.port} yet. See \`soii logs\`.`)
+  if (!(await waitHealthy(ctx, reg.port, HEALTH_WAIT_MS))) {
+    ctx.err(notAnswering(ctx, reg.port, 'restarted'))
     return 1
   }
   ctx.out(`soii restarted: http://localhost:${reg.port}`)
@@ -255,7 +281,7 @@ export async function check(ctx: Ctx): Promise<number> {
 
 // ---- update ----
 
-export async function update(ctx: Ctx): Promise<number> {
+export async function update(ctx: Ctx, flags: Flags): Promise<number> {
   const reg = needRegistry(ctx)
   const here = soiiDir(reg.vault)
   const pkgFile = join(here, 'package.json')
@@ -290,7 +316,7 @@ export async function update(ctx: Ctx): Promise<number> {
   const news = newDecisions(before, read(decisionsFile(installedRoot(reg.vault))))
   if (news.length) ctx.out(`\nWhat's new:\n${news.map(n => `  - ${n}`).join('\n')}\n`)
   // The new version rebuilds, refreshes the skills and restarts: its own install knows how.
-  return ctx.stream(ctx.bun, [vaultCli(reg.vault), 'install', reg.vault])
+  return ctx.stream(ctx.bun, [vaultCli(reg.vault), 'install', reg.vault, ...(flags.noService ? ['--no-service'] : [])], { env: { SOII_UPDATE: '1' } })
 }
 
 // ---- uninstall ----

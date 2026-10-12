@@ -19,13 +19,15 @@ Hard rules:
 Find the vault (current directory; in soii's repo ask whether to use `template/`). Ask what to explore with AskUserQuestion: **A topic**, **A note**, **A PDF in the vault**. If the owner already named it, skip the question.
 
 - **Note or PDF:** read it (PDF with `Read` and `pages`), and pull out its topic, key terms and open questions.
-- **Topic:** `grep -rIl -i --include='*.md' '<topic>' . | head -20`, and read the top few notes' titles, frontmatter and headings.
+- **Topic:** `grep -rIl -i --exclude-dir=.soii --exclude-dir=.claude --exclude-dir=.trash --exclude-dir=Templates --include='*.md' '<topic>' . | head -20`, and read the top few notes' titles, frontmatter and headings.
 
 Build a short picture of **what the vault already holds** on it: which notes, which authors, which sources, which angles. This is for contrast: you want what's missing, not more of the same. Also list the URLs and titles already in the vault so you don't suggest them again:
 
 ```bash
-grep -rIhoE --include='*.md' '^(url|doi|arxiv):.*' . | head -200
+grep -rIhoE --exclude-dir=.soii --exclude-dir=.claude --exclude-dir=.trash --exclude-dir=Templates --include='*.md' '^(url|doi|arxiv):.*' . | head -200
 ```
+
+Keep the `--exclude-dir` flags on every recursive grep: macOS's recursive grep descends into dot folders, so without them it also matches soii's own sample notes and docs in `.soii/`, and the Templates.
 
 Ask one question if it helps narrow the search: what angle do you want (history, practice, criticism, the primary sources, something surprising)? and how deep (a quick list, or a real reading list)?
 

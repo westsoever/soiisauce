@@ -13,6 +13,9 @@ function walkFiles(root: string, rel = ''): string[] {
   })
 }
 
+/** A YAML-safe value for `title:`: plain when it reads back the same, double-quoted otherwise. */
+const yamlText = (text: string): string => (/^[\s\-?:,\[\]{}#&*!|>'"%@`]|:\s|:$|\s#|\s$/.test(text) ? JSON.stringify(text) : text)
+
 export function copyTemplate(template: string, dest: string, opts: { empty: boolean; title: string }): void {
   if (existsSync(dest) && readdirSync(dest).length > 0) throw new Error(`${dest} is not empty. Pick a new folder, or an empty one.`)
   mkdirSync(dest, { recursive: true })
@@ -30,10 +33,9 @@ export function copyTemplate(template: string, dest: string, opts: { empty: bool
     mkdirSync(join(dest, dir), { recursive: true })
     writeFileSync(join(dest, dir, '.gitkeep'), '')
   }
-  if (opts.empty) {
-    const config = join(dest, 'soii.config.yml')
-    if (existsSync(config)) writeFileSync(config, readFileSync(config, 'utf8').replace(/^title:.*$/m, `title: ${opts.title}`))
-  }
+  // The starter says "Sam's vault"; the new vault is called what its owner calls it, sample notes or not.
+  const config = join(dest, 'soii.config.yml')
+  if (existsSync(config)) writeFileSync(config, readFileSync(config, 'utf8').replace(/^title:.*$/m, () => `title: ${yamlText(opts.title)}`))
 }
 
 /**

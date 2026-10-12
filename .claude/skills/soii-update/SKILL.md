@@ -16,7 +16,7 @@ git status -sb        # in the vault
 
 - `soii status` says `latest`: tell them they're up to date. Stop.
 - `soii status` isn't found or says soii isn't installed: use **/soii-install** instead.
-- If the vault has uncommitted changes, that's fine for soii (an update only touches `.soii/` and soii's skill folders), but mention it so they know what the commit in step 4 will and won't include.
+- If the vault has uncommitted changes, that's fine for soii: an update only touches `.soii/` and soii's skill folders, and its commit includes only those.
 - If you are in the soii repo itself (a development checkout, no `.soii/`), this isn't the flow: `git pull --ff-only` and stop.
 
 ## 2. Update
@@ -25,7 +25,7 @@ git status -sb        # in the vault
 soii update
 ```
 
-It fetches the newest release with git, prints **What's new** (the new `DECISIONS.md` entries), moves the pin, rebuilds, refreshes the skills and restarts. Summarise what's new for the owner in plain words, one line per entry, and say which workspaces or skills it touches.
+It fetches the newest release with git, prints **What's new** (the new `DECISIONS.md` entries), moves the pin, rebuilds, refreshes the skills, commits them and restarts. Summarise what's new for the owner in plain words, one line per entry, and say which workspaces or skills it touches.
 
 If it fails: "git could not fetch" is GitHub access (`gh auth login`, `gh auth setup-git`); anything else, read the message, and `soii logs`. A failed fetch leaves the working install as it was.
 
@@ -38,9 +38,9 @@ soii open
 
 If it says not running, `soii logs`. Don't repeat the update; read the log.
 
-## 4. Commit the pin
+## 4. The commit
 
-`soii update` changed `.soii/package.json` (the pin) and maybe `.soii/skills.json` and the skill folders. Show `git status`, and with the owner's yes: `git add .soii/package.json .soii/skills.json .claude/skills && git commit -m "Update soii to <version>"`. Don't push unless they ask.
+`soii update` commits what it changed in the vault by itself (`soii: update to <version>`): the pin in `.soii/package.json`, `.soii/skills.json` and the skill folders it installed or removed, and nothing else. Show it with `git log -1 --stat`. Don't push unless they ask.
 
 If a release renamed or dropped skills, the output said which old folders were removed. Mention it: only folders soii installed are ever removed, never their own skills.
 
