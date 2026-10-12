@@ -24,6 +24,9 @@ export const DEFAULT_CONFIG: SoiiConfig = {
     account: ['account', 'finance-account'],
     subscription: ['subscription'],
     expense: ['expense', 'purchase'],
+    recipe: ['recipe', 'recipie', 'recipes'],
+    // Transcripts of recorded video log entries. Not `journal`: vaults use that for daily notes.
+    'video-log': ['video-log', 'vlog', 'video-journal'],
     'daily-brief': ['daily-brief', 'daily-report', 'morning-briefing'],
     'weekly-review': ['weekly-review', 'weekly-report', 'weekly-synthesis']
   },
@@ -59,7 +62,9 @@ export const DEFAULT_CONFIG: SoiiConfig = {
           query: { type: 'research' },
           options: { columns: ['title', 'authors', 'year', 'status'] }
         },
-        { id: 'articles', title: 'Articles', view: 'list', query: { type: 'article' } }
+        { id: 'articles', title: 'Articles', view: 'list', query: { type: 'article' } },
+        { id: 'recipes', title: 'Recipes', view: 'showcase', query: { type: 'recipe' }, sort: [{ field: 'title', dir: 'asc' }] },
+        { id: 'journal', title: 'Journal', view: 'feed', query: { type: 'video-log' } }
       ]
     },
     {

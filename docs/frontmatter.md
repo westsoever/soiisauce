@@ -15,6 +15,8 @@ soii reads ordinary Obsidian notes. Workspaces pick notes up by their frontmatte
 | `video` | `youtube` |
 | `research` | `paper`, `article-research` |
 | `article` | `clipping` |
+| `recipe` | `recipie`, `recipes` |
+| `video-log` | `vlog`, `video-journal` |
 | `person` | `people`, `contact` |
 | `goal` | `bucket`, `bucket-list` |
 | `account` | `finance-account` |
@@ -32,6 +34,8 @@ soii reads ordinary Obsidian notes. Workspaces pick notes up by their frontmatte
 | video | `title, url, channel, cover, watched, collection, category` |
 | research | `title, authors, year, venue, url, doi, arxiv, status (to-read/reading/read), collection, category` |
 | article | `title, url, author, collection, category` |
+| recipe | `title, image, description, source, collection, category` (cover works for the picture too) |
+| video-log | `title, date, video`; the transcript is the note body |
 | person | `relationship, company, role, email, phone, location, last_contact, birthday, linkedin, cadence (days, weekly/monthly/quarterly/yearly, or never), circle (friends/network)` |
 | goal | `horizon (year/life/bucket), year, status (idea/active/done/dropped), area, due, progress (0–100)` |
 | subscription | `price, currency, cycle (weekly/monthly/yearly), renews, status (active/paused/cancelled)` |

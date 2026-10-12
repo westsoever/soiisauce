@@ -43,6 +43,16 @@ export interface FolderNode {
   notes: NoteId[]
 }
 
+/** One Claude Code skill from the vault's `.claude/skills/<id>/SKILL.md`: just its frontmatter, never the body. */
+export interface SkillMeta {
+  /** The folder name. */
+  id: string
+  name: string
+  description: string
+  /** Installed by soii (listed in `.soii/skills.json`), as opposed to the owner's own. */
+  soii: boolean
+}
+
 export interface VaultIndex {
   vaultCommit: string | null
   builtAt: string
@@ -50,6 +60,8 @@ export interface VaultIndex {
   notes: NoteMeta[]
   folders: FolderNode
   warnings: string[]
+  /** The vault's Claude Code skills (for the Skills page). Absent in builds that predate it. */
+  skills?: SkillMeta[]
 }
 
 export type Scalar = string | number | boolean
@@ -68,7 +80,7 @@ export interface SortKey {
   dir: 'asc' | 'desc'
 }
 
-export const VIEW_NAMES = ['list', 'table', 'gallery', 'board', 'stats', 'feed', 'pulse'] as const
+export const VIEW_NAMES = ['list', 'table', 'gallery', 'board', 'stats', 'feed', 'pulse', 'showcase'] as const
 export type ViewName = (typeof VIEW_NAMES)[number]
 
 export interface TabConfig {

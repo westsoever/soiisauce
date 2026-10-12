@@ -4,6 +4,7 @@
 //   /w/<workspace>[/<tab>] → a workspace tab
 //   /n/<note id>           → the reader (id percent-encoded per segment)
 //   /vault                 → folder tree + recent notes
+//   /skills                → the Claude Code skills in the vault, and the soii commands
 //   /log[/<kind>]          → the Log (pick a kind, then the form)
 import { useMemo, useSyncExternalStore } from 'react'
 import { decodePath } from '../../lib/paths'
@@ -13,6 +14,7 @@ export type Route =
   | { page: 'workspace'; workspace: string; tab?: string }
   | { page: 'note'; id: string }
   | { page: 'vault' }
+  | { page: 'skills' }
   | { page: 'log'; kind?: string }
   | { page: 'not-found' }
 
@@ -61,6 +63,7 @@ export function parseRoute(pathname: string): Route {
   if (parts.length === 0) return { page: 'home' }
   const [head, ...rest] = parts
   if (head === 'vault' && rest.length === 0) return { page: 'vault' }
+  if (head === 'skills' && rest.length === 0) return { page: 'skills' }
   if (head === 'log' && rest.length <= 1) {
     if (rest.length === 0) return { page: 'log' }
     const kind = decodePath(rest[0])

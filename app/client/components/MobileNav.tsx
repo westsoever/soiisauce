@@ -1,6 +1,6 @@
 // app/client/components/MobileNav.tsx
 // Below md: the bottom bar. The first three workspaces, a raised Log button in the middle, and
-// More (other workspaces, Vault, Search, Sign out). Padded for the iPhone home indicator.
+// More (other workspaces, Skills, Vault, Search, Sign out). Padded for the iPhone home indicator.
 import { IconDots, IconPlus } from '@tabler/icons-react'
 import type { VaultIndex, WorkspaceConfig } from '../../lib/types'
 import { signOut } from '../lib/http'
@@ -33,7 +33,7 @@ export function MobileNav({ index }: { index: VaultIndex }) {
   const [first, second, third] = workspaces
   const rest = workspaces.slice(3)
   const current = route.page === 'workspace' ? route.workspace : null
-  const moreActive = route.page === 'vault' || (current !== null && rest.some(w => w.id === current))
+  const moreActive = route.page === 'vault' || route.page === 'skills' || (current !== null && rest.some(w => w.id === current))
   return (
     <nav aria-label="Main" className="flex shrink-0 items-stretch border-t bg-background pb-[env(safe-area-inset-bottom)] md:hidden">
       {first && <WorkspaceItem workspace={first} active={current === first.id} />}
@@ -61,6 +61,9 @@ export function MobileNav({ index }: { index: VaultIndex }) {
             </DropdownMenuItem>
           ))}
           {rest.length > 0 && <DropdownMenuSeparator />}
+          <DropdownMenuItem className="min-h-11" onClick={() => navigate('/skills')}>
+            Skills
+          </DropdownMenuItem>
           <DropdownMenuItem className="min-h-11" onClick={() => navigate('/vault')}>
             Vault
           </DropdownMenuItem>

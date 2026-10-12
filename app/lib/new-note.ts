@@ -111,6 +111,21 @@ export const NEW_NOTE_SPECS: Record<string, NewNoteSpec> = {
     folder: `${LIBRARY}/Articles`,
     fields: [TITLE, { key: 'url', label: 'URL' }, { key: 'author', label: 'Author' }],
     extra: LIBRARY_LISTS
+  },
+  recipe: {
+    type: 'recipe',
+    noun: 'recipe',
+    folder: `${LIBRARY}/Recipes`,
+    fields: [TITLE, { key: 'image', label: 'Picture (URL or [[file]])', placeholder: 'optional' }, { key: 'description', label: 'Description' }, { key: 'source', label: 'Source URL' }],
+    extra: LIBRARY_LISTS
+  },
+  // A recorded log entry; the transcript goes in the body.
+  'video-log': {
+    type: 'video-log',
+    noun: 'journal entry',
+    folder: `${LIBRARY}/Journal`,
+    fields: [TITLE, { key: 'video', label: 'Video (URL or [[file]])', placeholder: 'optional' }],
+    extra: [{ key: 'date', kind: 'date', auto: 'today' }]
   }
 }
 

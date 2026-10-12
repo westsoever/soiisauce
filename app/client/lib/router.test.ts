@@ -7,6 +7,9 @@ describe('parseRoute', () => {
   const cases: [string, unknown][] = [
     ['/', { page: 'home' }],
     ['/vault', { page: 'vault' }],
+    ['/skills', { page: 'skills' }],
+    ['/skills/', { page: 'skills' }],
+    ['/skills/extra', { page: 'not-found' }],
     ['/w/library', { page: 'workspace', workspace: 'library', tab: undefined }],
     ['/w/library/books', { page: 'workspace', workspace: 'library', tab: 'books' }],
     ['/n/05-Knowledge/People/Anna', { page: 'note', id: '05-Knowledge/People/Anna' }],

@@ -272,8 +272,8 @@ describe('config handling', () => {
 
   test('types used in a config workspace query count as known', async () => {
     const dir = makeVault({
-      'soii.config.yml': 'workspaces:\n  - id: kitchen\n    title: Kitchen\n    tabs:\n      - { id: all, title: All, view: list, query: { type: recipe } }\n',
-      'A.md': note('type: recipe')
+      'soii.config.yml': 'workspaces:\n  - id: kitchen\n    title: Kitchen\n    tabs:\n      - { id: all, title: All, view: list, query: { type: cocktail } }\n',
+      'A.md': note('type: cocktail')
     })
     try {
       expect(await checkVault(dir)).toEqual([])

@@ -72,8 +72,14 @@ describe('template', () => {
     expect(notesOf('today', 'brief').some(n => n.path.startsWith('01-Daily/'))).toBe(false)
   })
 
+  test('Library Journal holds only the video log entries, not the daily notes', () => {
+    const entries = notesOf('library', 'journal')
+    expect(buildFeed(entries).days.length).toBeGreaterThanOrEqual(3)
+    expect(entries.every(n => n.type === 'video-log')).toBe(true)
+  })
+
   test('Library media have local covers that compile into files', () => {
-    const media = ['book', 'audiobook', 'movie', 'documentary', 'video'].flatMap(byType)
+    const media = ['book', 'audiobook', 'movie', 'documentary', 'video', 'recipe'].flatMap(byType)
     expect(media.length).toBeGreaterThanOrEqual(20)
     for (const note of media) {
       expect(note.image).toStartWith('/api/files/Attachments/covers/')
@@ -131,6 +137,17 @@ describe('template', () => {
   test('the sample notes have the documented properties too, so a fresh vault passes its own check', async () => {
     const { findings } = await inspectVault(VAULT)
     expect(findings.filter(f => f.rule === 'missing-field').map(f => f.path)).toEqual([])
+  })
+
+  test('the README tells a new user the same install steps as the repo README, and names the key skills', () => {
+    const own = readFileSync(join(VAULT, 'README.md'), 'utf8')
+    const root = readFileSync(join(ROOT, 'README.md'), 'utf8')
+    for (const line of ['gh auth login && gh auth setup-git', 'git clone --depth 1 https://github.com/westsoever/soii.git ~/soii-installer', 'bun ~/soii-installer/bin/soii.ts init ~/my-vault', 'bun ~/soii-installer/bin/soii.ts install']) {
+      expect(root).toContain(line)
+      expect(own).toContain(line)
+    }
+    for (const skill of ['soii-intro', 'soii-setup', 'soii-wrap', 'soii-chat', 'soii-learn', 'soii-explore', 'soii-health']) expect(own).toContain(`/${skill}`)
+    for (const word of ['localhost:5011', 'Log', 'Sync', 'Obsidian']) expect(own).toContain(word)
   })
 
   test('.soii/ (the pinned install) is never indexed as notes', () => {

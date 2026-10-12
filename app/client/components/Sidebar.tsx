@@ -1,7 +1,7 @@
 // app/client/components/Sidebar.tsx
 // The left rail (miso's Sidebar layout): soii. wordmark, workspaces from config,
-// Vault, Search (⌘K), and the signed-in user with sign-out. Hidden below md.
-import { IconFolder, IconLogout, IconPencilPlus, IconRefresh, IconSearch } from '@tabler/icons-react'
+// Log, Skills, Vault, Search (⌘K), and the signed-in user with sign-out. Hidden below md.
+import { IconFolder, IconLogout, IconPencilPlus, IconRefresh, IconSearch, IconSparkles } from '@tabler/icons-react'
 import { useState } from 'react'
 import type { VaultIndex, WorkspaceConfig } from '../../lib/types'
 import { api, signOut } from '../lib/http'
@@ -90,6 +90,10 @@ export function Sidebar({ index }: { index: VaultIndex }) {
         <NavRow active={route.page === 'log'} onClick={() => navigate('/log')}>
           <IconPencilPlus size={16} stroke={1.75} className="mx-0.5" />
           Log
+        </NavRow>
+        <NavRow active={route.page === 'skills'} onClick={() => navigate('/skills')}>
+          <IconSparkles size={16} stroke={1.75} className="mx-0.5" />
+          Skills
         </NavRow>
         <NavRow active={route.page === 'vault'} onClick={() => navigate('/vault')}>
           <IconFolder size={16} stroke={1.75} className="mx-0.5" />

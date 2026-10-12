@@ -7,6 +7,7 @@ import { FeedView } from './FeedView'
 import { GalleryView } from './GalleryView'
 import { ListView } from './ListView'
 import { PulseView } from './PulseView'
+import { ShowcaseView } from './ShowcaseView'
 import { StatsView } from './StatsView'
 import { TableView } from './TableView'
 
@@ -17,7 +18,8 @@ export const views: Record<ViewName, ComponentType<ViewProps>> = {
   board: BoardView,
   stats: StatsView,
   feed: FeedView,
-  pulse: PulseView
+  pulse: PulseView,
+  showcase: ShowcaseView
 }
 
 // Views that render their own empty state. WorkspaceScreen mounts them even when the

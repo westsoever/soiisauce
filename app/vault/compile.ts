@@ -16,6 +16,7 @@ import { computeLastSeen } from '../lib/people'
 import { renderMarkdown, scanMarkdown, stripComments } from './markdown'
 import { writeOutput } from './output'
 import { buildSearchIndex } from './search-index'
+import { readSkills } from './skills'
 import { walkVault } from './walk'
 
 export const MAX_FILE_BYTES = 10 * 1024 * 1024
@@ -111,6 +112,8 @@ export async function compileVault(opts: {
   maxFileBytes?: number
   /** Obsidian vault name when soii.config.yml doesn't set one (build.ts guesses it from the env). */
   vaultName?: string | null
+  /** soii's own skills folder: the Skills page falls back to it for a vault with no `.claude/skills`. */
+  shippedSkillsDir?: string
 }): Promise<{ index: VaultIndex; warnings: string[] }> {
   const warnings: string[] = []
   const config = loadConfig(opts.vaultDir)
@@ -210,7 +213,8 @@ export async function compileVault(opts: {
     config,
     notes,
     folders: buildFolderTree(notes),
-    warnings
+    warnings,
+    skills: readSkills(opts.vaultDir, opts.shippedSkillsDir)
   }
   const searchDocs: SearchDoc[] = drafts.map(d => ({
     id: d.meta.id,

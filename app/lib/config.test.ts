@@ -16,7 +16,7 @@ describe('resolveConfig', () => {
     const ids = Object.fromEntries(DEFAULT_CONFIG.workspaces.map(w => [w.id, w.tabs.map(t => t.id)]))
     expect(ids).toEqual({
       today: ['brief', 'weekly'],
-      library: ['books', 'audiobooks', 'movies', 'documentaries', 'videos', 'research', 'articles'],
+      library: ['books', 'audiobooks', 'movies', 'documentaries', 'videos', 'research', 'articles', 'recipes', 'journal'],
       people: ['overview', 'friends', 'network', 'all'],
       finance: ['overview', 'subscriptions', 'accounts', 'expenses', 'notes'],
       goals: ['board', 'years', 'bucket']

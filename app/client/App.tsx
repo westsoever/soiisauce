@@ -13,6 +13,7 @@ import { useFreshVault } from './lib/use-fresh-vault'
 import { navigate, useRoute, workspacePath } from './lib/router'
 import { applyWorkspaceTheme } from './lib/theme'
 import { NoteReader } from './reader/NoteReader'
+import { SkillsPage } from './skills/SkillsPage'
 import { Skeleton } from './ui/skeleton'
 import { VaultPage } from './vault/VaultPage'
 
@@ -65,6 +66,7 @@ export function App() {
           {route.page === 'workspace' && <WorkspaceScreen key={route.workspace} workspaceId={route.workspace} tabId={route.tab} index={index} />}
           {route.page === 'note' && <NoteReader key={route.id} id={route.id} />}
           {route.page === 'vault' && <VaultPage index={index} />}
+          {route.page === 'skills' && <SkillsPage index={index} />}
           {route.page === 'log' && <LogScreen index={index} kindId={route.kind} />}
           {route.page === 'not-found' && <NothingHere />}
         </div>

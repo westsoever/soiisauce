@@ -144,7 +144,7 @@ async function main(): Promise<void> {
   // leaves the working build as it was instead of wiping it.
   const target = vaultOnly ? `${vaultOut}.next` : vaultOut
   if (vaultOnly) fresh(target)
-  const { index, warnings } = await compileVault({ vaultDir, outDir: target, vaultName: vaultNameFrom(process.env) })
+  const { index, warnings } = await compileVault({ vaultDir, outDir: target, vaultName: vaultNameFrom(process.env), shippedSkillsDir: join(ROOT, '.claude', 'skills') })
   if (vaultOnly) {
     rmSync(vaultOut, { recursive: true, force: true })
     renameSync(target, vaultOut)

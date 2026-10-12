@@ -37,6 +37,16 @@ describe('docs/skills.md', () => {
     )
     expect(bad).toEqual([])
   })
+  test('soii-learn and soii-chat never depend on soii-explore: at most one optional mention each', () => {
+    for (const name of ['soii-learn', 'soii-chat']) {
+      const body = readFileSync(join(skillsDir, name, 'SKILL.md'), 'utf8').split('\n---\n').slice(1).join('\n---\n')
+      expect(body.split('/soii-explore').length - 1).toBeLessThanOrEqual(1)
+    }
+    const learn = readFileSync(join(skillsDir, 'soii-learn', 'SKILL.md'), 'utf8')
+    expect(learn).toContain('Pick for me')
+    expect(learn).toMatch(/\(learn\)/)
+    expect(learn).not.toMatch(/nothing to drill/)
+  })
   test('each skill names itself in its frontmatter', () => {
     for (const name of shipped) {
       expect(readFileSync(join(skillsDir, name, 'SKILL.md'), 'utf8')).toMatch(new RegExp(`^---\\nname: ${name}\\n`))

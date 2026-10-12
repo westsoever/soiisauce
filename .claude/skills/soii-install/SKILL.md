@@ -1,6 +1,6 @@
 ---
 name: soii-install
-description: Walk a new owner through installing soii on their own computer, end to end: GitHub access to the private repo, a new vault from the starter or soii added to an existing vault, the soii command, the start-at-login service, and a first look at http://localhost:5011. Use when someone has just cloned soii and asks how to set it up, install it, or run it, or says soii isn't running.
+description: Walk a new owner through installing soii on their own computer, from GitHub access to the private repo, through a new vault from the starter or soii added to an existing vault, to the soii command, the start-at-login service and a first look at http://localhost:5011. Use when someone has just cloned soii and asks how to set it up, install it, or run it, or says soii isn't running.
 ---
 
 # Install soii

@@ -14,6 +14,8 @@ export const TYPE_FIELDS: Record<string, string[]> = {
   video: ['url', 'channel', 'cover', 'watched', ...FILING],
   research: ['authors', 'year', 'venue', 'url', 'doi', 'arxiv', 'status', ...FILING],
   article: ['url', 'author', ...FILING],
+  recipe: ['image', 'description', 'source', ...FILING],
+  'video-log': ['date', 'video'],
   person: ['relationship', 'company', 'role', 'email', 'phone', 'location', 'last_contact', 'birthday', 'linkedin', 'cadence', 'circle'],
   goal: ['horizon', 'year', 'status', 'area', 'due', 'progress'],
   subscription: ['price', 'currency', 'cycle', 'renews', 'status'],

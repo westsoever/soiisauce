@@ -23,7 +23,7 @@ const freePort = () =>
     })
   })
 
-test('soii run serves the vault, picks up a new note, and stays quiet otherwise', async () => {
+test('soii run serves the vault, picks up a new note and a new skill, and stays quiet otherwise', async () => {
   mkdirSync(join(vault, 'Notes'), { recursive: true })
   mkdirSync(join(vault, '.soii'), { recursive: true })
   writeFileSync(join(vault, 'Notes', 'One.md'), '---\ntype: note\n---\nFirst.\n')
@@ -54,6 +54,14 @@ test('soii run serves the vault, picks up a new note, and stays quiet otherwise'
       return null
     }
   }
+  const skillIds = async (): Promise<string[] | null> => {
+    try {
+      const res = await fetch(`http://127.0.0.1:${port}/api/vault`)
+      return res.ok ? ((await res.json()) as { skills?: { id: string }[] }).skills?.map(s => s.id) ?? [] : null
+    } catch {
+      return null
+    }
+  }
   const waitFor = async (done: () => Promise<boolean>, ms: number) => {
     const until = Date.now() + ms
     while (Date.now() < until) {
@@ -69,6 +77,11 @@ test('soii run serves the vault, picks up a new note, and stays quiet otherwise'
 
     writeFileSync(join(vault, 'Notes', 'Two.md'), '---\ntype: note\n---\nSecond.\n')
     expect(await waitFor(async () => (await noteCount()) === 2, 30_000)).toBe(true)
+
+    // A new skill (what /skillfactory writes) shows up on the Skills page without a restart.
+    mkdirSync(join(vault, '.claude', 'skills', 'my-new-skill'), { recursive: true })
+    writeFileSync(join(vault, '.claude', 'skills', 'my-new-skill', 'SKILL.md'), '---\nname: my-new-skill\ndescription: Mine. Use when I say so.\n---\n')
+    expect(await waitFor(async () => (await skillIds())?.includes('my-new-skill') ?? false, 30_000)).toBe(true)
 
     // Quiet: the recompile wrote into .soii/build and .soii/ is not watched, so no further rebuilds follow.
     const rebuilds = () => output.split('recompiling the vault').length - 1

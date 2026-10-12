@@ -209,3 +209,16 @@ A numeric `progress` (0–100, `40%` works too) draws a progress bar on the card
 ### Library browsing
 
 In the Library workspace, gallery tabs get a toolbar: Sections (collections), Subcategories (categories), status chips (Want/Reading/Read; Watchlist/Watching/Watched for films and videos; only statuses present are shown), Has my notes, Grid/List and S/M/L. Grouped views show each group as a shelf of its first few notes with **Show all N**; notes without a collection are their own **No collection** section. Filters are in the URL (`?c=startupbooks&cat=biographies&s=read&notes=1`), so a filtered view can be bookmarked; grid/list and size are remembered per tab on each device. There, the toolbar's grouping replaces `groupBy`.
+
+### Recipes and Journal
+
+**Recipes** (`type: recipe`) uses the `showcase` view: the picture first, then the title and a short description, in two columns on wider screens. The picture is 4:5 and as tall as a book cover in the M grid. It reads `image`/`cover` like covers do, and the description from `description`, else the start of the note.
+
+| Key | Meaning |
+|---|---|
+| `image` | Field holding the picture (default: `cover`, `image`, `poster` or `thumbnail`). |
+| `title` | Field shown as the title (default: the note title). |
+| `subtitle` | Field shown under the title, e.g. `time`. |
+| `description` | Field shown as the description (default `description`, else the note's excerpt). |
+
+**Journal** (`type: video-log`) holds the transcripts of your recorded video log entries, one day at a time with the newest first, like the Today feeds. It uses its own type because many vaults already map daily notes to `journal`.

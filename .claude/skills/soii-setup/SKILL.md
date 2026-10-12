@@ -83,7 +83,7 @@ Rules for the proposal:
 
 - Only propose a type for a folder that is clearly one kind of thing. A mixed folder stays as it is.
 - Prefer the owner's existing words: if they already use `type: contact`, that's an accepted alias for `person`, so keep it.
-- If they use a type soii doesn't know (`type: recipe`), suggest adding it as a workspace tab in `soii.config.yml` instead of renaming their notes.
+- If they use a type soii doesn't know (`type: cocktail`), suggest adding it as a workspace tab in `soii.config.yml` instead of renaming their notes.
 - Folders soii should ignore (archives, attachments, templates, private journals) go in `soii.config.yml` as excludes. Ask about anything that looks private.
 
 ## 5. Fill in the properties

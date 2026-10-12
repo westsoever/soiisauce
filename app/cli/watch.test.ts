@@ -5,8 +5,22 @@ test('notes and attachments are watched', () => {
   for (const p of ['Home.md', '05-Knowledge/People/Anna.md', 'Attachments/covers/x.svg', 'soii.config.yml']) expect(isIgnoredVaultPath(p)).toBe(false)
 })
 
-test('dot-folders are never watched: .git, .obsidian, .claude, and soii itself in .soii (whose build output would loop)', () => {
-  for (const p of ['.git/index', '.git/refs/heads/main', '.obsidian/workspace.json', '.claude/skills/x/SKILL.md', '.soii/build/dist/index.html', '.soii/node_modules/soii/package.json', '.DS_Store']) {
+test('dot-folders are never watched (.git, .obsidian, and soii itself in .soii, whose build output would loop), apart from the skill files below', () => {
+  for (const p of ['.git/index', '.git/refs/heads/main', '.obsidian/workspace.json', '.soii/build/dist/index.html', '.soii/node_modules/soii/package.json', '.DS_Store']) {
+    expect(isIgnoredVaultPath(p)).toBe(true)
+  }
+})
+
+test('skill files are the exception: a change to a SKILL.md rebuilds the Skills page', () => {
+  for (const p of ['.claude/skills/soii-health/SKILL.md', '.claude/skills/my-own/SKILL.md', '.soii/skills.json']) expect(isIgnoredVaultPath(p)).toBe(false)
+})
+
+test('a new skill folder arrives as a directory event first, so the skills tree itself counts', () => {
+  for (const p of ['.claude', '.claude/skills', '.claude/skills/my-new-skill']) expect(isIgnoredVaultPath(p)).toBe(false)
+})
+
+test('but the rest of .claude and .soii stays ignored', () => {
+  for (const p of ['.claude/settings.json', '.claude/skills/soii-health/notes.md', '.claude/skills/soii-health/extra/SKILL.md', '.claude/commands/x.md', '.soii/package.json', '.soii/build/api/_generated/vault/index.json']) {
     expect(isIgnoredVaultPath(p)).toBe(true)
   }
 })
