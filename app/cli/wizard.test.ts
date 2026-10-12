@@ -388,6 +388,19 @@ describe('when it runs (main)', () => {
     expect(existsSync(join(ROOT, '.soii'))).toBe(false)
   })
 
+  test('inside the clone the wizard runs even when the answers are piped, unless --yes or a vault is named', async () => {
+    const r = rig([], { cwd: ROOT })
+    expect(await main(['install'], quiet(r, { interactive: false }))).toBe(1)
+    expect(said(r)).toContain('Welcome to soii')
+    expect(said(r)).not.toContain('Installing soii')
+    expect(existsSync(join(ROOT, '.soii'))).toBe(false)
+    const vault = tmp()
+    const named = rig([], { cwd: ROOT })
+    expect(await main(['install', vault], quiet(named, { interactive: false }))).toBe(1)
+    expect(said(named)).toContain('Installing soii')
+    expect(said(named)).not.toContain('Welcome to soii')
+  })
+
   test('without a terminal, install does what it always did', async () => {
     const dir = tmp()
     const r = rig([], { cwd: dir })

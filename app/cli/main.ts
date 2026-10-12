@@ -1,5 +1,7 @@
 // app/cli/main.ts
 // `soii`: dispatch a command line to its command.
+import { existsSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { parseArgs, type Command } from './args'
 import * as commands from './commands'
 import { realCtx, type Ctx } from './context'
@@ -27,6 +29,15 @@ Options: --port <n>, --from <tag> (install, setup, init), --title <name> (init),
   install into the vault only, with no service and nothing outside the vault; SOII_NO_SERVICE=1 does the same), --help, --version
 It listens on http://localhost:5011 only.`
 
+/** Is `dir` a checkout of soii itself (bin/soii.ts and soii's own package.json)? Notes never belong in there. */
+function isSoiiClone(dir: string): boolean {
+  try {
+    return existsSync(join(dir, 'bin', 'soii.ts')) && (JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8')) as { name?: string }).name === 'soii'
+  } catch {
+    return false
+  }
+}
+
 export async function main(argv: string[], ctx: Ctx = realCtx()): Promise<number> {
   const parsed = parseArgs(argv, ctx.env)
   if (!parsed.ok) {
@@ -40,8 +51,9 @@ export async function main(argv: string[], ctx: Ctx = realCtx()): Promise<number
   }
   const handlers: Record<Exclude<Command, 'help'>, () => Promise<number> | number> = {
     install: async () => {
-      // A bare `soii install` in a terminal asks questions (D108). A vault path, --yes or a pipe keep the plain install.
-      if (positional.length === 0 && !flags.yes && ctx.interactive) return (await import('./wizard')).runWizard(ctx, flags)
+      // A bare `soii install` in a terminal asks questions (D108), and so does one run inside the soii clone (installing
+      // into the clone itself is never what anyone wants). A vault path, --yes or a pipe elsewhere keep the plain install.
+      if (positional.length === 0 && !flags.yes && (ctx.interactive || isSoiiClone(ctx.cwd))) return (await import('./wizard')).runWizard(ctx, flags)
       return commands.install(ctx, positional[0], flags)
     },
     // `soii setup` always asks, so a script or a test can pipe the answers in.
