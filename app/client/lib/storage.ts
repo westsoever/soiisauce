@@ -6,6 +6,7 @@ export const storageKeys = {
   openFolders: 'soii:open-folders',
   logDraft: 'soii:log-draft',
   lastLogKind: 'soii:log-kind',
+  currency: 'soii:currency',
   browseLayout: (workspace: string, tab: string) => `soii:browse-layout:${workspace}/${tab}`
 }
 

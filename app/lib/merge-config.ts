@@ -20,6 +20,7 @@ export function resolveConfig(raw: unknown, defaults: SoiiConfig = DEFAULT_CONFI
     exclude: user.exclude ?? base.exclude,
     types: { ...base.types, ...user.types },
     workspaces,
-    ...(user.obsidianVault ? { obsidianVault: user.obsidianVault } : {})
+    ...(user.obsidianVault ? { obsidianVault: user.obsidianVault } : {}),
+    ...(user.currency ? { currency: user.currency } : {})
   })
 }

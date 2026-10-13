@@ -2,6 +2,7 @@
 // app/serve.ts locally. Every route except health, auth/* and cover needs a session.
 import { Hono, type Context, type MiddlewareHandler } from 'hono'
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie'
+import { join } from 'node:path'
 import { decodePath } from '../lib/paths'
 import {
   clearSessionCookie,
@@ -23,7 +24,9 @@ import { missingEnv, readEnv, signingSecret } from './env'
 import { serveFile } from './files'
 import { authorizeUrl, exchangeCode, fetchGithubUser, type FetchLike } from './github-oauth'
 import { logNote } from './log-note'
+import { createRatesProvider } from './rates'
 import { canSync, runGit, syncVault, type RunGit } from './sync'
+import { createTexCompiler, type TexCompiler } from './tex'
 import { createVersionChecker, gitLsRemote, type VersionChecker } from './version'
 import { remoteFromEnv } from '../cli/vault-files'
 import { hostHeaderAllowed } from './local'
@@ -39,6 +42,8 @@ export interface AppOptions {
   git?: RunGit
   /** Replaces the release check (tests). By default local mode checks soii's remote for a newer tag. */
   version?: VersionChecker
+  /** LaTeX compiler (tests). Undefined: one over VAULT_PATH in local mode; null: none (hosted). */
+  tex?: TexCompiler | null
 }
 
 /** The decoded rest of the raw (still percent-encoded) path after `prefix`, or null. */
@@ -55,7 +60,9 @@ export function createSoiiApp(opts: AppOptions = {}): Hono<AuthEnv> {
   const seconds = () => Math.floor(now() / 1000)
   const fetchImpl: FetchLike = opts.fetch ?? ((input, init) => fetch(input, init))
   const store = opts.store ?? createVaultStore(opts.generatedDir ?? defaultGeneratedDir(source))
+  const tex = opts.tex !== undefined ? opts.tex : env.vaultPath ? createTexCompiler({ vaultDir: env.vaultPath, cacheDir: join(env.vaultPath, '.soii', 'cache', 'tex') }) : null
   const auth = requireUser(env, now)
+  const rates = createRatesProvider({ fetch: fetchImpl, now })
   const version =
     opts.version ?? (env.local ? createVersionChecker({ installed: env.soiiVersion, lsRemote: gitLsRemote(remoteFromEnv(source), opts.git ?? runGit) }) : null)
   const app = new Hono<AuthEnv>()
@@ -119,6 +126,9 @@ export function createSoiiApp(opts: AppOptions = {}): Hono<AuthEnv> {
     version.ensureStarted()
     return c.json(version.info())
   })
+
+  // Exchange rates (units per 1 EUR) for the Finance currency switch; cached for hours, with a built-in fallback.
+  app.get('/api/rates', auth, async c => c.json(await rates.get()))
 
   // ---- vault ----
   app.get('/api/vault', auth, c => {
@@ -200,6 +210,23 @@ export function createSoiiApp(opts: AppOptions = {}): Hono<AuthEnv> {
   })
 
   app.get('/api/files/*', auth, c => serveFile(store, pathAfter(c, '/api/files/')))
+
+  // ---- LaTeX (.tex viewer): compile an indexed .tex on click, local mode only ----
+  app.get('/api/tex/*', auth, async c => {
+    const id = pathAfter(c, '/api/tex/')
+    const doc = id === null ? null : store.note(id)
+    if (!doc || doc.format !== 'tex') return c.json({ error: 'not_found' }, 404)
+    if (!tex) return c.json({ error: 'tex_unavailable', message: 'LaTeX files compile in local mode only.' }, 501)
+    const result = await tex.compile(doc.path)
+    if (result.ok) {
+      return new Response(Bun.file(result.pdf), {
+        headers: { 'Content-Type': 'application/pdf', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' }
+      })
+    }
+    if (result.error === 'tex_failed') return c.json({ error: result.error, tool: result.tool, log: result.log }, 422)
+    const status = result.error === 'tex_missing' ? 404 : result.error === 'tex_no_compiler' ? 503 : 504
+    return c.json(result.error === 'tex_missing' ? { error: 'not_found' } : { error: result.error, message: result.message }, status)
+  })
 
   // ---- extension mounts (Plan 2 adds `app.route('/api/cover', …)` on the line below) ----
   app.route('/api/cover', createCoverRoute({ secret: () => (missingEnv(env).length ? undefined : signingSecret(env)), googleBooksKey: () => source.GOOGLE_BOOKS_API_KEY, tmdbKey: () => source.TMDB_API_KEY }))

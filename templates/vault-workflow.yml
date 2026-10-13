@@ -1,0 +1,22 @@
+# Copy this file into your vault repo as .github/workflows/soii-deploy.yml.
+# Then add the repo secret SOII_DEPLOY_HOOK_URL: in Vercel, open your soii project →
+# Settings → Git → Deploy Hooks, create a hook for branch "main", and paste its URL.
+# Every push to the vault then rebuilds soii with the new notes.
+name: Deploy soii
+on:
+  push:
+    branches: [main, master]   # keep the one your vault uses
+  workflow_dispatch:
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger the soii deploy hook
+        env:
+          SOII_DEPLOY_HOOK_URL: ${{ secrets.SOII_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$SOII_DEPLOY_HOOK_URL" ]; then
+            echo "Add the SOII_DEPLOY_HOOK_URL repository secret first (see the comment at the top of this file)." >&2
+            exit 1
+          fi
+          curl -fsS -X POST "$SOII_DEPLOY_HOOK_URL"

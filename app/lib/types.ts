@@ -1,6 +1,8 @@
 // The contracts every part of soii shares (spec §6). Plans 2–4 are written
 // against these exact names — rename nothing.
 
+import type { CurrencyConfig } from './currency'
+
 export type NoteId = string
 export type Frontmatter = Record<string, unknown>
 
@@ -21,6 +23,8 @@ export interface NoteMeta {
   noteWords?: number
   /** Person notes only: newest of an ISO `last_contact` and the dated list items in the body (YYYY-MM-DD). */
   lastSeen?: string | null
+  /** "tex" for a LaTeX source (compiled to PDF on click); absent for Markdown. */
+  format?: 'tex'
 }
 
 export interface Heading {
@@ -34,6 +38,8 @@ export interface NoteDoc extends NoteMeta {
   headings: Heading[]
   outgoing: NoteId[]
   backlinks: NoteId[]
+  /** format "tex" only: the raw LaTeX, for the reader's Source view. Never in index.json. */
+  source?: string
 }
 
 export interface FolderNode {
@@ -124,6 +130,8 @@ export interface SoiiConfig {
   workspaces: WorkspaceConfig[]
   /** Obsidian vault name for "Open in Obsidian". Set by soii.config.yml, else guessed at build time. */
   obsidianVault?: string
+  /** Finance currency: the default display currency and your own exchange rates (D114). */
+  currency?: CurrencyConfig
 }
 
 export interface ViewProps {

@@ -45,7 +45,7 @@ describe('template', () => {
   })
 
   test('keeps the built-in workspaces and adds Projects', () => {
-    expect(index.config.workspaces.map(w => w.id)).toEqual(['today', 'library', 'people', 'finance', 'goals', 'projects'])
+    expect(index.config.workspaces.map(w => w.id)).toEqual(['today', 'inbox', 'library', 'people', 'finance', 'goals', 'projects'])
     expect(index.config.workspaces.find(w => w.id === 'today')?.tabs.map(t => t.id)).toEqual(['brief', 'weekly', 'journal'])
   })
 
@@ -142,10 +142,13 @@ describe('template', () => {
   test('the README tells a new user the same install steps as the repo README, and names the key skills', () => {
     const own = readFileSync(join(VAULT, 'README.md'), 'utf8')
     const root = readFileSync(join(ROOT, 'README.md'), 'utf8')
-    for (const line of ['gh auth login && gh auth setup-git', 'git clone --depth 1 https://github.com/westsoever/soii.git ~/soii-installer', 'bun ~/soii-installer/bin/soii.ts init ~/my-vault', 'bun ~/soii-installer/bin/soii.ts install']) {
+    // The one-command install (D113) in both READMEs; the by-hand steps stay in docs/setup.md.
+    for (const line of ['gh auth login && gh auth setup-git', "gh api repos/westsoever/soii/contents/install.sh -H 'Accept: application/vnd.github.raw' | bash", 'bash -s -- init ~/my-vault']) {
       expect(root).toContain(line)
       expect(own).toContain(line)
     }
+    const setup = readFileSync(join(ROOT, 'docs', 'setup.md'), 'utf8')
+    for (const line of ['git clone --depth 1 https://github.com/westsoever/soii.git ~/soii-installer', 'bun ~/soii-installer/bin/soii.ts init ~/my-vault', 'bun ~/soii-installer/bin/soii.ts install']) expect(setup).toContain(line)
     for (const skill of ['soii-intro', 'soii-setup', 'soii-wrap', 'soii-chat', 'soii-learn', 'soii-explore', 'soii-health']) expect(own).toContain(`/${skill}`)
     for (const word of ['localhost:5011', 'Log', 'Sync', 'Obsidian']) expect(own).toContain(word)
   })

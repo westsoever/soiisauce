@@ -16,6 +16,7 @@ import { NoteBody } from './NoteBody'
 import { OpenInObsidian } from './OpenInObsidian'
 import { Outline } from './Outline'
 import { PropertiesPanel } from './PropertiesPanel'
+import { TexArticle } from './TexArticle'
 import { hideDuplicateTitle } from './title'
 
 function Breadcrumb({ folder }: { folder: string }) {
@@ -91,7 +92,7 @@ export function NoteReader({ id }: { id: NoteId }) {
             </Button>
           </div>
         )}
-        {note.data && <Article doc={note.data} />}
+        {note.data && (note.data.format === 'tex' ? <TexArticle doc={note.data} /> : <Article doc={note.data} />)}
       </main>
     </div>
   )

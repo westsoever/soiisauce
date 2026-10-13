@@ -32,6 +32,14 @@ export async function api<T>(path: string, init: { method?: string; body?: unkno
   return data as T
 }
 
+/** A binary response (the compiled PDF). Errors carry the JSON body like api() does. */
+export async function fetchBlob(path: string): Promise<Blob> {
+  const res = await fetch(path, { credentials: 'same-origin' })
+  if (res.ok) return res.blob()
+  const body = (await res.json().catch(() => null)) as { error?: string; message?: string } | null
+  throw new HttpError(body?.message ?? body?.error ?? `Request failed (${res.status})`, res.status, body)
+}
+
 export async function signOut(): Promise<void> {
   await fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }).catch(() => {})
   location.assign('/')

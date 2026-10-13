@@ -2,9 +2,9 @@
 // Server state (TanStack Query). The vault index loads once per page view;
 // a new deploy is picked up on reload (spec §17).
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { noteApiPath } from '../../lib/paths'
+import { noteApiPath, texApiPath } from '../../lib/paths'
 import type { Me, NoteDoc, NoteId, SearchResult, VaultIndex, VersionInfo } from '../../lib/types'
-import { api } from './http'
+import { api, fetchBlob } from './http'
 
 export const keys = {
   me: ['me'] as const,
@@ -12,6 +12,7 @@ export const keys = {
   capabilities: ['capabilities'] as const,
   version: ['version'] as const,
   note: (id: NoteId) => ['note', id] as const,
+  tex: (id: NoteId) => ['tex', id] as const,
   search: (q: string) => ['search', q] as const
 }
 
@@ -67,4 +68,9 @@ export function useVersion() {
     retry: false,
     refetchInterval: query => (query.state.data?.latest ? HALF_HOUR : 30_000)
   })
+}
+
+/** The compiled PDF of a .tex note. Asked for on every open; the server's cache makes an unchanged file cheap. */
+export function useTexPdf(id: NoteId) {
+  return useQuery({ queryKey: keys.tex(id), queryFn: () => fetchBlob(texApiPath(id)), staleTime: 0, gcTime: 0, retry: false })
 }

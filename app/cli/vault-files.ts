@@ -38,7 +38,7 @@ export function setPin(packageJson: string, spec: string): string {
   return `${JSON.stringify(pkg, null, 2)}\n`
 }
 
-export const SOII_GITIGNORE_LINES = ['soii/', 'build/', 'logs/', '.env.local', 'node_modules/']
+export const SOII_GITIGNORE_LINES = ['soii/', 'build/', 'logs/', 'cache/', '.env.local', 'node_modules/']
 
 /** Add the lines that aren't already there; the file stays as the owner wrote it otherwise. */
 export function ensureLines(text: string, lines: string[]): string {

@@ -6,14 +6,15 @@
 
 ## Quick start
 
+In a terminal, no AI needed:
+
 ```bash
-git clone https://github.com/westsoever/soii.git && cd soii
-claude
+gh api repos/westsoever/soii/contents/install.sh -H 'Accept: application/vnd.github.raw' | bash
 ```
 
-Then type **`/soii-setup`** in Claude Code. It installs soii, starts a new vault or brings in your existing one, and opens it at http://localhost:5011. (The repo is private: run `gh auth login && gh auth setup-git` once if the clone asks for a login.)
+It checks that git, Bun and your GitHub login work (and tells you the exact fix if not), asks a few plain questions (a new vault from the starter, or your own notes), installs soii and opens it at http://localhost:5011. The repo is private, so this needs `gh` signed in: run `gh auth login && gh auth setup-git` once first.
 
-No AI? Run `bun bin/soii.ts install` in the clone instead: it asks a few questions and sets everything up.
+Prefer Claude Code? Clone the repo, run `claude` in it and type **`/soii-setup`**: the same install, as a conversation.
 
 ## What you get
 
@@ -54,14 +55,10 @@ You need a Mac (Linux works as a background process), [Bun](https://bun.sh), git
 
 ```bash
 gh auth login && gh auth setup-git      # once, so git can read the soii repo
-git clone --depth 1 https://github.com/westsoever/soii.git ~/soii-installer
-
-# new to soii: a vault made from the starter (add --empty for no sample notes)
-bun ~/soii-installer/bin/soii.ts init ~/my-vault
-
-# or you already have a vault
-cd ~/my-vault && bun ~/soii-installer/bin/soii.ts install
+gh api repos/westsoever/soii/contents/install.sh -H 'Accept: application/vnd.github.raw' | bash
 ```
+
+That is the whole install: it asks whether the vault is new or yours. To skip the questions, pass them on (`... | bash -s -- init ~/my-vault`, or `... | bash -s -- ~/my-vault --yes` for a vault you have; add `--empty` to `init` for no sample notes). Doing it by hand, or without `gh`, is in [docs/setup.md](docs/setup.md).
 
 Then `soii open`. From now on `soii status`, `soii update`, `soii logs` and the rest work from anywhere. In Claude Code, run `/soii-intro` in your vault for a tour, and `/soii-setup` if your notes lack properties soii reads. Full guide: [docs/setup.md](docs/setup.md).
 

@@ -1,12 +1,14 @@
 // app/client/views/cells.tsx
 // Column specs and cell rendering shared by table-like views, plus the inline
 // error a view shows when its config options don't validate (spec §15).
-import type { ReactNode } from 'react'
+import { useContext, type ReactNode } from 'react'
 import { z } from 'zod'
+import { convertAmount, currencyCode, type Conversion } from '../../lib/currency'
 import { formatCurrency, formatDate, parseLooseNumber } from '../../lib/format'
 import { linkedinLabel, linkedinUrl } from '../../lib/people'
 import { getField } from '../../lib/query'
 import type { NoteMeta } from '../../lib/types'
+import { CurrencyContext } from '../lib/currency'
 import { Badge } from '../ui/badge'
 
 export const CELL_FORMATS = ['text', 'date', 'number', 'currency', 'rating', 'link', 'tags'] as const
@@ -64,7 +66,17 @@ export function hasValue(note: NoteMeta, column: ColumnSpec): boolean {
   return !(value === null || value === undefined || value === '' || (Array.isArray(value) && value.length === 0))
 }
 
+/** An amount in the display currency, plus what the note wrote when that differs. No conversion → just the amount as written. */
+export function currencyCell(amount: number, currency: unknown, conv: Conversion | null): { main: string; original: string | null } {
+  const written = typeof currency === 'string' ? currency : undefined
+  const from = currencyCode(written)
+  const converted = conv && from && from !== conv.to ? convertAmount(amount, from, conv.to, conv.rates) : null
+  if (converted === null) return { main: formatCurrency(amount, written), original: null }
+  return { main: formatCurrency(converted, conv!.to), original: formatCurrency(amount, written) }
+}
+
 export function Cell({ note, column }: { note: NoteMeta; column: ColumnSpec }): ReactNode {
+  const { conversion } = useContext(CurrencyContext)
   if (!hasValue(note, column)) return <span className="text-muted-foreground">—</span>
   const value = getField(note, column.field)
   switch (column.format) {
@@ -76,8 +88,14 @@ export function Cell({ note, column }: { note: NoteMeta; column: ColumnSpec }): 
     }
     case 'currency': {
       const n = parseLooseNumber(value)
-      const currency = note.frontmatter.currency
-      return <span className="tabular-nums">{n === null ? displayValue(value) : formatCurrency(n, typeof currency === 'string' ? currency : undefined)}</span>
+      if (n === null) return <span className="tabular-nums">{displayValue(value)}</span>
+      const { main, original } = currencyCell(n, note.frontmatter.currency, conversion)
+      return (
+        <span className="tabular-nums">
+          {main}
+          {original && <span className="ml-1.5 text-xs text-muted-foreground">({original})</span>}
+        </span>
+      )
     }
     case 'rating': {
       const n = parseLooseNumber(value)

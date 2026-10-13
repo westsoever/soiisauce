@@ -46,7 +46,7 @@ test('setPin on invalid JSON throws a message naming the file', () => {
 })
 
 test('the .gitignore covers install, build output, logs and secrets', () => {
-  for (const line of ['soii/', 'build/', 'logs/', '.env.local', 'node_modules/']) expect(SOII_GITIGNORE_LINES).toContain(line)
+  for (const line of ['soii/', 'build/', 'logs/', 'cache/', '.env.local', 'node_modules/']) expect(SOII_GITIGNORE_LINES).toContain(line)
 })
 
 test('ensureLines appends only what is missing and never duplicates', () => {

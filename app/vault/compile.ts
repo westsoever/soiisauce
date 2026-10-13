@@ -17,6 +17,7 @@ import { renderMarkdown, scanMarkdown, stripComments } from './markdown'
 import { writeOutput } from './output'
 import { buildSearchIndex } from './search-index'
 import { readSkills } from './skills'
+import { texNote } from './tex'
 import { walkVault } from './walk'
 
 export const MAX_FILE_BYTES = 10 * 1024 * 1024
@@ -118,7 +119,7 @@ export async function compileVault(opts: {
   const warnings: string[] = []
   const config = loadConfig(opts.vaultDir)
   config.obsidianVault ??= opts.vaultName ?? posix.basename(opts.vaultDir.replace(/\\/g, '/'))
-  const { markdown, attachments, fsPaths, warnings: walkWarnings } = walkVault(opts.vaultDir, config.exclude)
+  const { markdown, attachments, tex, fsPaths, warnings: walkWarnings } = walkVault(opts.vaultDir, config.exclude)
   warnings.push(...walkWarnings)
   const maxBytes = opts.maxFileBytes ?? MAX_FILE_BYTES
   const sizes = fileSizes(opts.vaultDir, attachments, fsPaths)
@@ -170,6 +171,20 @@ export async function compileVault(opts: {
     })
   }
 
+  // LaTeX sources (spec: .tex viewer §3): notes with format "tex", compiled to PDF on click, never rendered here.
+  const texSizes = fileSizes(opts.vaultDir, tex, fsPaths)
+  for (const path of tex) {
+    const size = texSizes.get(path) ?? 0
+    if (size > maxBytes) {
+      warnings.push(`${path}: skipped, ${(size / 1024 / 1024).toFixed(1)} MB is over the ${(maxBytes / 1024 / 1024).toFixed(1)} MB limit`)
+      continue
+    }
+    const source = readFileSync(join(opts.vaultDir, fsPaths.get(path) ?? path), 'utf8')
+    const { meta, plainText } = texNote(path, source)
+    drafts.push({ meta, body: source, headings: [], plainText })
+  }
+  drafts.sort((a, b) => (a.meta.path < b.meta.path ? -1 : a.meta.path > b.meta.path ? 1 : 0))
+
   const byPath = new Map(drafts.map(d => [d.meta.path, d]))
   const resolve = createLinkResolver([...byPath.keys(), ...attachments])
   const noteInfo = (p: string) => {
@@ -184,6 +199,7 @@ export async function compileVault(opts: {
   // Pass 2: render with link resolution.
   const missing: string[] = []
   const docs: NoteDoc[] = drafts.map(d => {
+    if (d.meta.format === 'tex') return { ...d.meta, html: '', headings: [], outgoing: [], backlinks: [], source: d.body }
     const r = renderMarkdown(d.body, { fromPath: d.meta.path, resolve, noteInfo, tooLarge: p => tooLarge.has(p) })
     for (const a of r.attachments) referenced.add(a)
     for (const target of r.missing) missing.push(`${d.meta.path}: [[${target}]]`)
@@ -206,7 +222,7 @@ export async function compileVault(opts: {
     warnings.push(`attachments total ${(totalBytes / 1024 / 1024).toFixed(0)} MB, over the 200 MB guideline — deploys may get slow`)
   }
 
-  const notes: NoteMeta[] = docs.map(({ html: _h, headings: _hd, outgoing: _o, backlinks: _b, ...meta }) => meta)
+  const notes: NoteMeta[] = docs.map(({ html: _h, headings: _hd, outgoing: _o, backlinks: _b, source: _s, ...meta }) => meta)
   const index: VaultIndex = {
     vaultCommit: gitHead(opts.vaultDir),
     builtAt: new Date().toISOString(),

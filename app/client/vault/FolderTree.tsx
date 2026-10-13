@@ -1,6 +1,6 @@
 // app/client/vault/FolderTree.tsx
 // The vault's folders and notes, expand/collapse remembered per browser (spec §9).
-import { IconChevronRight, IconFileText, IconFolder } from '@tabler/icons-react'
+import { IconChevronRight, IconFileText, IconFolder, IconTex } from '@tabler/icons-react'
 import { useMemo, useState } from 'react'
 import { notePath } from '../../lib/paths'
 import type { FolderNode, NoteMeta } from '../../lib/types'
@@ -16,6 +16,7 @@ interface Shared {
   open: string[]
   toggle: (path: string) => void
   titles: Map<string, string>
+  tex: Set<string>
 }
 
 function Children({ node, depth, shared }: { node: FolderNode; depth: number; shared: Shared }) {
@@ -51,7 +52,11 @@ function Children({ node, depth, shared }: { node: FolderNode; depth: number; sh
             style={{ paddingLeft: 8 + depth * 14 + 18 }}
             className="flex h-8 items-center gap-1.5 rounded-lg pr-2 hover:bg-accent"
           >
-            <IconFileText size={16} stroke={1.75} className="shrink-0 text-muted-foreground" />
+            {shared.tex.has(id) ? (
+              <IconTex size={16} stroke={1.75} className="shrink-0 text-muted-foreground" />
+            ) : (
+              <IconFileText size={16} stroke={1.75} className="shrink-0 text-muted-foreground" />
+            )}
             <span className="truncate">{shared.titles.get(id) ?? id}</span>
           </a>
         </li>
@@ -62,6 +67,7 @@ function Children({ node, depth, shared }: { node: FolderNode; depth: number; sh
 
 export function FolderTree({ root, notes }: { root: FolderNode; notes: NoteMeta[] }) {
   const titles = useMemo(() => new Map(notes.map(n => [n.id, n.title])), [notes])
+  const tex = useMemo(() => new Set(notes.filter(n => n.format === 'tex').map(n => n.id)), [notes])
   const [open, setOpen] = useState<string[]>(() => readJson<string[]>(storageKeys.openFolders, []))
   const toggle = (path: string) =>
     setOpen(prev => {
@@ -71,7 +77,7 @@ export function FolderTree({ root, notes }: { root: FolderNode; notes: NoteMeta[
     })
   return (
     <ul className="flex flex-col text-sm">
-      <Children node={root} depth={0} shared={{ open, toggle, titles }} />
+      <Children node={root} depth={0} shared={{ open, toggle, titles, tex }} />
     </ul>
   )
 }

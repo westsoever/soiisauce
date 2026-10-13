@@ -65,6 +65,14 @@ function uniqueIds(workspaces: { id: string; tabs: { id: string }[] }[], ctx: z.
   })
 }
 
+// Rates are units per 1 EUR. Codes are kept as written; withOverrides() upper-cases them.
+const currencySchema = z
+  .object({
+    display: z.string().regex(/^[A-Za-z]{3}$/, 'a three-letter currency code such as DKK').optional(),
+    rates: z.record(z.string().regex(/^[A-Za-z]{3}$/, 'a three-letter currency code'), z.number().positive()).optional()
+  })
+  .strict()
+
 export const soiiConfigSchema = z
   .object({
     title: z.string().min(1),
@@ -72,7 +80,8 @@ export const soiiConfigSchema = z
     exclude: z.array(z.string()),
     types: z.record(z.string(), z.array(z.string())),
     workspaces: z.array(workspaceSchema),
-    obsidianVault: z.string().min(1).optional()
+    obsidianVault: z.string().min(1).optional(),
+    currency: currencySchema.optional()
   })
   .strict()
   .superRefine((config, ctx) => uniqueIds(config.workspaces, ctx))
@@ -85,6 +94,7 @@ export const userConfigSchema = z
     types: z.record(z.string(), z.array(z.string())).optional(),
     workspaces: z.array(workspaceSchema).optional(),
     obsidianVault: z.string().min(1).optional(),
+    currency: currencySchema.optional(),
     replaceDefaultWorkspaces: z.boolean().optional()
   })
   .strict()

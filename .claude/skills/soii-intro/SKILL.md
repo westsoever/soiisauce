@@ -74,7 +74,7 @@ done
 Group them by job and print each as `/name: <first sentence of its description, shortened>`. Group by what the skill does, using these headings (drop empty ones; put anything unrecognised under "Other"):
 
 - **Set up and keep tidy:** `soii-setup`, `soii-health`, `soii-sync-fix`
-- **Capture:** `soii-capture`, `soii-save`, `soii-wrap`
+- **Capture:** `soii-capture`, `unbox`, `soii-save`, `soii-wrap`
 - **Thinking:** `soii-synthesize`, `soii-panel`, `soii-chat`
 - **Learning:** `soii-learn`, `soii-explore`
 - **Make your own:** `skillfactory`

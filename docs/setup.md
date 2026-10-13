@@ -4,6 +4,20 @@ soii runs **on your own computer**, inside your vault, at `http://localhost:5011
 
 **You need:** a Mac (Linux works too, as a background process), [Bun](https://bun.sh) (`curl -fsSL https://bun.sh/install | bash`), git, and access to the private `westsoever/soii` repo from the command line (step 1).
 
+## The short way
+
+In a terminal, once git can read the repo (step 1):
+
+```bash
+gh api repos/westsoever/soii/contents/install.sh -H 'Accept: application/vnd.github.raw' | bash
+```
+
+`install.sh` checks that git, Bun and GitHub access work (and prints the exact fix if not), clones soii to a temporary folder, runs the plain-questions install described in [Set up without AI](#set-up-without-ai), and deletes the clone. You are left with the vault, `.soii/` in it and the `soii` command. Nothing needs Claude Code.
+
+Arguments go to soii: `... | bash -s -- init ~/my-vault --empty`, `... | bash -s -- ~/my-vault --yes`, `... | bash -s -- --no-service`. With no terminal to ask on (a pipe into a script, CI) a bare run stops and says so; name the vault or add `--yes`. If Bun is missing it offers to install it. `SOII_REF=v0.1.9` installs a given tag or branch of the installer.
+
+Steps 2 to 4 below are the same thing by hand: use them if you'd rather clone the repo yourself, or can't run `gh`.
+
 ## 1. Let git read the soii repo (once)
 
 soii is released as git tags on a private GitHub repo, and git fetches it with your GitHub login.
@@ -43,7 +57,7 @@ Your notes aren't touched. soii adds a `.soii/` folder (its code, build and sett
 
 ## Set up without AI
 
-You don't need Claude Code. In a terminal, `soii install` with no vault named asks a few plain questions and does the rest. From a fresh clone (after step 1):
+You don't need Claude Code. In a terminal, `soii install` with no vault named asks a few plain questions and does the rest. `install.sh` above starts it for you; from a fresh clone you start it yourself (after step 1):
 
 ```bash
 git clone --depth 1 https://github.com/westsoever/soii.git ~/soii-installer

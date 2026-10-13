@@ -25,6 +25,12 @@ test('but the rest of .claude and .soii stays ignored', () => {
   }
 })
 
+test('the TeX compile cache is ignored, `.soii/skills.json` is not', () => {
+  expect(isIgnoredVaultPath('.soii/cache/tex/abc/out.pdf')).toBe(true)
+  expect(isIgnoredVaultPath('.soii/cache/tex/abc')).toBe(true)
+  expect(isIgnoredVaultPath('.soii/skills.json')).toBe(false)
+})
+
 test('a dot-folder deeper in the tree is ignored too, and so is node_modules', () => {
   expect(isIgnoredVaultPath('02-Projects/.trash/old.md')).toBe(true)
   expect(isIgnoredVaultPath('tools/node_modules/x/index.js')).toBe(true)

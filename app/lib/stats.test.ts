@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import { computeChart, computeTile, formatTileValue, StatsOptionsSchema, tileFootnote, type TileSpec } from './stats'
 import { DEFAULT_CONFIG } from './default-config'
 import { indexOf, note } from './life-test-utils'
+import type { Conversion } from './currency'
 
 const MONTHLY = { field: 'cycle', factors: { weekly: 4.33, monthly: 1, yearly: 0.0833 } }
 
@@ -119,9 +120,10 @@ describe('formatting', () => {
   })
 
   test('tileFootnote', () => {
-    const base = { label: 'x', value: 1, format: 'number' as const, currency: null, display: '1' }
+    const base = { label: 'x', value: 1, format: 'number' as const, currency: null, display: '1', convertedFrom: [] }
     expect(tileFootnote({ ...base, count: 1, skipped: 0 })).toBe('1 note')
     expect(tileFootnote({ ...base, count: 3, skipped: 1 })).toBe('3 notes · 1 not counted')
+    expect(tileFootnote({ ...base, count: 3, skipped: 0, convertedFrom: ['EUR', 'USD'] })).toBe('3 notes · converted from EUR, USD')
   })
 })
 
@@ -188,5 +190,75 @@ describe('computeChart never adds currencies together', () => {
     const others = points.filter(p => p.label.startsWith('Other')).map(p => [p.label, p.value])
     expect(others).toEqual([['Other · USD', 2], ['Other · DKK', 1]])
     expect(points.some(p => p.label === 'Other')).toBe(false)
+  })
+})
+
+describe('conversion to one display currency', () => {
+  const conv: Conversion = { to: 'DKK', rates: { DKK: 7.5, USD: 1.2 } }
+  const convTile = (spec: TileSpec) => computeTile(spec, all, index, conv)
+
+  test('one tile adds every currency up in the display currency, even with groupBy currency', () => {
+    const tiles = convTile({
+      label: 'Monthly subscriptions', agg: 'sum', field: 'price', type: 'subscription',
+      where: { status: 'active' }, normalize: MONTHLY, groupBy: 'currency', format: 'currency'
+    })
+    expect(tiles).toHaveLength(1)
+    expect(tiles[0].label).toBe('Monthly subscriptions')
+    expect(tiles[0].currency).toBe('DKK')
+    // DKK: 25 + 29 + 99 * 0.0833; USD: 96 * 0.0833 / 1.2 EUR-based → * 7.5; the semester ticket has no cycle factor.
+    const dkk = 25 + 29 + 99 * 0.0833
+    const usd = ((96 * 0.0833) / 1.2) * 7.5
+    expect(tiles[0].value!).toBeCloseTo(dkk + usd, 4)
+    expect(tiles[0].convertedFrom).toEqual(['EUR', 'USD'])
+    expect(tiles[0].skipped).toBe(1)
+  })
+
+  test('net balance of accounts in several currencies becomes one number', () => {
+    const [t] = convTile({ label: 'Net balance', agg: 'sum', field: 'balance', type: 'account', format: 'currency', groupBy: 'currency' })
+    expect(t.value!).toBeCloseTo((1234.56 / 1.2) * 7.5 + 12500 + 2000, 4)
+    expect(t.skipped).toBe(1) // "n/a"
+  })
+
+  test('notes whose currency has no rate, or none at all, are not counted', () => {
+    const notes = [
+      note('a', { type: 'account', balance: 100, currency: 'DKK' }),
+      note('b', { type: 'account', balance: 100, currency: 'SEK' }),
+      note('c', { type: 'account', balance: 100 })
+    ]
+    const [t] = computeTile({ label: 'x', agg: 'sum', field: 'balance', format: 'currency' }, notes, indexOf(notes), conv)
+    expect(t.value).toBe(100)
+    expect(t.skipped).toBe(2)
+  })
+
+  test('counts and plain-number tiles are left alone', () => {
+    const [count] = convTile({ label: 'n', agg: 'count', type: 'subscription' })
+    expect(count.value).toBe(6)
+    expect(count.convertedFrom).toEqual([])
+    const [plain] = convTile({ label: 'p', agg: 'sum', field: 'price', type: 'subscription', format: 'number', where: { currency: 'DKK' } })
+    expect(plain.currency).toBeNull()
+  })
+
+  test('another groupBy still gives one tile per group, each in the display currency', () => {
+    const tiles = convTile({ label: 'Subs', agg: 'sum', field: 'price', type: 'subscription', groupBy: 'status', format: 'currency' })
+    expect(tiles.map(t => t.label)).toEqual(['Subs · active', 'Subs · cancelled'])
+    expect(tiles.every(t => t.currency === 'DKK')).toBe(true)
+  })
+
+  test('without a conversion the old per-currency tiles come back', () => {
+    const tiles = tile({ label: 'Net', agg: 'sum', field: 'balance', type: 'account', format: 'currency', groupBy: 'currency' })
+    expect(tiles.map(t => t.label)).toEqual(['Net · DKK', 'Net · USD'])
+  })
+
+  test('a bar chart converts too, with one bar per group', () => {
+    const notes = [
+      note('a', { type: 'expense', amount: 75, currency: 'DKK', category: 'food' }),
+      note('b', { type: 'expense', amount: 10, currency: 'EUR', category: 'food' }),
+      note('c', { type: 'expense', amount: 150, currency: 'DKK', category: 'rent' })
+    ]
+    const points = computeChart({ kind: 'bar', groupBy: 'category', agg: 'sum', field: 'amount', label: 'Spend' }, notes, indexOf(notes), {
+      to: 'DKK',
+      rates: { DKK: 7.5 }
+    })
+    expect(points.map(p => [p.label, Math.round(p.value)])).toEqual([['food', 150], ['rent', 150]])
   })
 })

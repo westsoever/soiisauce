@@ -46,6 +46,13 @@ export const DEFAULT_CONFIG: SoiiConfig = {
       ]
     },
     {
+      // Everything delivered into the vault's Inbox folder, newest first (the default sort).
+      id: 'inbox',
+      title: '00 Inbox',
+      icon: 'inbox',
+      tabs: [{ id: 'inbox', title: '00 Inbox', view: 'list', query: { path: '00-Inbox/**' } }]
+    },
+    {
       id: 'library',
       title: 'Library',
       icon: 'books',
@@ -182,6 +189,20 @@ export const DEFAULT_CONFIG: SoiiConfig = {
         { id: 'board', title: 'Board', view: 'board', query: { type: 'goal' }, options: { groupBy: 'status' } },
         { id: 'years', title: 'By year', view: 'board', query: { type: 'goal' }, options: { groupBy: 'year' } },
         { id: 'bucket', title: 'Bucket list', view: 'list', query: { type: 'goal', where: { horizon: ['life', 'bucket'] } } }
+      ]
+    },
+    {
+      id: 'projects',
+      title: 'Projects',
+      icon: 'briefcase',
+      tabs: [
+        {
+          id: 'board',
+          title: 'Board',
+          view: 'board',
+          query: { type: 'project' },
+          options: { groupBy: 'status', groups: ['idea', 'active', 'done'], subtitle: 'area' }
+        }
       ]
     }
   ]

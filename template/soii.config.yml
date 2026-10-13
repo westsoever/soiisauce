@@ -1,5 +1,6 @@
 # soii config for this vault. Everything here is optional: delete this file and
-# soii falls back to its built-in workspaces (Today, Library, People, Finance, Goals).
+# soii falls back to its built-in workspaces (Today, 00 Inbox, Library, People,
+# Finance, Goals, Projects).
 # A workspace listed here with the same id as a built-in one replaces it whole;
 # a new id adds a workspace after the built-ins. Reference: docs/frontmatter.md
 # and docs/workspaces.md in the soii repo.
@@ -39,6 +40,8 @@ workspaces:
           - { type: journal }
           - { path: "01-Daily/20??-??-??.md" }
 
+  # Replaces the built-in Projects workspace whole: its Board tab, repeated here,
+  # plus a Knowledge tab for this vault's topic notes.
   - id: projects
     title: Projects
     icon: briefcase
@@ -48,10 +51,6 @@ workspaces:
         view: board
         query: { type: project }
         options: { groupBy: status, groups: [idea, active, done], subtitle: area }
-      - id: inbox
-        title: Inbox
-        view: list
-        query: { path: "00-Inbox/**" }
       - id: knowledge
         title: Knowledge
         view: list

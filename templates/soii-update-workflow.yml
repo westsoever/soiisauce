@@ -1,0 +1,23 @@
+# Optional: keep your soii fork up to date automatically.
+# Copy this file into YOUR soii fork as .github/workflows/soii-update.yml and enable Actions
+# on the fork (GitHub → your fork → Actions → "I understand my workflows, go ahead and enable them").
+# Every Monday it pulls the latest soii from the original repo into your fork's main branch.
+# Vercel then redeploys. Your vault, soii.config.yml and environment variables are never touched.
+# If your fork has code changes of its own that conflict, the run fails and changes nothing;
+# update by hand with GitHub's "Sync fork" button instead.
+name: Update soii from upstream
+on:
+  schedule:
+    - cron: '0 5 * * 1'   # Mondays 05:00 UTC
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  sync:
+    if: github.event.repository.fork
+    runs-on: ubuntu-latest
+    steps:
+      - name: Sync the fork's main branch with upstream
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh repo sync "$GITHUB_REPOSITORY" --branch main

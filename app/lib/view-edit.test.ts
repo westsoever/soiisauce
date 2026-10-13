@@ -175,7 +175,7 @@ describe('block-style query and sort', () => {
     const brief = ok(setTabQuery(TEMPLATE, 'today', 'brief', { type: 'daily-brief' }))
     expect(brief.yaml).toContain('        query: { type: daily-brief }\n      - id: weekly')
     const journal = ok(setTabQuery(TEMPLATE, 'today', 'journal', { type: 'journal' }))
-    expect(journal.yaml).toContain('        query: { type: journal }\n\n  - id: projects')
+    expect(journal.yaml).toContain('        query: { type: journal }\n\n  # Replaces the built-in Projects')
     const block = '        query:\n          - { type: journal }\n          - { path: "01-Daily/20??-??-??.md" }\n'
     expect(TEMPLATE).toContain(block)
     expect(journal.yaml).toBe(TEMPLATE.replace(block, '        query: { type: journal }\n'))

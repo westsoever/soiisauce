@@ -4,18 +4,23 @@ import { useMemo } from 'react'
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 import { computeChart, computeTile, StatsOptionsSchema, tileFootnote, type ChartPoint, type TileResult } from '../../lib/stats'
 import type { ViewProps } from '../../lib/types'
+import { useCurrency } from '../lib/currency'
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from '../ui/chart'
 import { OptionsError } from './cells'
 
 export function StatsView({ tab, notes, index }: ViewProps) {
   const parsed = useMemo(() => StatsOptionsSchema.safeParse(tab.options ?? {}), [tab.options])
+  const { conversion } = useCurrency()
   const tiles = useMemo(
-    () => (parsed.success ? parsed.data.tiles.flatMap(spec => computeTile(spec, notes, index)) : []),
-    [parsed, notes, index]
+    () => (parsed.success ? parsed.data.tiles.flatMap(spec => computeTile(spec, notes, index, conversion ?? undefined)) : []),
+    [parsed, notes, index, conversion]
   )
   const chart = useMemo(
-    () => (parsed.success && parsed.data.chart ? { label: parsed.data.chart.label, points: computeChart(parsed.data.chart, notes, index) } : null),
-    [parsed, notes, index]
+    () =>
+      parsed.success && parsed.data.chart
+        ? { label: parsed.data.chart.label, points: computeChart(parsed.data.chart, notes, index, conversion ?? undefined) }
+        : null,
+    [parsed, notes, index, conversion]
   )
 
   if (!parsed.success) return <OptionsError view="stats" error={parsed.error} />
