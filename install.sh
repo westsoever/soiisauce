@@ -65,6 +65,25 @@ if ! command -v bun >/dev/null 2>&1; then
   command -v bun >/dev/null 2>&1 || problems+=("Bun is missing. Install it with: curl -fsSL https://bun.sh/install | bash   (then open a new terminal)")
 fi
 
+# An older Bun can't read soii's lockfile or load its packages, and fails later with errors that don't say why.
+MIN_BUN="1.2.0"
+# True when version $1 is older than $2, compared number by number (1.10 is newer than 1.9). Plain bash, no other tools.
+older_than() {
+  local IFS=. i
+  local a=(${1%%[-+]*}) b=($2)
+  for i in 0 1 2; do
+    [ "${a[i]:-0}" -lt "${b[i]:-0}" ] 2>/dev/null && return 0
+    [ "${a[i]:-0}" -gt "${b[i]:-0}" ] 2>/dev/null && return 1
+  done
+  return 1
+}
+if command -v bun >/dev/null 2>&1; then
+  have_bun="$(bun --version 2>/dev/null)"
+  if older_than "$have_bun" "$MIN_BUN"; then
+    problems+=("Bun $have_bun is too old for soii, which needs Bun $MIN_BUN or newer. Update it with: bun upgrade   (or brew upgrade bun, if Homebrew installed it)")
+  fi
+fi
+
 if command -v git >/dev/null 2>&1; then
   # Ask git itself: this is the one check that is true whichever way you signed in (gh, ssh, a token).
   if ! GIT_TERMINAL_PROMPT=0 git ls-remote --exit-code "$URL" HEAD >/dev/null 2>&1; then
@@ -91,9 +110,9 @@ GIT_TERMINAL_PROMPT=0 "${clone[@]}" "$URL" "$tmp/soii" || die "git could not fet
 
 # soii's own packages, in the clone. Without node_modules Bun fetches imports from its global cache on the fly, and
 # some packages (they import themselves by name) can't be loaded that way. Never from the keyboard: that's soii's.
-say "Installing soii's packages..."
+say "Installing soii's packages (the first time this can take a minute or two)..."
 # The lockfile is the lock; an older Bun that can't read it falls back to a plain install, as `soii install` does.
-(cd "$tmp/soii" && { TMPDIR="$tmp" bun install --frozen-lockfile --silent < /dev/null || TMPDIR="$tmp" bun install --silent < /dev/null; }) || die "couldn't install soii's packages (bun install failed; the lines above say why). Check that you are online, then run this again."
+(cd "$tmp/soii" && { TMPDIR="$tmp" bun install --frozen-lockfile < /dev/null 2>&1 || TMPDIR="$tmp" bun install < /dev/null 2>&1; }) || die "couldn't install soii's packages (bun install failed; the lines above say why). Check that you are online, then run this again."
 
 # 3. Hand over to soii. It asks its questions on the keyboard, and the clone is deleted when it ends.
 # Not `exec`: the trap must run afterwards. Its exit code is ours.

@@ -29,6 +29,13 @@ function toolbox(name: string, tools: string[]): string {
 const ALL = toolbox('all', ['git', 'bun', 'mktemp', 'rm'])
 const NO_BUN = toolbox('no-bun', ['git', 'mktemp', 'rm'])
 const NO_GIT = toolbox('no-git', ['bun', 'mktemp', 'rm'])
+/** git and the rest, plus a `bun` that says it is `version` (and runs the real one for anything else). */
+function fakeBun(version: string): string {
+  const dir = toolbox(`bun-${version}`, ['git', 'mktemp', 'rm'])
+  writeFileSync(join(dir, 'bun'), `#!/bin/sh\nif [ "$1" = "--version" ]; then echo ${version}; exit 0; fi\nexec ${which('bun')} "$@"\n`)
+  chmodSync(join(dir, 'bun'), 0o755)
+  return dir
+}
 
 /**
  * A git repo shaped like soii for the script's purposes: bin/soii.ts writes argv, stdin, cwd and whether the packages were
@@ -207,6 +214,23 @@ describe('install.sh', () => {
       const r = run(['--yes'], { path: NO_BUN, home })
       expect(r.err).toBe('')
       expect(r.code).toBe(0)
+    })
+
+    test('a Bun older than soii needs: says which, and how to update, and clones nothing', () => {
+      const r = run(['--yes'], { path: fakeBun('1.1.45') })
+      expect(r.code).toBe(1)
+      expect(r.err).toContain('Bun 1.1.45 is too old')
+      expect(r.err).toContain('bun upgrade')
+      expect(r.soii).toBeNull()
+      expect(r.leftovers).toEqual([])
+    })
+
+    test('a new enough Bun passes the check, compared by number and not as text', () => {
+      for (const version of ['1.2.0', '1.10.0', '2.0.1', '1.3.14-canary.1+abc']) {
+        const r = run(['--yes'], { path: fakeBun(version) })
+        expect(r.err).toBe('')
+        expect(r.code).toBe(0)
+      }
     })
 
     test('missing git: says so', () => {

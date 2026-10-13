@@ -2,6 +2,13 @@
 
 What's new in each soii release, newest first. `soii update` prints the sections that are newer than the version you had.
 
+## v0.2.2
+
+The one-line install checks your Bun first and shows its progress.
+
+- If your Bun is older than 1.2, the install stops straight away and tells you how to update it (`bun upgrade`, or `brew upgrade bun`), instead of failing later with an error that doesn't say why.
+- While it installs soii's packages you see the progress, so a first install that takes a minute doesn't look stuck.
+
 ## v0.2.1
 
 A fix for the one-line install: on a first run it could stop with "Cannot find module 'unist-util-visit-parents/do-not-use-color'". It now installs soii's packages before it starts.
