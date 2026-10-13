@@ -8,7 +8,8 @@ export interface Flags {
   from?: string
   title?: string
   follow: boolean
-  empty: boolean
+  /** `soii init --samples`: fill the new vault with Sam's sample notes. Without it (or with --empty) the vault starts empty. */
+  samples: boolean
   /** Install into the vault only: no LaunchAgent, no background process, nothing global (registry, shim). */
   noService: boolean
   /** `soii install --yes`: never ask anything, even in a terminal (today's behaviour). */
@@ -34,7 +35,7 @@ const isCommand = (s: string): s is Command => (COMMANDS as readonly string[]).i
 const OPTIONS: Record<Command, readonly string[]> = {
   install: ['--port', '--from', '--no-service', '--yes', '-y'],
   setup: ['--port', '--from', '--no-service'],
-  init: ['--empty', '--port', '--from', '--title', '--no-service'],
+  init: ['--samples', '--empty', '--port', '--from', '--title', '--no-service'],
   logs: ['--follow', '-f'],
   start: [],
   stop: [],
@@ -51,7 +52,7 @@ const OPTIONS: Record<Command, readonly string[]> = {
 }
 
 export function parseArgs(argv: string[], env: Record<string, string | undefined> = {}): Parsed {
-  const flags: Flags = { follow: false, empty: false, noService: false, help: false, json: false }
+  const flags: Flags = { follow: false, samples: false, noService: false, help: false, json: false }
   const [first, ...rest] = argv
   if (first === undefined) return { ok: true, command: 'help', positional: [], flags }
   if (first === '--help' || first === '-h') return { ok: true, command: 'help', positional: [], flags }
@@ -76,7 +77,8 @@ export function parseArgs(argv: string[], env: Record<string, string | undefined
     if (!OPTIONS[command].includes(name)) return { ok: false, error: `Unknown option "${name}" for \`soii ${command}\`.` }
     const value = () => (inline !== undefined ? inline : rest[++i])
     if (name === '--follow' || name === '-f') flags.follow = true
-    else if (name === '--empty') flags.empty = true
+    else if (name === '--samples') flags.samples = true
+    else if (name === '--empty') flags.samples = false
     else if (name === '--no-service') flags.noService = true
     else if (name === '--yes' || name === '-y') flags.yes = true
     else if (name === '--json') flags.json = true
@@ -96,7 +98,7 @@ export function parseArgs(argv: string[], env: Record<string, string | undefined
       flags.title = raw
     } else if (name === '--from') {
       const raw = value()
-      if (!raw || raw.startsWith('--')) return { ok: false, error: '--from needs a value, e.g. github:westsoever/soii#v0.1.0.' }
+      if (!raw || raw.startsWith('--')) return { ok: false, error: '--from needs a value, e.g. github:westsoever/soiisauce#v0.1.0.' }
       flags.from = raw
     }
   }

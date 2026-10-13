@@ -138,13 +138,13 @@ describe('groupSkills', () => {
   const ids = (g: { skills: { id: string }[] }) => g.skills.map(s => s.id)
 
   test('soii skills fall into their jobs, in the planned order', () => {
-    const all = ['soii-wrap', 'skillfactory', 'soii-learn', 'soii-chat', 'soii-health', 'soii-sync-fix', 'soii-setup', 'soii-intro', 'soii-panel', 'soii-synthesize', 'soii-capture', 'soii-save', 'soii-explore'].map(id => skill(id))
+    const all = ['soii-wrap', 'skillfactory', 'soii-learn', 'soii-chat', 'soii-health', 'soii-sync-fix', 'soii-setup', 'soii-intro', 'soii-panel', 'soii-synthesize', 'soii-capture', 'soii-save', 'soii-explore', 'unbox'].map(id => skill(id))
     const groups = groupSkills(all)
     expect(groups.map(g => g.title)).toEqual(['Start & setup', 'Keep healthy', 'Capture & save', 'Think & connect', 'Learn & explore', 'Make your own'])
     expect(groups.map(ids)).toEqual([
       ['soii-intro', 'soii-setup', 'soii-sync-fix'],
       ['soii-health'],
-      ['soii-capture', 'soii-save', 'soii-wrap'],
+      ['soii-capture', 'unbox', 'soii-save', 'soii-wrap'],
       ['soii-chat', 'soii-synthesize', 'soii-panel'],
       ['soii-learn', 'soii-explore'],
       ['skillfactory']

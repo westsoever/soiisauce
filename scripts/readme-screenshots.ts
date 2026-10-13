@@ -1,7 +1,7 @@
 // Regenerates the README screenshots from the demo vault (never from a real vault: the
 // screenshots are public, real notes are private).
 //
-//   PORT=13398 VAULT_PATH=$PWD/template SOII_DEV_AUTH=1 bun run dev   # in one terminal
+//   PORT=13398 VAULT_PATH=$PWD/template bun run dev   # in one terminal
 //   bun add --no-save playwright-core && bun scripts/readme-screenshots.ts       # in another
 //
 // Uses your installed Chrome (CHROME=/path/to/chrome to override). Writes docs/screenshots/*.png.

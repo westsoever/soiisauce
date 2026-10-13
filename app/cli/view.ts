@@ -82,7 +82,7 @@ export async function view(ctx: Ctx, args: string[], flags: Flags): Promise<numb
   try {
     const [sub, ...rest] = args
     const vault = vaultDir(ctx, flags)
-    const write = (req: ViewRequest) => editViews(readEnv({ SOII_LOCAL: '1', VAULT_PATH: vault }), req, { fetch: fetch, git: runGit })
+    const write = (req: ViewRequest) => editViews(readEnv({ SOII_LOCAL: '1', VAULT_PATH: vault }), req, { git: runGit })
     const refuse = (r: { message: string }) => {
       ctx.err(r.message)
       return 1

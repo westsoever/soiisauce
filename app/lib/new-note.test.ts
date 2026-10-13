@@ -32,7 +32,7 @@ describe('buildNote', () => {
   test('a book lists every property, empty ones bare, filled ones unquoted where YAML allows', () => {
     const { path, content } = buildNote(
       NEW_NOTE_SPECS.book,
-      { title: 'Dune', author: 'Frank Herbert', cover: '[[dune-cover.jpg]]', status: 'finished', rating: '5', finished: '2026-03-01', category: 'Product Management, Fiction', tags: 'StartupBooks, sci-fi' },
+      { title: 'Dune', author: 'Frank Herbert', cover: '[[dune-cover.jpg]]', status: 'finished', rating: '5', finished: '2026-03-01', category: 'Product Management, Fiction', tags: 'ReadingList, sci-fi' },
       '2026-10-12'
     )
     expect(path).toBe('04-Resources/Library/Books/Dune.md')
@@ -57,7 +57,7 @@ describe('buildNote', () => {
         '  - Product Management',
         '  - Fiction',
         'tags:',
-        '  - StartupBooks',
+        '  - ReadingList',
         '  - sci-fi',
         '---',
         '',

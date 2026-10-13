@@ -92,11 +92,11 @@ function NewViewForm({ workspace, index, onDone }: { workspace: WorkspaceConfig;
       const before = await builtAt()
       const { id: _draftId, ...tab } = draft
       const result = await addView(workspace.id, { ...tab, title: title.trim() })
-      toast(result.via === 'github' ? `Added ${result.title} to ${workspace.title}. It shows up after the next deploy (about 2 minutes).` : `Added ${result.title} to ${workspace.title}.`)
+      toast(`Added ${result.title} to ${workspace.title}.`)
       if (result.warning) toast(result.warning)
-      await afterViewWrite(queryClient, before, result)
+      await afterViewWrite(queryClient, before)
       onDone()
-      if (result.via === 'local') navigate(workspacePath(workspace.id, result.tabId))
+      navigate(workspacePath(workspace.id, result.tabId))
     } catch (err) {
       setError(err instanceof HttpError ? err.message : 'Saving failed. Try again.')
     } finally {

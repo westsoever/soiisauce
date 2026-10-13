@@ -17,7 +17,7 @@ import {
 } from '../../lib/properties'
 import type { NoteDoc, NoteMeta, VaultIndex } from '../../lib/types'
 import { api } from '../lib/http'
-import { keys, useCapabilities, useVault } from '../lib/queries'
+import { keys, useVault } from '../lib/queries'
 import { toast } from '../lib/toast'
 import { builtAt, waitForRebuild } from '../lib/use-fresh-vault'
 import { Button } from '../ui/button'
@@ -28,9 +28,6 @@ import { labelFor } from '../views/cells'
 
 interface SavedProperty {
   path: string
-  via: 'github' | 'local'
-  commitUrl: string | null
-  pulled: boolean | null
   warning: string | null
 }
 
@@ -39,26 +36,18 @@ const same = (a: unknown, b: unknown) => JSON.stringify(a ?? null) === JSON.stri
 /** Save one property; resolves true when it was written. Shows the new value at once, then catches up with the rebuild. */
 export function useSaveProperty(note: NoteMeta) {
   const queryClient = useQueryClient()
-  const capabilities = useCapabilities().data
   const index = useVault().data
   const saveOne = async (key: string, value: PropertyValue): Promise<boolean> => {
     try {
-      const before = capabilities?.writeVia === 'local' || capabilities?.sync ? await builtAt() : null
+      const before = await builtAt()
       const saved = await api<SavedProperty>('/api/notes/properties', { method: 'POST', body: { path: note.path, key, value, date: localDay() } })
       const patch = <T extends NoteMeta>(n: T): T => (n.path === note.path ? { ...n, frontmatter: { ...n.frontmatter, [key]: value } } : n)
       queryClient.setQueryData<VaultIndex>(keys.vault, index => index && { ...index, notes: index.notes.map(patch) })
       queryClient.setQueryData<NoteDoc>(keys.note(note.id), doc => doc && patch(doc))
       const label = labelFor(key)
       const extra = saved.warning && !saved.warning.startsWith('Committed') ? ` ${saved.warning}` : ''
-      toast(
-        saved.via === 'local'
-          ? `Saved ${label}.${extra}`
-          : saved.pulled
-            ? `Saved ${label} to GitHub.${extra}`
-            : `Saved ${label} to GitHub. Other pages catch up after the next deploy (about 2 minutes).${extra}`,
-        extra ? 'info' : 'success'
-      )
-      if (saved.via === 'local' || saved.pulled) void waitForRebuild(queryClient, before)
+      toast(`Saved ${label}.${extra}`, extra ? 'info' : 'success')
+      void waitForRebuild(queryClient, before)
       return true
     } catch (err) {
       toast(err instanceof Error ? err.message : "Couldn't save that property.", 'error')

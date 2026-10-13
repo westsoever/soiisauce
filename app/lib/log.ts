@@ -1,5 +1,5 @@
 // app/lib/log.ts
-// The Log (docs/superpowers/specs/2026-10-12-log-design.md): what you can log, which fields each
+// The Log (see the design notes): what you can log, which fields each
 // kind asks for, and the markdown a log turns into. Pure and client-safe (no yaml import): the
 // browser uses it for the form and for Copy, the server to rebuild the file it commits.
 import { LIST_FIELDS } from './collections'
@@ -45,7 +45,22 @@ export const PEOPLE_SECTION = 'Notes & dated interactions'
 /** Contact-card sections that stay last: a missing notes section goes in before them. */
 export const PERSON_TAIL = ['Identity / ambiguity flags', 'Sources']
 
-const RELATIONSHIPS = ['friend', 'family', 'partner', 'techbbq', 'aiesec', 'mentor', 'investor', 'contact']
+const RELATIONSHIPS = ['friend', 'family', 'partner', 'mentor', 'investor', 'contact']
+
+/** The Relationship choices: the generic ones, then the values the vault's person notes already use, most used first. */
+export function relationshipOptions(notes: { type: string | null; frontmatter: Record<string, unknown> }[]): string[] {
+  const counts = new Map<string, number>()
+  for (const note of notes) {
+    if (note.type !== 'person') continue
+    const raw = note.frontmatter.relationship
+    for (const value of Array.isArray(raw) ? raw : [raw]) {
+      const v = typeof value === 'string' ? value.trim().toLowerCase() : ''
+      if (v && !RELATIONSHIPS.includes(v)) counts.set(v, (counts.get(v) ?? 0) + 1)
+    }
+  }
+  const own = [...counts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([v]) => v)
+  return [...RELATIONSHIPS, ...own]
+}
 
 const text = (key: string, label: string, placeholder?: string): LogField => ({ key, label, kind: 'text', placeholder })
 const select = (key: string, label: string, options: string[], labels?: Record<string, string>): LogField => ({ key, label, kind: 'select', options, labels })
@@ -282,9 +297,5 @@ export type LogRequestBody =
 export interface LogResponse {
   path: string
   mode: 'new' | 'append'
-  via: 'github' | 'local'
-  commitUrl: string | null
-  /** true/false: whether the local vault pulled the GitHub commit; null when there's nothing to pull. */
-  pulled: boolean | null
   warning: string | null
 }

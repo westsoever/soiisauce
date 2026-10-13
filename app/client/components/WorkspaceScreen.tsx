@@ -10,6 +10,7 @@ import type { VaultIndex } from '../../lib/types'
 import { applyPending } from '../../lib/view-filter'
 import { useCapabilities } from '../lib/queries'
 import { navigate, workspacePath } from '../lib/router'
+import { CurrencyProvider, CurrencySwitch, tabHasMoney } from '../lib/currency'
 import { readJson, storageKeys, writeJson } from '../lib/storage'
 import { Button } from '../ui/button'
 import { handlesEmpty, views } from '../views/registry'
@@ -75,8 +76,10 @@ export function WorkspaceScreen({ workspaceId, tabId, index }: { workspaceId: st
   const View = shown ? views[shown.view] : null
   const addSpec = tab ? specForTab(workspace.id, tab, index.config) : null
   const showEmpty = notes.length === 0 && !(shown && handlesEmpty.has(shown.view))
+  const showCurrency = shown !== undefined && !showEmpty && tabHasMoney(shown)
 
   return (
+    <CurrencyProvider index={index}>
     <div className="flex h-full flex-col">
       <header className="flex h-14 shrink-0 items-center gap-1 px-2 md:h-12 md:px-3">
         <h1 className="max-w-28 shrink-0 truncate px-2 text-base font-medium md:hidden">{workspace.title}</h1>
@@ -94,6 +97,7 @@ export function WorkspaceScreen({ workspaceId, tabId, index }: { workspaceId: st
       </header>
       <div className="flex min-h-0 flex-1">
         <main className="relative min-h-0 flex-1 overflow-auto rounded-tl-xl bg-background shadow-xs max-md:rounded-none">
+          {showCurrency && <CurrencySwitch className="px-4 pt-3 max-md:px-3" />}
           {shown && View && showEmpty && <EmptyTab tab={shown} />}
           {shown && View && !showEmpty && (
             <ViewBoundary key={`${workspace.id}/${shown.id}`} view={shown.view}>
@@ -104,5 +108,6 @@ export function WorkspaceScreen({ workspaceId, tabId, index }: { workspaceId: st
         {settingsOpen && tab && tabKey && <ViewSettingsPanel workspace={workspace} tab={tab} index={index} pending={pending} {...panelFor(tabKey)} />}
       </div>
     </div>
+    </CurrencyProvider>
   )
 }

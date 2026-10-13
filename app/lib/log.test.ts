@@ -1,6 +1,6 @@
 // app/lib/log.test.ts
 import { describe, expect, test } from 'bun:test'
-import { autoDates, buildNewNote, creatingKind, fieldsFor, formatEntry, kindById, LOG_KINDS, localDay, numberValue, type LogKind } from './log'
+import { autoDates, buildNewNote, creatingKind, fieldsFor, formatEntry, kindById, LOG_KINDS, localDay, numberValue, relationshipOptions, type LogKind } from './log'
 
 const kind = (id: string): LogKind => {
   const k = kindById(id)
@@ -92,9 +92,9 @@ describe('formatEntry', () => {
 
 describe('buildNewNote', () => {
   test('collection and category are written last as block lists, like the Library and the Add dialog', () => {
-    const n = buildNewNote({ kind: kind('book'), title: 'Dune', values: { status: 'want', collection: 'StartupBooks', category: 'Biographies, Leadership & Management' }, text: '', date: D })
+    const n = buildNewNote({ kind: kind('book'), title: 'Dune', values: { status: 'want', collection: 'ReadingList', category: 'Biographies, Leadership & Management' }, text: '', date: D })
     expect(n.content).toBe(
-      '---\ntype: book\nstatus: want\ncollection:\n  - StartupBooks\ncategory:\n  - Biographies\n  - Leadership & Management\ncreated: 2026-10-12\n---\n\n# Dune\n'
+      '---\ntype: book\nstatus: want\ncollection:\n  - ReadingList\ncategory:\n  - Biographies\n  - Leadership & Management\ncreated: 2026-10-12\n---\n\n# Dune\n'
     )
   })
 
@@ -111,15 +111,15 @@ describe('buildNewNote', () => {
   })
 
   test('a conversation with someone new creates a person card with the first entry', () => {
-    const n = buildNewNote({ kind: kind('conversation'), title: 'Ada Fernsby', values: { relationship: 'techbbq', company: 'Brightwell' }, text: 'Met at the meetup.', date: D, how: 'met' })
+    const n = buildNewNote({ kind: kind('conversation'), title: 'Ada Fernsby', values: { relationship: 'book-club', company: 'Brightwell' }, text: 'Met at the meetup.', date: D, how: 'met' })
     expect(n.path).toBe('05-Knowledge/People/Ada Fernsby.md')
     expect(n.content).toBe(
       [
         '---',
         'type: person',
-        'relationship: techbbq',
+        'relationship: book-club',
         'company: Brightwell',
-        'tags: [people, techbbq]',
+        'tags: [people, book-club]',
         'created: 2026-10-12',
         'updated: 2026-10-12',
         '---',
@@ -169,5 +169,18 @@ describe('buildNewNote', () => {
     const n = buildNewNote({ kind: kind('book'), title: 'Dune', values: { author: 'X\ntype: hidden' }, text: '', date: D })
     expect(n.content).toContain('author: "X type: hidden"\n')
     expect(n.content.split('\n').filter(l => l.startsWith('type:'))).toEqual(['type: book'])
+  })
+})
+
+describe('relationshipOptions', () => {
+  const person = (relationship: unknown, type: string | null = 'person') => ({ type, frontmatter: { relationship } })
+
+  test('an empty vault gets the generic relationships only', () => {
+    expect(relationshipOptions([])).toEqual(['friend', 'family', 'partner', 'mentor', 'investor', 'contact'])
+  })
+
+  test("the vault's own relationship values follow, most used first, from person notes only", () => {
+    const notes = [person('book-club'), person(['climbing', 'friend']), person('climbing'), person('Climbing '), person('band', 'project'), person(42), person('')]
+    expect(relationshipOptions(notes)).toEqual(['friend', 'family', 'partner', 'mentor', 'investor', 'contact', 'climbing', 'book-club'])
   })
 })

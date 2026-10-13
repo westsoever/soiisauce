@@ -3,40 +3,33 @@ import { afterEach, describe, expect, test } from 'bun:test'
 import { rmSync } from 'node:fs'
 import type { NoteMeta } from '../lib/types'
 import { createSoiiApp } from './app'
-import { createSessionToken } from './auth'
 import { decorators } from './decorate'
 import { makeGeneratedFixture } from './test-fixture'
 
-const SECRET = 's'.repeat(40)
-const ENV = { GITHUB_CLIENT_ID: 'cid', GITHUB_CLIENT_SECRET: 'csec', SOII_ALLOWED_GITHUB_LOGINS: 'octo', SOII_SESSION_SECRET: SECRET }
+const ENV = {}
 const NOW = 1_800_000_000_000
 const dir = makeGeneratedFixture()
 const app = createSoiiApp({ env: ENV, generatedDir: dir, now: () => NOW })
-const token = await createSessionToken({ login: 'octo', avatarUrl: null }, SECRET, NOW / 1000)
-const authed = { headers: { Cookie: `soii_session=${token}` } }
-const get = (path: string, init: RequestInit = authed) => app.request(`https://soii.test${path}`, init)
+const get = (path: string) => app.request(`https://soii.test${path}`)
 
 afterEach(() => {
   decorators.length = 0
 })
 
-const PROTECTED = ['/api/me', '/api/vault', '/api/notes/People/Anna', '/api/search?q=anna', '/api/files/assets/pic.png']
-
-describe('protected routes', () => {
-  for (const path of PROTECTED) {
-    test(`${path} is 401 without a session`, async () => {
-      const res = await get(path, { headers: {} })
-      expect(res.status).toBe(401)
-    })
-    test(`${path} works with a session`, async () => {
+describe('no sign-in', () => {
+  for (const path of ['/api/vault', '/api/notes/People/Anna', '/api/search?q=anna', '/api/files/assets/pic.png']) {
+    test(`${path} answers without a cookie`, async () => {
       expect((await get(path)).status).toBe(200)
     })
   }
+  test('there are no sign-in routes', async () => {
+    for (const path of ['/api/me', '/api/auth/login', '/api/auth/callback']) expect((await get(path)).status).toBe(404)
+  })
 })
 
 describe('vault routes', () => {
   test('health reports build meta without content', async () => {
-    const body = await (await get('/api/health', { headers: {} })).json()
+    const body = await (await get('/api/health')).json()
     expect(body).toEqual({ ok: true, commit: 'def5678', vaultCommit: 'abc1234', builtAt: '2026-10-11T20:00:00.000Z' })
   })
 
@@ -107,7 +100,7 @@ describe('vault routes', () => {
   test('unknown api path → 404 JSON; no compiled vault → 503 not_built', async () => {
     expect(await (await get('/api/nope')).json()).toEqual({ error: 'not_found' })
     const empty = createSoiiApp({ env: ENV, generatedDir: '/nonexistent/soii', now: () => NOW })
-    const res = await empty.request('https://soii.test/api/vault', authed)
+    const res = await empty.request('https://soii.test/api/vault')
     expect(res.status).toBe(503)
     expect(await res.json()).toEqual({ error: 'not_built' })
   })

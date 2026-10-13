@@ -79,7 +79,7 @@ async function prerequisites(ctx: Ctx): Promise<boolean> {
   else {
     const remote = await ctx.exec('git', ['ls-remote', '--tags', remoteUrl(ctx)], { timeoutMs: 30_000 })
     ctx.out(`  GitHub access to soii: ${remote.code === 0 ? 'ok' : 'cannot read it'}`)
-    if (remote.code !== 0) problems.push('git cannot read the soii repo (it is private). Sign in to GitHub once with:\n    gh auth login && gh auth setup-git\n  (the `gh` tool is at https://cli.github.com, or `brew install gh`), then start again.')
+    if (remote.code !== 0) problems.push('git cannot reach soii on GitHub. Check that this computer is online, then start again.\n  (Installing from a private fork? Sign in once with: gh auth login && gh auth setup-git)')
   }
   if (!problems.length) return true
   ctx.err(`\nSomething is missing, so I stopped before changing anything:\n\n${problems.map(p => `- ${p}`).join('\n\n')}`)
@@ -189,11 +189,11 @@ async function askFolderTypes(ctx: Ctx, p: Prompter, folders: FolderStat[]): Pro
 async function ask(ctx: Ctx, p: Prompter, flags: Flags): Promise<Plan> {
   const interactiveService = !flags.noService
   const kind = await askMode(ctx, p)
-  const plan: Plan = { mode: 'new', vault: '', samples: true, gitInit: false, fill: false, typeMap: [], open: false }
+  const plan: Plan = { mode: 'new', vault: '', samples: false, gitInit: false, fill: false, typeMap: [], open: false }
 
   if (kind === 'new') {
     plan.vault = await askNewFolder(ctx, p, 'soii-vault')
-    plan.samples = await askYesNo(p, 'Add a few sample notes (made-up books, people and goals) so you can see what soii looks like?', true)
+    plan.samples = await askYesNo(p, "Fill the vault with Sam's sample notes (a made-up person's books, people and goals) so you can see soii working? Without them it starts empty, with just the folders and templates.", false)
   } else {
     const source = await askExistingPath(ctx, p)
     plan.mode = await askPlaceOrCopy(ctx, p, source)
@@ -355,9 +355,9 @@ async function tidyNotes(ctx: Ctx, p: Prompter, vault: string, plan: Plan): Prom
 async function execute(ctx: Ctx, p: Prompter, plan: Plan, flags: Flags, deps: WizardDeps): Promise<number> {
   const withBoot: Flags = { ...flags, boot: plan.boot }
   let code: number
-  if (plan.mode === 'new') code = await deps.init(ctx, plan.vault, { ...withBoot, empty: !plan.samples })
+  if (plan.mode === 'new') code = await deps.init(ctx, plan.vault, { ...withBoot, samples: plan.samples })
   else if (plan.mode === 'copy') {
-    code = await deps.init(ctx, plan.vault, { ...withBoot, empty: true }, dest => {
+    code = await deps.init(ctx, plan.vault, { ...withBoot, samples: false }, dest => {
       const r = importVault(plan.source!, dest)
       ctx.out(`Copied ${plural(r.copied.length, 'file')} from ${plan.source}.${r.conflicts.length ? ` ${r.conflicts.length} had the same name as a starter file and the starter's was kept.` : ''}`)
     })

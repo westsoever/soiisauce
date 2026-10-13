@@ -1,7 +1,9 @@
 // Aggregation for the `stats` view (spec §12): KPI tiles and one optional bar
 // chart. Numbers come through parseLooseNumber; values that can't be read are
-// "not counted", never 0. Different currencies are never added together.
+// "not counted", never 0. Different currencies are never added together, unless the caller
+// passes a Conversion (D114): then every amount is converted to one currency first.
 import { z } from 'zod'
+import { convertAmount, currencyCode, type Conversion } from './currency'
 import { formatCurrency, parseLooseNumber } from './format'
 import { runTab } from './query'
 import { readField } from './read-field'
@@ -54,6 +56,8 @@ export interface TileResult {
   count: number
   skipped: number
   display: string
+  /** The other currencies whose amounts were converted into `currency`, for the footnote. */
+  convertedFrom: string[]
 }
 
 export interface ChartPoint {
@@ -119,15 +123,25 @@ function factorFor(factors: Record<string, number>, key: string): number | undef
   return Object.entries(factors).find(([name]) => name.toLowerCase() === key)?.[1]
 }
 
+/** Converts one note's amount into the display currency; null (not counted) when its currency is missing or has no rate. */
+function converter(conv: Conversion): (note: NoteMeta, value: number) => number | null {
+  return (note, value) => {
+    const from = currencyCode(textOf(note, 'currency'))
+    return from ? convertAmount(value, from, conv.to, conv.rates) : null
+  }
+}
+
 export function aggregate(
   notes: NoteMeta[],
   agg: Agg,
   field?: string,
-  normalize?: TileSpec['normalize']
+  normalize?: TileSpec['normalize'],
+  conv?: Conversion
 ): { value: number | null; count: number; skipped: number } {
   if (agg === 'count') return { value: notes.length, count: notes.length, skipped: 0 }
   if (!field) return { value: null, count: notes.length, skipped: notes.length }
   const values: number[] = []
+  const convert = conv ? converter(conv) : null
   let skipped = 0
   for (const note of notes) {
     let value = parseLooseNumber(readField(note, field))
@@ -135,6 +149,7 @@ export function aggregate(
       const factor = factorFor(normalize.factors, textOf(note, normalize.field).toLowerCase())
       value = factor === undefined ? null : value * factor
     }
+    if (value !== null && convert) value = convert(note, value)
     if (value === null) skipped++
     else values.push(value)
   }
@@ -166,15 +181,29 @@ export function formatTileValue(value: number | null, format: 'number' | 'curren
 
 export function tileFootnote(tile: TileResult): string {
   const notes = `${tile.count} ${tile.count === 1 ? 'note' : 'notes'}`
-  return tile.skipped ? `${notes} · ${tile.skipped} not counted` : notes
+  const counted = tile.skipped ? `${notes} · ${tile.skipped} not counted` : notes
+  return tile.convertedFrom.length ? `${counted} · converted from ${tile.convertedFrom.join(', ')}` : counted
 }
 
-function result(label: string, spec: TileSpec, notes: NoteMeta[], currencyOverride?: string | null): TileResult {
-  const { value, count, skipped } = aggregate(notes, spec.agg, spec.field, spec.normalize)
+// Money tiles are the ones a Conversion applies to: not counts, not tiles pinned to plain numbers.
+const isMoneyTile = (spec: TileSpec) => spec.agg !== 'count' && spec.format !== 'number'
+
+function result(label: string, spec: TileSpec, notes: NoteMeta[], currencyOverride?: string | null, conv?: Conversion): TileResult {
+  const { value, count, skipped } = aggregate(notes, spec.agg, spec.field, spec.normalize, conv)
   const found = currencies(notes)
   const format = spec.agg === 'count' ? 'number' : (spec.format ?? (found.length ? 'currency' : 'number'))
-  const currency = currencyOverride !== undefined ? currencyOverride : found.length === 1 ? found[0] : null
-  return { label, value, format, currency: format === 'currency' ? currency : null, count, skipped, display: formatTileValue(value, format, currency) }
+  const currency = conv ? conv.to : currencyOverride !== undefined ? currencyOverride : found.length === 1 ? found[0] : null
+  const convertedFrom = conv ? [...new Set(found.map(c => currencyCode(c)).filter((c): c is string => c !== null && c !== conv.to))].sort() : []
+  return {
+    label,
+    value,
+    format,
+    currency: format === 'currency' ? currency : null,
+    count,
+    skipped,
+    display: formatTileValue(value, format, currency),
+    convertedFrom
+  }
 }
 
 // One tile per currency whenever a field aggregate would otherwise add different currencies.
@@ -183,8 +212,15 @@ function splitByCurrency(spec: TileSpec, label: string, notes: NoteMeta[]): Tile
   return groupBy(notes, 'currency').map(group => result(`${label} · ${group.label}`, spec, group.notes, group.missing ? null : group.label))
 }
 
-export function computeTile(spec: TileSpec, notes: NoteMeta[], index: VaultIndex): TileResult[] {
+export function computeTile(spec: TileSpec, notes: NoteMeta[], index: VaultIndex, conv?: Conversion): TileResult[] {
   const pool = filterNotes(notes, index, spec)
+  // With a display currency, one tile adds everything up in it, so the per-currency split is no longer needed.
+  if (conv && isMoneyTile(spec)) {
+    if (!spec.groupBy || spec.groupBy === 'currency') return [result(spec.label, spec, pool, undefined, conv)]
+    const groups = groupBy(pool, spec.groupBy)
+    if (!groups.length) return [result(spec.label, spec, [], undefined, conv)]
+    return groups.map(group => result(`${spec.label} · ${group.label}`, spec, group.notes, undefined, conv))
+  }
   if (!spec.groupBy) return splitByCurrency(spec, spec.label, pool)
   const groups = groupBy(pool, spec.groupBy)
   if (!groups.length) return [result(spec.label, spec, [])]
@@ -203,7 +239,8 @@ interface ChartEntry {
   currency: string | null
 }
 
-function chartEntries(groups: Group[], spec: ChartSpec): ChartEntry[] {
+function chartEntries(groups: Group[], spec: ChartSpec, conv?: Conversion): ChartEntry[] {
+  if (conv) return groups.map(group => ({ key: group.key, label: group.label, notes: group.notes, currency: conv.to }))
   return groups.flatMap((group): ChartEntry[] => {
     const found = spec.agg === 'count' ? [] : currencies(group.notes)
     if (found.length <= 1) return [{ key: group.key, label: group.label, notes: group.notes, currency: found[0] ?? null }]
@@ -216,10 +253,11 @@ function chartEntries(groups: Group[], spec: ChartSpec): ChartEntry[] {
   })
 }
 
-export function computeChart(spec: ChartSpec, notes: NoteMeta[], index: VaultIndex): ChartPoint[] {
+export function computeChart(spec: ChartSpec, notes: NoteMeta[], index: VaultIndex, conv?: Conversion): ChartPoint[] {
   const groups = groupBy(filterNotes(notes, index, {}), spec.groupBy)
-  const points = chartEntries(groups, spec)
-    .map(entry => ({ entry, value: aggregate(entry.notes, spec.agg, spec.field).value }))
+  const money = conv && spec.agg !== 'count' ? conv : undefined
+  const points = chartEntries(groups, spec, money)
+    .map(entry => ({ entry, value: aggregate(entry.notes, spec.agg, spec.field, undefined, money).value }))
     .filter((point): point is { entry: ChartEntry; value: number } => point.value !== null)
     .sort((a, b) => b.value - a.value || a.entry.key.localeCompare(b.entry.key))
   const toPoint = ({ entry, value }: { entry: ChartEntry; value: number }): ChartPoint => ({ key: entry.key, label: entry.label, value })
@@ -231,7 +269,7 @@ export function computeChart(spec: ChartSpec, notes: NoteMeta[], index: VaultInd
   }
   const others = [...tail.values()].map((entries, i): ChartPoint => {
     const currency = entries[0].currency
-    const value = aggregate(entries.flatMap(e => e.notes), spec.agg, spec.field).value ?? 0
+    const value = aggregate(entries.flatMap(e => e.notes), spec.agg, spec.field, undefined, money).value ?? 0
     return { key: i === 0 ? '\u0000other' : `\u0000other${i}`, label: currency && tail.size > 1 ? `Other · ${currency}` : 'Other', value }
   })
   return [...points.slice(0, MAX_BARS - 1).map(toPoint), ...others.sort((a, b) => b.value - a.value || a.label.localeCompare(b.label))]

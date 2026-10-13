@@ -7,7 +7,7 @@ import { keys } from '../lib/queries'
 import { UPDATE_COMMAND, updateMessage } from './messages'
 import { UpdateNoticeRow } from './UpdateNotice'
 
-const NEWER: VersionInfo = { installed: 'v0.1.2', latest: 'v0.1.3', updateAvailable: true, releaseUrl: 'https://github.com/westsoever/soii/releases/tag/v0.1.3' }
+const NEWER: VersionInfo = { installed: 'v0.1.2', latest: 'v0.1.3', updateAvailable: true, releaseUrl: 'https://github.com/westsoever/soiisauce/releases/tag/v0.1.3' }
 
 function render(ui: ReactNode, info: VersionInfo | undefined): string {
   const client = new QueryClient()

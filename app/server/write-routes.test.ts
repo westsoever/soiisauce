@@ -13,15 +13,9 @@ const post = (path: string, body: unknown, origin: string | null = 'http://local
   })
 
 describe('write routes', () => {
-  test('need a session', async () => {
-    const app = createSoiiApp({ env: { SOII_SESSION_SECRET: 'x'.repeat(40), GITHUB_CLIENT_ID: 'a', GITHUB_CLIENT_SECRET: 'b', SOII_ALLOWED_GITHUB_LOGINS: 'me' } })
-    expect((await app.fetch(post('/api/notes', { type: 'book', values: { title: 'Dune' } }))).status).toBe(401)
-    expect((await app.fetch(post('/api/sync', {}))).status).toBe(401)
-  })
-
   test('reject a missing or foreign Origin', async () => {
     const root = mkdtempSync(join(tmpdir(), 'soii-routes-'))
-    const app = createSoiiApp({ env: { SOII_DEV_AUTH: '1', VAULT_PATH: root } })
+    const app = createSoiiApp({ env: { VAULT_PATH: root } })
     for (const origin of [null, 'https://evil.example']) {
       expect((await app.fetch(post('/api/notes', { type: 'book', values: { title: 'Dune' } }, origin))).status).toBe(403)
       expect((await app.fetch(post('/api/sync', {}, origin))).status).toBe(403)
@@ -31,17 +25,17 @@ describe('write routes', () => {
 
   test('write a note for a same-origin request and report capabilities', async () => {
     const root = mkdtempSync(join(tmpdir(), 'soii-routes-'))
-    const app = createSoiiApp({ env: { SOII_DEV_AUTH: '1', VAULT_PATH: root } })
-    expect(await (await app.fetch(new Request('http://localhost/api/capabilities'))).json()).toEqual({ write: true, writeVia: 'local', sync: true })
+    const app = createSoiiApp({ env: { VAULT_PATH: root } })
+    expect(await (await app.fetch(new Request('http://localhost/api/capabilities'))).json()).toEqual({ write: true, sync: true })
     const res = await app.fetch(post('/api/notes', { type: 'book', values: { title: 'Dune' } }))
     expect(res.status).toBe(201)
     // A temp folder is not a git repo, so the file is saved and the response says nothing was committed.
-    expect(await res.json()).toEqual({ path: '04-Resources/Library/Books/Dune.md', via: 'local', commitUrl: null, warning: expect.stringContaining('not a git repository') })
+    expect(await res.json()).toEqual({ path: '04-Resources/Library/Books/Dune.md', warning: expect.stringContaining('not a git repository') })
     expect((await app.fetch(post('/api/notes', { type: 'book', values: { title: 'Dune' } }))).status).toBe(409)
   })
 
   test('capabilities are off when nothing is configured', async () => {
-    const app = createSoiiApp({ env: { SOII_DEV_AUTH: '1' } })
-    expect(await (await app.fetch(new Request('http://localhost/api/capabilities'))).json()).toEqual({ write: false, writeVia: null, sync: false })
+    const app = createSoiiApp({ env: {} })
+    expect(await (await app.fetch(new Request('http://localhost/api/capabilities'))).json()).toEqual({ write: false, sync: false })
   })
 })

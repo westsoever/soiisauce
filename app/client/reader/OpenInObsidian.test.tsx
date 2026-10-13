@@ -17,7 +17,7 @@ function render(ui: ReactNode, obsidianVault: string | null = 'cos'): string {
   const client = new QueryClient()
   client.setQueryData(keys.vault, { config: { obsidianVault }, notes: [note] } as unknown as VaultIndex)
   const doc = { ...note, frontmatter: {}, tags: [], html: '<p>Hello</p>', headings: [], outgoing: [], backlinks: [] }
-  client.setQueryData<Capabilities>(keys.capabilities, { write: false, writeVia: null, sync: false })
+  client.setQueryData<Capabilities>(keys.capabilities, { write: false, sync: false })
   client.setQueryData(keys.note(note.id), doc as unknown as NoteDoc)
   return renderToStaticMarkup(<QueryClientProvider client={client}>{ui}</QueryClientProvider>)
 }

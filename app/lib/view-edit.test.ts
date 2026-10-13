@@ -48,9 +48,9 @@ describe('addTab', () => {
     expect(tabsOf(r.yaml, 'projects').map(t => t.id)).toEqual(['board', 'active'])
   })
   test('copies a built-in workspace whole before adding to it', () => {
-    const r = ok(addTab(CONFIG, 'people', { title: 'TechBBQ', view: 'table', query: { type: 'person', where: { relationship: 'techbbq' } } }))
+    const r = ok(addTab(CONFIG, 'people', { title: 'Book club', view: 'table', query: { type: 'person', where: { relationship: 'book-club' } } }))
     const builtIn = DEFAULT_CONFIG.workspaces.find(w => w.id === 'people')!
-    expect(tabsOf(r.yaml, 'people').map(t => t.id)).toEqual([...builtIn.tabs.map(t => t.id), 'techbbq'])
+    expect(tabsOf(r.yaml, 'people').map(t => t.id)).toEqual([...builtIn.tabs.map(t => t.id), 'book-club'])
     expect(tabsOf(r.yaml, 'people')[0]).toEqual(builtIn.tabs[0])
   })
   test('works with no file at all', () => {
@@ -175,7 +175,7 @@ describe('block-style query and sort', () => {
     const brief = ok(setTabQuery(TEMPLATE, 'today', 'brief', { type: 'daily-brief' }))
     expect(brief.yaml).toContain('        query: { type: daily-brief }\n      - id: weekly')
     const journal = ok(setTabQuery(TEMPLATE, 'today', 'journal', { type: 'journal' }))
-    expect(journal.yaml).toContain('        query: { type: journal }\n\n  - id: projects')
+    expect(journal.yaml).toContain('        query: { type: journal }\n\n  # Replaces the built-in Projects')
     const block = '        query:\n          - { type: journal }\n          - { path: "01-Daily/20??-??-??.md" }\n'
     expect(TEMPLATE).toContain(block)
     expect(journal.yaml).toBe(TEMPLATE.replace(block, '        query: { type: journal }\n'))

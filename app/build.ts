@@ -1,14 +1,13 @@
 // Builds soii:
 //   api/_generated/vault/          the compiled vault — private, only the API reads it
-//   api/_generated/server-entry.js the API bundled for Vercel's Bun runtime
+//   api/_generated/server-entry.js the API bundled for app/serve.ts
 //   dist/                          the public app shell (no vault content)
-// Vault source: VAULT_PATH (local) or a shallow clone of VAULT_REPO / VAULT_GIT_URL.
+// Vault source: VAULT_PATH, the vault folder on disk.
 //   bun app/build.ts [--dev] [--vault-only]   (--dev: unminified, sourcemaps; --vault-only: recompile the vault into an existing build, which is what a note edit needs)
 // SOII_OUT_DIR=<dir> writes dist/ and api/_generated/ under <dir> instead of the repo (used by app/dev.test.ts).
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { basename, dirname, join, relative, resolve } from 'node:path'
 import tailwind from 'bun-plugin-tailwind'
-import { fetchVault } from '../scripts/fetch-vault'
 import { vaultNameFrom } from './lib/obsidian'
 import { compileVault } from './vault/compile'
 
@@ -31,12 +30,10 @@ function fresh(dir: string): void {
 
 function resolveVaultDir(): string {
   const local = process.env.VAULT_PATH?.trim()
-  if (local) {
-    const dir = resolve(ROOT, local.replace(/^~(?=\/|$)/, process.env.HOME ?? '~'))
-    if (!existsSync(dir)) throw new Error(`VAULT_PATH ${dir} doesn't exist.`)
-    return dir
-  }
-  return fetchVault(process.env, join(ROOT, '.vault'))
+  if (!local) throw new Error('Set VAULT_PATH to your vault folder.')
+  const dir = resolve(ROOT, local.replace(/^~(?=\/|$)/, process.env.HOME ?? '~'))
+  if (!existsSync(dir)) throw new Error(`VAULT_PATH ${dir} doesn't exist.`)
+  return dir
 }
 
 function formatLogs(logs: { message: string; position?: { file: string; line: number } | null }[]): string {
@@ -129,7 +126,6 @@ async function buildServer(): Promise<void> {
     [
       `import type { Hono } from 'hono'`,
       `export declare function createSoiiApp(opts?: { generatedDir?: string }): Hono`,
-      `export declare function restoreApiPath(request: Request, param?: string): Request`,
       ''
     ].join('\n')
   )

@@ -3,15 +3,13 @@
 // as you type and cleared only by a 201. "Log it" sits in the header so the iOS keyboard never
 // hides it, and again at the end of the form.
 import { IconChevronLeft, IconCopy } from '@tabler/icons-react'
-import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { facetSuggestions, libraryRoot, noteCategories, noteCollections } from '../../lib/collections'
-import { buildNewNote, creatingKind, fieldsFor, formatEntry, localDay, type LogField, type LogKind, type LogRequestBody, type LogResponse } from '../../lib/log'
+import { buildNewNote, creatingKind, fieldsFor, formatEntry, localDay, relationshipOptions, type LogField, type LogKind, type LogRequestBody, type LogResponse } from '../../lib/log'
 import type { NoteMeta, VaultIndex } from '../../lib/types'
 import { api, HttpError } from '../lib/http'
 import { useCapabilities } from '../lib/queries'
 import { logPath, navigate } from '../lib/router'
-import { builtAt, waitForRebuild } from '../lib/use-fresh-vault'
 import { toast } from '../lib/toast'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
@@ -47,7 +45,6 @@ function Section({ label, children }: { label: string; children: ReactNode }) {
 }
 
 export function LogForm({ kind, index }: { kind: LogKind; index: VaultIndex }) {
-  const queryClient = useQueryClient()
   const capabilities = useCapabilities().data
   const [initial] = useState(() => {
     const saved = loadDraft()
@@ -67,6 +64,9 @@ export function LogForm({ kind, index }: { kind: LogKind; index: VaultIndex }) {
     return { collection: facetSuggestions(index.notes, type, 'collection'), category: facetSuggestions(index.notes, type, 'category') }
   }, [kind, index.notes])
   const suggestionsFor = (f: LogField) => (f.kind === 'list' ? suggestions[f.key === 'collection' ? 'collection' : 'category'] : undefined)
+  // Relationship offers the generic choices plus the ones this vault's people already have.
+  const relationships = useMemo(() => relationshipOptions(index.notes), [index.notes])
+  const withVaultOptions = (f: LogField): LogField => (f.key === 'relationship' && f.kind === 'select' ? { ...f, options: relationships } : f)
   useEffect(() => {
     if (result) return
     const t = setTimeout(() => saveDraft(draft, defaults), 300)
@@ -77,8 +77,8 @@ export function LogForm({ kind, index }: { kind: LogKind; index: VaultIndex }) {
   const mode = target?.mode ?? null
   const targetNote = target?.mode === 'append' ? (index.notes.find(n => n.path === target.path) ?? null) : null
   const appendFields = fieldsFor(kind, 'append')
-  const quick = mode === 'new' ? creatingKind(kind).quick : mode === 'append' ? appendFields : []
-  const more = mode === 'new' ? creatingKind(kind).more : []
+  const quick = (mode === 'new' ? creatingKind(kind).quick : mode === 'append' ? appendFields : []).map(withVaultOptions)
+  const more = (mode === 'new' ? creatingKind(kind).more : []).map(withVaultOptions)
   const changed =
     mode === 'append'
       ? Object.fromEntries(
@@ -123,11 +123,9 @@ export function LogForm({ kind, index }: { kind: LogKind; index: VaultIndex }) {
     setSaving(true)
     setExistsPath(null)
     try {
-      const before = capabilities?.sync ? await builtAt() : null
       const response = await api<LogResponse>('/api/log', { method: 'POST', body })
       clearDraft()
       setResult({ response, title: target?.title || kind.label })
-      if (response.pulled) void waitForRebuild(queryClient, before)
     } catch (err) {
       const data = err instanceof HttpError ? (err.body as { error?: string; path?: string } | null) : null
       if (data?.error === 'exists' && data.path && index.notes.some(n => n.path === data.path)) setExistsPath(data.path)

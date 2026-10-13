@@ -18,14 +18,10 @@ function vault() {
   writeFileSync(join(root, 'soii.config.yml'), CONFIG)
   return root
 }
-const devApp = (root: string) => createSoiiApp({ env: { SOII_DEV_AUTH: '1', VAULT_PATH: root }, generatedDir: makeGeneratedFixture() })
+const devApp = (root: string) => createSoiiApp({ env: { VAULT_PATH: root }, generatedDir: makeGeneratedFixture() })
 const ADD = { workspace: 'projects', tab: { title: 'Active', view: 'list', query: { type: 'project' } } }
 
 describe('/api/views', () => {
-  test('needs a session', async () => {
-    const app = createSoiiApp({ env: { SOII_SESSION_SECRET: 'x'.repeat(40), GITHUB_CLIENT_ID: 'a', GITHUB_CLIENT_SECRET: 'b', SOII_ALLOWED_GITHUB_LOGINS: 'me' } })
-    expect((await app.fetch(req('POST', '/api/views', ADD))).status).toBe(401)
-  })
   test('rejects a missing or foreign Origin and writes nothing', async () => {
     const root = vault()
     for (const origin of [null, 'https://evil.example']) {
@@ -39,7 +35,7 @@ describe('/api/views', () => {
     const app = devApp(root)
     const added = await app.fetch(req('POST', '/api/views', ADD))
     expect(added.status).toBe(201)
-    expect(await added.json()).toMatchObject({ workspace: 'projects', tabId: 'active', title: 'Active', via: 'local' })
+    expect(await added.json()).toMatchObject({ workspace: 'projects', tabId: 'active', title: 'Active' })
     const patched = await app.fetch(req('PATCH', '/api/views/projects/active', { sort: [{ field: 'title', dir: 'asc' }] }))
     expect(patched.status).toBe(200)
     expect(readFileSync(join(root, 'soii.config.yml'), 'utf8')).toContain('field: title')
@@ -56,7 +52,7 @@ describe('/api/views', () => {
     expect(await last.json()).toMatchObject({ error: 'last_tab' })
   })
   test('501 when writing is not set up', async () => {
-    const app = createSoiiApp({ env: { SOII_DEV_AUTH: '1' }, generatedDir: makeGeneratedFixture() })
+    const app = createSoiiApp({ env: {}, generatedDir: makeGeneratedFixture() })
     expect((await app.fetch(req('POST', '/api/views', ADD))).status).toBe(501)
   })
 })

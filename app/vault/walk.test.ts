@@ -114,3 +114,13 @@ describe('collectWalk duplicates', () => {
     expect(collectWalk([f('a.txt'), f('b.md')]).markdown).toEqual(['b.md'])
   })
 })
+
+describe('collectWalk .tex', () => {
+  test('.tex files get their own list; .bib and other TeX files are ignored', () => {
+    const found = ['b.tex', 'a.md', 'c.TEX', 'refs.bib', 'style.sty', 'e.pdf'].map(p => ({ path: p, onDisk: p }))
+    const r = collectWalk(found)
+    expect(r.tex).toEqual(['b.tex', 'c.TEX'])
+    expect(r.markdown).toEqual(['a.md'])
+    expect(r.attachments).toEqual(['e.pdf'])
+  })
+})

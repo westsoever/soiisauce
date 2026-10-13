@@ -6,7 +6,7 @@ import type { Flags } from './args'
 import { checkoutSoii, remoteUrl, soiiCheckout } from './checkout'
 import type { Ctx } from './context'
 import { copyTemplate, NOT_FOR_VAULTS, syncSkills } from './copy'
-import { newDecisions } from './decisions'
+import { newChangelog } from './changelog'
 import { versionLine, updateLinks } from './messages'
 import { commitSoiiFiles } from './vault-commit'
 import { chooseShimDir, logPath, renderShim } from './paths'
@@ -19,7 +19,7 @@ import { isNewer, newestTag } from './version'
 const SHIM_MARKER = '# soii shim'
 /** How long to wait for the service to answer before saying it didn't. Starting it takes a few seconds. */
 const HEALTH_WAIT_MS = 15_000
-const AUTH_HINT = 'The soii repo is private. Run `gh auth login` and then `gh auth setup-git` once so git can read it, then try again.'
+const FETCH_HINT = 'Check that this computer is online and can reach github.com, then try again. (Using a private fork of soii? Run `gh auth login` and then `gh auth setup-git` once so git can read it.)'
 
 const expandHome = (ctx: Ctx, p: string) => (p === '~' ? ctx.home : p.startsWith('~/') ? join(ctx.home, p.slice(2)) : p)
 const soiiDir = (vault: string) => join(vault, '.soii')
@@ -59,7 +59,7 @@ function prepareSoiiDir(ctx: Ctx, vault: string, flags: Flags): string {
     writeFileSync(pkgFile, setPin(readFileSync(pkgFile, 'utf8'), pinSpec(flags.from)))
   }
   const ref = parsePin(readFileSync(pkgFile, 'utf8'))
-  if (!ref) throw new Error(`${pkgFile} doesn't pin a soii version ("soii": "github:westsoever/soii#v0.1.0"). Fix it, or pass --from v0.1.0.`)
+  if (!ref) throw new Error(`${pkgFile} doesn't pin a soii version ("soii": "github:westsoever/soiisauce#v0.1.0"). Fix it, or pass --from v0.1.0.`)
   const ignoreFile = join(here, '.gitignore')
   writeFileSync(ignoreFile, ensureLines(existsSync(ignoreFile) ? readFileSync(ignoreFile, 'utf8') : '', SOII_GITIGNORE_LINES))
   return ref
@@ -88,7 +88,7 @@ export async function install(ctx: Ctx, vaultArg: string | undefined, flags: Fla
   ctx.out(`Installing soii ${ref} into ${here} …`)
   const fetched = await checkoutSoii(ctx, vault, ref)
   if (!fetched.ok) {
-    ctx.err(`soii: ${fetched.message}\n${AUTH_HINT}`)
+    ctx.err(`soii: ${fetched.message}\n${FETCH_HINT}`)
     return 1
   }
   const root = installedRoot(vault)
@@ -191,10 +191,10 @@ export async function init(ctx: Ctx, dirArg: string, flags: Flags, beforeCommit?
   const dest = resolve(ctx.cwd, expandHome(ctx, dirArg))
   const template = join(ctx.pkgRoot, 'template')
   if (!existsSync(template)) throw new Error(`This soii package has no template/ folder (looked in ${template}).`)
-  copyTemplate(template, dest, { empty: flags.empty, title: flags.title ?? basename(dest) })
+  copyTemplate(template, dest, { empty: !flags.samples, title: flags.title ?? basename(dest) })
   // The template pins a tag; point it at the version running now, and ignore soii's own folders, before the first commit.
   prepareSoiiDir(ctx, dest, { ...flags, from: flags.from ?? packageVersion(ctx.pkgRoot) ?? undefined })
-  ctx.out(`New vault in ${dest}${flags.empty ? ' (empty)' : ''}.`)
+  ctx.out(`New vault in ${dest}${flags.samples ? ' (with sample notes)' : ' (empty)'}.`)
   if (beforeCommit) await beforeCommit(dest)
 
   if (!existsSync(join(dest, '.git'))) {
@@ -307,7 +307,7 @@ export async function update(ctx: Ctx, flags: Flags): Promise<number> {
   const remote = await ctx.exec('git', ['ls-remote', '--tags', remoteUrl(ctx)], { timeoutMs: 30_000 })
   const latest = remote.code === 0 ? newestTag(remote.out) : null
   if (remote.code !== 0) {
-    ctx.err(`soii: could not list soii's releases.\n${AUTH_HINT}`)
+    ctx.err(`soii: could not list soii's releases.\n${FETCH_HINT}`)
     return 1
   }
   if (!latest) {
@@ -320,20 +320,20 @@ export async function update(ctx: Ctx, flags: Flags): Promise<number> {
     return 0
   }
   ctx.out(`Updating soii ${installed ? `v${installed}` : '(unknown)'} → ${latest} …`)
-  const decisionsFile = (root: string) => join(root, 'docs', 'superpowers', 'DECISIONS.md')
+  const changelogFile = (root: string) => join(root, 'CHANGELOG.md')
   const read = (f: string) => (existsSync(f) ? readFileSync(f, 'utf8') : '')
-  const before = read(decisionsFile(installedRoot(reg.vault)))
+  const before = read(changelogFile(installedRoot(reg.vault)))
 
   const fetched = await checkoutSoii(ctx, reg.vault, latest)
   if (!fetched.ok) {
-    ctx.err(`soii: ${fetched.message}\n${AUTH_HINT}`)
+    ctx.err(`soii: ${fetched.message}\n${FETCH_HINT}`)
     return 1
   }
   // The new checkout has no node_modules yet, and the CLI run below can't start without them.
   if (!(await installDeps(ctx, installedRoot(reg.vault)))) return 1
   writeFileSync(pkgFile, setPin(readFileSync(pkgFile, 'utf8'), pinSpec(latest)))
-  const news = newDecisions(before, read(decisionsFile(installedRoot(reg.vault))))
-  if (news.length) ctx.out(`\nWhat's new:\n${news.map(n => `  - ${n}`).join('\n')}`)
+  const news = newChangelog(before, read(changelogFile(installedRoot(reg.vault))))
+  if (news.length) ctx.out(`\nWhat's new:\n\n${news.join('\n\n')}`)
   ctx.out(`\n${updateLinks(installed, latest).join('\n')}\n`)
   // The new version rebuilds, refreshes the skills and restarts: its own install knows how.
   return ctx.stream(ctx.bun, [vaultCli(reg.vault), 'install', reg.vault, ...(flags.noService ? ['--no-service'] : [])], { env: { SOII_UPDATE: '1' } })

@@ -1,17 +1,49 @@
-# Customising Finance, People and Goals
+# Customising Finance, People, Goals and Projects
 
-soii ships with Finance, People and Goals workspaces that work from frontmatter alone (see `docs/frontmatter.md`). To change them, add a `soii.config.yml` at your vault root.
+soii ships with Finance, People, Goals and Projects workspaces that work from frontmatter alone (see `docs/frontmatter.md`). To change them, add a `soii.config.yml` at your vault root.
 
 ## Adding views without YAML
 
 - **In soii:** the **+** next to a workspace's tabs opens **New view**: a title, a layout (list, table, gallery or board), a filter (which notes are in the view) and a sort (the order they're shown in), with a live preview. The **⋯** next to it changes the current tab's filter or sort, or removes it.
 - **In Claude Code:** `/soii-view` turns a description into a view, and can use every layout and option on this page.
 
-Both write a tab into `soii.config.yml` and make a commit (in your local vault, or on GitHub when soii runs on Vercel). The first change to a built-in workspace (Library, People, Finance, Goals) copies the whole workspace into your config, following the rule below.
+Both write a tab into `soii.config.yml` and make a commit in your local vault. The first change to a built-in workspace (Library, People, Finance, Goals, Projects) copies the whole workspace into your config, following the rule below.
 
 **One rule to know:** a workspace in your config with the same `id` as a default **replaces the whole default workspace**. Copy every tab you want to keep, not just the one you change.
 
 Option names are checked. A misspelt key (say `groupby` instead of `groupBy`) shows an inline error naming it on that tab, instead of being ignored.
+
+## 00 Inbox
+
+**00 Inbox** sits right after Today in the sidebar. It is a single list of every note under `00-Inbox/`, subfolders included (a `clippings/` folder, say), newest first. "Newest" is the note's `date`, then its `created` property, then a date in its file name. Notes with none of those go to the bottom.
+
+It reads that folder and nothing else, so a note leaves the list when you file it somewhere else. soii doesn't track read or unread: the list is what is in the folder.
+
+Vaults with a differently named inbox folder can point it elsewhere. A workspace with `id: inbox` in your `soii.config.yml` replaces this one, whole:
+
+```yaml
+workspaces:
+  - id: inbox
+    title: Inbox
+    icon: inbox
+    tabs:
+      - { id: inbox, title: Inbox, view: list, query: { path: "Unsorted/**" } }
+```
+
+## Projects
+
+**Projects** is a board of every note with `type: project`, in three columns by `status`: `idea`, `active` and `done`. Other status values get a column of their own, and notes with no status go in a last **No status** column. Each card shows the project's `area` under its title.
+
+```markdown
+---
+type: project
+status: active
+area: Home
+---
+# Balcony garden
+```
+
+Only the note that stands for the project needs the type (one per project folder, say), so plans, transcripts and other files next to it stay off the board. To add tabs, such as a list of a project folder's notes, give your config a workspace with `id: projects`. It replaces this one whole, so repeat the Board tab in it.
 
 ## Finance
 
@@ -39,6 +71,20 @@ Manage at https://apps.apple.com/account/subscriptions
 ```
 
 Prices can be written the way you'd write them: `25,00 kr.`, `$96.00`, `1,234.56` and `12.500,00` are all understood. Values soii can't read (`n/a`) aren't counted, and the tile says how many were left out.
+
+### Showing everything in one currency
+
+Above the Overview and any table with a currency column there is a switch: **EUR**, **DKK**, any other currency your notes use, and **As entered**. Pick one and every tile, chart and price is converted to it. In tables the written amount stays visible in brackets. **As entered** shows each currency on its own again. Your choice is remembered in this browser.
+
+Rates come from the ECB (through the free Frankfurter API), are fetched by soii at most twice a day, and the switch says which day they are from. If they can't be fetched, soii uses rough built-in rates and says "approximate rates". All amounts use today's rate, not the rate on the day of the entry. A note with no `currency`, or a currency soii has no rate for, is not counted, and the tile says how many were left out.
+
+To choose the starting currency, or to pin your own rates (units per 1 EUR, which win over the live ones), add this to `soii.config.yml`:
+
+```yaml
+currency:
+  display: DKK
+  rates: { USD: 1.08 }
+```
 
 A custom overview with an extra billing cycle and a chart:
 
@@ -105,7 +151,7 @@ People has four tabs out of the box:
 |---|---|
 | **Overview** | Who you've been in touch with and who you should reach out to |
 | **Friends** | `relationship` friend, partner, family or flatmate, or `circle: friends` |
-| **Network** | `relationship` mentor, investor, techbbq, aiesec, volt or oasis, or `circle: network`, with LinkedIn |
+| **Network** | `relationship` mentor or investor, or `circle: network`, with LinkedIn |
 | **Contacts** | Everyone with `type: person` |
 
 Tabs are filters, so one person can be in Friends and Network at once. Give someone `circle: [friends, network]` to put them in both regardless of their relationship.
@@ -117,7 +163,7 @@ soii works out **last seen** for every person when the vault compiles. It's the 
 ```markdown
 ## Notes & dated interactions
 - 2026-09-24: dinner at Mikkeller
-- **2026-10-03**: call about the TechBBQ budget
+- **2026-10-03**: call about the book club budget
 ```
 
 Future dates (planned meetings) don't count. Dates inside `%% comments %%` don't count either.
@@ -146,7 +192,7 @@ The default cadences are in the Overview tab's options. To change them, copy the
         view: pulse
         query: { type: person }
         options:
-          cadence: { friend: 30, partner: 30, family: 30, flatmate: 30, mentor: 60, investor: 60, techbbq: 90, aiesec: 90, volt: 90, oasis: 90 }
+          cadence: { friend: 30, partner: 30, family: 30, flatmate: 30, mentor: 60, investor: 60 }
           recentDays: 30   # the "Recently in touch" window
           limit: 10        # rows before "Show all"
       - id: friends
@@ -161,7 +207,7 @@ The default cadences are in the Overview tab's options. To change them, copy the
         title: Network
         view: table
         query:
-          - { type: person, where: { relationship: [mentor, investor, techbbq, aiesec, volt, oasis] } }
+          - { type: person, where: { relationship: [mentor, investor] } }
           - { type: person, where: { circle: network } }
         sort: [{ field: lastSeen, dir: desc }, { field: title, dir: asc }]
         options: { columns: [title, relationship, company, role, { field: linkedin, label: LinkedIn }, lastSeen] }
@@ -215,7 +261,7 @@ A numeric `progress` (0–100, `40%` works too) draws a progress bar on the card
 
 ### Library browsing
 
-In the Library workspace, gallery tabs get a toolbar: Sections (collections), Subcategories (categories), status chips (Want/Reading/Read; Watchlist/Watching/Watched for films and videos; only statuses present are shown), Has my notes, Grid/List and S/M/L. Grouped views show each group as a shelf of its first few notes with **Show all N**; notes without a collection are their own **No collection** section. Filters are in the URL (`?c=startupbooks&cat=biographies&s=read&notes=1`), so a filtered view can be bookmarked; grid/list and size are remembered per tab on each device. There, the toolbar's grouping replaces `groupBy`.
+In the Library workspace, gallery tabs get a toolbar: Sections (collections), Subcategories (categories), status chips (Want/Reading/Read; Watchlist/Watching/Watched for films and videos; only statuses present are shown), Has my notes, Grid/List and S/M/L. Grouped views show each group as a shelf of its first few notes with **Show all N**; notes without a collection are their own **No collection** section. Filters are in the URL (`?c=readinglist&cat=biographies&s=read&notes=1`), so a filtered view can be bookmarked; grid/list and size are remembered per tab on each device. There, the toolbar's grouping replaces `groupBy`.
 
 ### Recipes and Journal
 

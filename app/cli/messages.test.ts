@@ -3,13 +3,13 @@ import { updateLinks, versionLine } from './messages'
 
 test('after an update the release page and the comparison with the old version are linked', () => {
   expect(updateLinks('0.1.2', 'v0.1.3')).toEqual([
-    'Release notes: https://github.com/westsoever/soii/releases/tag/v0.1.3',
-    "What changed: https://github.com/westsoever/soii/compare/v0.1.2...v0.1.3"
+    'Release notes: https://github.com/westsoever/soiisauce/releases/tag/v0.1.3',
+    "What changed: https://github.com/westsoever/soiisauce/compare/v0.1.2...v0.1.3"
   ])
 })
 
 test('with no known old version only the release page is linked', () => {
-  expect(updateLinks(null, 'v0.1.3')).toEqual(['Release notes: https://github.com/westsoever/soii/releases/tag/v0.1.3'])
+  expect(updateLinks(null, 'v0.1.3')).toEqual(['Release notes: https://github.com/westsoever/soiisauce/releases/tag/v0.1.3'])
 })
 
 test('a v-prefixed old version is not doubled', () => {

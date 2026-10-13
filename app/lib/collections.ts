@@ -1,5 +1,5 @@
 // app/lib/collections.ts
-// One field per job (docs/superpowers/specs/2026-10-12-library-browse-design.md): `collection` is the
+// One field per job (see the library browse design notes): `collection` is the
 // list or source a note belongs to (a Library section), `category` its subject (a subcategory).
 // Pure and client-safe: the Library toolbar, the Log and Add forms and the server all use it.
 import { NEW_NOTE_SPECS } from './new-note'
@@ -27,7 +27,7 @@ export function foldKey(value: string): string {
   return value.replace(/\s+/g, ' ').trim().toLowerCase()
 }
 
-/** StartupBooks → "Startup Books", self-help_books → "Self help books". Display only. */
+/** ReadingList → "Reading List", self-help_books → "Self help books". Display only. */
 export function humanize(value: string): string {
   const spaced = value
     .trim()

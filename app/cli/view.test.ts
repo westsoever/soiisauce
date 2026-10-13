@@ -28,7 +28,7 @@ function capture(): { ctx: Ctx; out: string[]; err: string[] } {
   const err: string[] = []
   return { ctx: { ...realCtx(), out: m => out.push(m), err: m => err.push(m) }, out, err }
 }
-const flags = (f: Partial<Flags>): Flags => ({ follow: false, empty: false, noService: false, help: false, json: false, ...f })
+const flags = (f: Partial<Flags>): Flags => ({ follow: false, samples: false, noService: false, help: false, json: false, ...f })
 
 describe('soii view', () => {
   test('fields --json lists types with counts', async () => {

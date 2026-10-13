@@ -13,7 +13,7 @@ export function GalleryView({ workspace, tab, notes, openNote }: ViewProps) {
   const parsed = parseGalleryOptions(tab.options)
   if (!parsed.ok) return <OptionsError view="gallery" error={parsed.error} />
   const options: GalleryOptions = parsed.options
-  // Library tabs browse by section/subcategory (docs/superpowers/specs/2026-10-12-library-browse-design.md).
+  // Library tabs browse by section/subcategory (see the library browse design notes).
   if (workspace.id === 'library') return <LibraryBrowse workspaceId={workspace.id} tabId={tab.id} notes={notes} options={options} openNote={openNote} />
   const aspect = tabAspect(options, notes)
   const groups: NoteGroup[] = options.groupBy ? groupNotes(notes, options.groupBy) : [{ key: '*', label: '', notes }]

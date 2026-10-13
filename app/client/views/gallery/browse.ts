@@ -1,4 +1,4 @@
-// Library browsing (docs/superpowers/specs/2026-10-12-library-browse-design.md): sections
+// Library browsing (see the library browse design notes): sections
 // (collections), subcategories (categories), status and Has-my-notes filters, grouping into
 // capped shelves, URL state and grid sizes. Pure, so it is unit-tested; LibraryBrowse renders it.
 import { bucket, foldKey, libraryRoot, noteCategories, noteCollections, UNCATEGORIZED, type Facet } from '../../../lib/collections'

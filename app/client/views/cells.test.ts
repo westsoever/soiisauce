@@ -1,6 +1,6 @@
 // app/client/views/cells.test.ts
 import { describe, expect, test } from 'bun:test'
-import { displayValue, hasValue, labelFor, toColumn } from './cells'
+import { currencyCell, displayValue, hasValue, labelFor, toColumn } from './cells'
 
 describe('cells', () => {
   test('labelFor humanises field names', () => {
@@ -37,4 +37,19 @@ test('hasValue: empty strings, nulls and empty lists are empty', () => {
   expect(hasValue(n, toColumn('list'))).toBe(false)
   expect(hasValue(n, toColumn('role'))).toBe(true)
   expect(hasValue(n, toColumn('zero'))).toBe(true)
+})
+
+describe('currencyCell', () => {
+  const conv = { to: 'DKK', rates: { DKK: 7.5 } }
+  test('converts to the display currency and keeps the written amount', () => {
+    expect(currencyCell(10, 'EUR', conv)).toEqual({ main: expect.stringContaining('75.00'), original: expect.stringContaining('10.00') })
+  })
+  test('an amount already in the display currency has nothing to add', () => {
+    expect(currencyCell(25, 'dkk', conv).original).toBeNull()
+  })
+  test('unknown currencies, missing currencies and "As entered" stay as written', () => {
+    expect(currencyCell(5, 'SEK', conv).original).toBeNull()
+    expect(currencyCell(5, undefined, conv).original).toBeNull()
+    expect(currencyCell(10, 'EUR', null)).toEqual({ main: expect.stringContaining('10.00'), original: null })
+  })
 })

@@ -132,7 +132,6 @@ Finally, one run **without** `--only` for notes that already carry a type but li
 - **`soii.config.yml`** at the vault root: start from `$SOII/template/soii.config.yml`. Keep only what this vault needs (excludes, renamed workspaces, extra tabs). An absent config is fine too: soii's defaults work. Validate by running the checker again; a config typo shows up there and in the build.
 - **Templates:** copy the files in `$SOII/template/Templates/` that the vault doesn't already have into `$VAULT/Templates/` (never overwrite), so a new note made in Obsidian starts with the same complete properties. Check `.obsidian/templates.json` points at that folder.
 - **Daily notes:** `YYYY-MM-DD.md` in the daily folder, as set up in step 2 (path A already has it).
-- **Deploying to Vercel (optional):** soii runs on `localhost:5011`. Only if they also deploy it, add `.github/workflows/soii-deploy.yml` from `templates/vault-workflow.yml` and follow `docs/deploy-vercel.md`.
 
 Commit: `soii: config and templates`.
 

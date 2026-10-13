@@ -20,12 +20,12 @@ import {
 
 const ROOT = '04-Resources/Library/Books'
 const b = (name: string, fm: Record<string, unknown>, extra: Partial<NoteMeta> = {}) => note(`${ROOT}/${name}`, { type: 'book', ...fm }, extra)
-const SB = { tags: ['StartupBooks'] }
+const SB = { tags: ['ReadingList'] }
 const NOTES = [
-  b('StartupBooks/Steve Jobs', { category: ['Biographies'], status: 'finished' }, { ...SB, noteWords: 120 }),
-  b('StartupBooks/Elon', { category: ['biographies '], status: 'want' }, SB),
-  b('StartupBooks/Lean Startup', { category: 'Startup Methodologies', status: 'reading' }, { ...SB, noteWords: 4 }),
-  b('StartupBooks/Mystery', { status: 'Done' }, { ...SB, noteWords: 0 }),
+  b('ReadingList/Steve Jobs', { category: ['Biographies'], status: 'finished' }, { ...SB, noteWords: 120 }),
+  b('ReadingList/Elon', { category: ['biographies '], status: 'want' }, SB),
+  b('ReadingList/Lean Startup', { category: 'Startup Methodologies', status: 'reading' }, { ...SB, noteWords: 4 }),
+  b('ReadingList/Mystery', { status: 'Done' }, { ...SB, noteWords: 0 }),
   b('Psychology of Money', { status: 'finished' }, { noteWords: 300 })
 ]
 const run = (state: Partial<BrowseState>) => browse(NOTES, { ...EMPTY_BROWSE, ...state }, 'book')
@@ -48,21 +48,21 @@ describe('browse', () => {
   test('sections count the whole tab, No collection last; All/All groups by collection', () => {
     const r = run({})
     expect(r.sections).toEqual([
-      { key: 'startupbooks', value: 'StartupBooks', label: 'Startup Books', count: 4 },
+      { key: 'readinglist', value: 'ReadingList', label: 'Reading List', count: 4 },
       { key: NO_COLLECTION, value: '', label: 'No collection', count: 1 }
     ])
     expect(r.total).toBe(5)
     expect(r.grouped).toBe(true)
     expect(r.groupedBy).toBe('collection')
     expect(shape(r)).toEqual([
-      ['Startup Books', ['Steve Jobs', 'Elon', 'Lean Startup', 'Mystery']],
+      ['Reading List', ['Steve Jobs', 'Elon', 'Lean Startup', 'Mystery']],
       ['No collection', ['Psychology of Money']]
     ])
   })
 
   test('a section groups by category, count desc, Uncategorized last', () => {
-    const r = run({ c: 'startupbooks' })
-    expect(r.section).toBe('startupbooks')
+    const r = run({ c: 'readinglist' })
+    expect(r.section).toBe('readinglist')
     expect(r.matching).toBe(4)
     expect(r.groupedBy).toBe('category')
     expect(r.subcategories.map(f => [f.label, f.count])).toEqual([['Biographies', 2], ['Startup Methodologies', 1], ['Uncategorized', 1]])
@@ -78,20 +78,20 @@ describe('browse', () => {
   })
 
   test('subcategory counts follow the status filter; section counts do not', () => {
-    const r = run({ c: 'startupbooks', s: ['read'] })
+    const r = run({ c: 'readinglist', s: ['read'] })
     expect(r.sections[0].count).toBe(4)
     expect(r.matching).toBe(2)
     expect(r.subcategories.map(f => [f.label, f.count])).toEqual([['Biographies', 1], ['Uncategorized', 1]])
   })
 
   test('status chips: counted in the section before the status filter; which ones show depends only on the section', () => {
-    expect(run({ c: 'startupbooks' }).statuses).toEqual([
+    expect(run({ c: 'readinglist' }).statuses).toEqual([
       { id: 'want', label: 'Want', count: 1 },
       { id: 'reading', label: 'Reading', count: 1 },
       { id: 'read', label: 'Read', count: 2 }
     ])
     // Has my notes leaves Want at 0 but keeps the chip, so the toolbar doesn't move.
-    expect(run({ c: 'startupbooks', notes: true }).statuses.map(s => [s.id, s.count])).toEqual([['want', 0], ['reading', 1], ['read', 1]])
+    expect(run({ c: 'readinglist', notes: true }).statuses.map(s => [s.id, s.count])).toEqual([['want', 0], ['reading', 1], ['read', 1]])
     expect(run({ c: 'no collection' }).statuses.map(s => s.id)).toEqual(['read'])
     expect(run({ c: 'no collection', s: ['want'] }).statuses.map(s => s.id)).toEqual(['want', 'read'])
   })
@@ -113,11 +113,11 @@ describe('browse', () => {
   })
 
   test('Has my notes keeps notes with any words of their own', () => {
-    expect(run({ c: 'startupbooks', notes: true }).groups.flatMap(g => g.notes.map(n => n.title))).toEqual(['Steve Jobs', 'Lean Startup'])
+    expect(run({ c: 'readinglist', notes: true }).groups.flatMap(g => g.notes.map(n => n.title))).toEqual(['Steve Jobs', 'Lean Startup'])
   })
 
   test('a subcategory is flat', () => {
-    const r = run({ c: 'startupbooks', cat: 'uncategorized' })
+    const r = run({ c: 'readinglist', cat: 'uncategorized' })
     expect(r.category).toBe('uncategorized')
     expect(r.grouped).toBe(false)
     expect(r.groupedBy).toBeNull()
@@ -132,7 +132,7 @@ describe('browse', () => {
   })
 
   test('nothing matches: no groups, the facets stay', () => {
-    const r = run({ c: 'startupbooks', s: ['want'], notes: true })
+    const r = run({ c: 'readinglist', s: ['want'], notes: true })
     expect(r.groups).toEqual([])
     expect(r.sections.length).toBe(2)
     expect(r.matching).toBe(0)
@@ -152,8 +152,8 @@ describe('browse', () => {
 })
 
 describe('shelves', () => {
-  const many = Array.from({ length: 12 }, (_, i) => b(`StartupBooks/B${i}`, { category: 'Biographies' }, SB))
-  const r = browse([...many, NOTES[2]], { ...EMPTY_BROWSE, c: 'startupbooks' }, 'book')
+  const many = Array.from({ length: 12 }, (_, i) => b(`ReadingList/B${i}`, { category: 'Biographies' }, SB))
+  const r = browse([...many, NOTES[2]], { ...EMPTY_BROWSE, c: 'readinglist' }, 'book')
 
   test('a grouped view caps each group and counts what is hidden', () => {
     const bio = r.groups[0]
@@ -166,23 +166,23 @@ describe('shelves', () => {
   })
 
   test('Show all selects the group and keeps the other filters', () => {
-    expect(showAll({ ...EMPTY_BROWSE, c: 'startupbooks', s: ['read'] }, r, r.groups[0])).toEqual({ c: 'startupbooks', cat: 'biographies', s: ['read'], notes: false, q: '' })
+    expect(showAll({ ...EMPTY_BROWSE, c: 'readinglist', s: ['read'] }, r, r.groups[0])).toEqual({ c: 'readinglist', cat: 'biographies', s: ['read'], notes: false, q: '' })
     const all = run({})
-    expect(showAll(EMPTY_BROWSE, all, all.groups[0])).toEqual({ ...EMPTY_BROWSE, c: 'startupbooks' })
+    expect(showAll(EMPTY_BROWSE, all, all.groups[0])).toEqual({ ...EMPTY_BROWSE, c: 'readinglist' })
     expect(showAll(EMPTY_BROWSE, all, all.groups[1])).toEqual({ ...EMPTY_BROWSE, c: NO_COLLECTION })
   })
 })
 
 describe('URL state', () => {
   test('parses keys folded, statuses in canonical order, unknowns dropped', () => {
-    expect(parseBrowse('?c=StartupBooks&cat=Biographies&s=read,bogus,WANT&notes=1')).toEqual({ c: 'startupbooks', cat: 'biographies', s: ['want', 'read'], notes: true, q: '' })
+    expect(parseBrowse('?c=ReadingList&cat=Biographies&s=read,bogus,WANT&notes=1')).toEqual({ c: 'readinglist', cat: 'biographies', s: ['want', 'read'], notes: true, q: '' })
     expect(parseBrowse('?q=shoe+dog')).toEqual({ ...EMPTY_BROWSE, q: 'shoe dog' })
     expect(parseBrowse('')).toEqual(EMPTY_BROWSE)
     expect(parseBrowse('?c=&s=&notes=yes')).toEqual(EMPTY_BROWSE)
   })
   test('serialises only what is set, and round-trips', () => {
-    const state: BrowseState = { c: 'startupbooks', cat: 'leadership & management', s: ['read', 'want'], notes: true, q: 'shoe dog' }
-    expect(browseSearch(state)).toBe('?c=startupbooks&cat=leadership+%26+management&s=want,read&notes=1&q=shoe+dog')
+    const state: BrowseState = { c: 'readinglist', cat: 'leadership & management', s: ['read', 'want'], notes: true, q: 'shoe dog' }
+    expect(browseSearch(state)).toBe('?c=readinglist&cat=leadership+%26+management&s=want,read&notes=1&q=shoe+dog')
     expect(parseBrowse(browseSearch(state))).toEqual({ ...state, s: ['want', 'read'] })
     expect(browseSearch(EMPTY_BROWSE)).toBe('')
     expect(browseSearch({ ...EMPTY_BROWSE, q: '   ' })).toBe('')

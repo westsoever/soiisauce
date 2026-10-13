@@ -1,7 +1,7 @@
 // app/server/edit-views.ts
 // /api/views and `soii view`: add, change (filter/sort) or remove a view in soii.config.yml (spec §4, D101).
-// Same write rules as edit-properties.ts: GitHub writes send the sha and retry once on a conflict, local
-// writes commit just the config file. The YAML editing itself is app/lib/view-edit.ts.
+// Same write rules as edit-properties.ts: each change is a local commit of just the config file.
+// The YAML editing itself is app/lib/view-edit.ts.
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { z } from 'zod'
@@ -9,11 +9,9 @@ import { querySchema, tabSchema } from '../lib/config-schema'
 import type { Query, SortKey } from '../lib/types'
 import { addTab, removeTab, setTabQuery, setTabSort, type EditResult, type TabDraft } from '../lib/view-edit'
 import type { SoiiEnv } from './env'
-import { getFile, putFile } from './github-contents'
-import type { FetchLike } from './github-oauth'
-import { commitLocal, githubFail, pullAfterCommit } from './log-note'
+import { commitLocal } from './log-note'
 import type { RunGit } from './sync'
-import { writeTarget } from './write-note'
+import { canWrite } from './write-note'
 
 export type ViewRequest =
   | { action: 'add'; workspace: string; tab: TabDraft }
@@ -21,8 +19,8 @@ export type ViewRequest =
   | { action: 'remove'; workspace: string; tabId: string }
 
 export type ViewResult =
-  | { ok: true; workspace: string; tabId: string; title: string; via: 'github' | 'local'; commitUrl: string | null; warning: string | null }
-  | { ok: false; status: 400 | 409 | 501 | 502; error: string; message: string }
+  | { ok: true; workspace: string; tabId: string; title: string; warning: string | null }
+  | { ok: false; status: 400 | 409 | 501; error: string; message: string }
 
 type Bad = { ok: false; status: 400; error: string; message: string }
 type Parsed = { ok: true; req: ViewRequest } | Bad
@@ -71,34 +69,8 @@ function message(req: ViewRequest, title: string): string {
   return req.query !== undefined ? `soii: filter view "${title}"` : `soii: sort view "${title}"`
 }
 
-export async function editViews(env: SoiiEnv, req: ViewRequest, deps: { fetch: FetchLike; git: RunGit }): Promise<ViewResult> {
-  const target = writeTarget(env)
-  if (!target) return { ok: false, status: 501, error: 'write_not_configured', message: 'Writing is not set up, so views can only be changed in soii.config.yml.' }
-
-  if (target === 'github') {
-    for (let attempt = 0; attempt < 2; attempt++) {
-      let path = CONFIG_FILES[0]
-      let file: { content: string; sha: string } | null = null
-      for (const name of CONFIG_FILES) {
-        const got = await getFile(env, name, deps.fetch)
-        if (!got.ok) return githubFail(got) as Extract<ViewResult, { ok: false }>
-        if (got.file) {
-          path = name
-          file = got.file
-          break
-        }
-      }
-      const edited = apply(file?.content ?? null, req)
-      if (!edited.ok) return edited
-      const put = await putFile(env, path, edited.yaml, message(req, edited.title), file?.sha ?? null, deps.fetch)
-      if (put.ok) {
-        const pull = await pullAfterCommit(env, deps.git)
-        return { ok: true, workspace: req.workspace, tabId: edited.tabId, title: edited.title, via: 'github', commitUrl: put.commitUrl, warning: pull.warning }
-      }
-      if (put.reason !== 'conflict' && put.reason !== 'exists') return githubFail(put) as Extract<ViewResult, { ok: false }>
-    }
-    return { ok: false, status: 409, error: 'conflict', message: 'Your soii.config.yml changed on GitHub while saving. Try again.' }
-  }
+export async function editViews(env: SoiiEnv, req: ViewRequest, deps: { git: RunGit }): Promise<ViewResult> {
+  if (!canWrite(env)) return { ok: false, status: 501, error: 'write_not_configured', message: 'Writing is not set up, so views can only be changed in soii.config.yml.' }
 
   const vault = env.vaultPath ?? ''
   const name = CONFIG_FILES.find(n => existsSync(join(vault, n))) ?? CONFIG_FILES[0]
@@ -107,5 +79,5 @@ export async function editViews(env: SoiiEnv, req: ViewRequest, deps: { fetch: F
   if (!edited.ok) return edited
   writeFileSync(file, edited.yaml)
   const warning = await commitLocal(env, deps.git, name, message(req, edited.title))
-  return { ok: true, workspace: req.workspace, tabId: edited.tabId, title: edited.title, via: 'local', commitUrl: null, warning }
+  return { ok: true, workspace: req.workspace, tabId: edited.tabId, title: edited.title, warning }
 }

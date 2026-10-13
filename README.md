@@ -6,14 +6,15 @@
 
 ## Quick start
 
+In a terminal, no AI needed:
+
 ```bash
-git clone https://github.com/westsoever/soii.git && cd soii
-claude
+curl -fsSL https://raw.githubusercontent.com/westsoever/soiisauce/main/install.sh | bash
 ```
 
-Then type **`/soii-setup`** in Claude Code. It installs soii, starts a new vault or brings in your existing one, and opens it at http://localhost:5011. (The repo is private: run `gh auth login && gh auth setup-git` once if the clone asks for a login.)
+It checks that git, Bun and GitHub can be reached (and tells you the exact fix if not), asks a few plain questions (a new vault from the starter, or your own notes), installs soii and opens it at http://localhost:5011.
 
-No AI? Run `bun bin/soii.ts install` in the clone instead: it asks a few questions and sets everything up.
+Prefer Claude Code? Clone the repo, run `claude` in it and type **`/soii-setup`**: the same install, as a conversation.
 
 ## What you get
 
@@ -21,9 +22,9 @@ No AI? Run `bun bin/soii.ts install` in the clone instead: it asks a few questio
 |---|---|
 | **Library.** Books, audiobooks, films, documentaries, videos, papers and articles as a shelf with covers, status and ratings. Add a book from soii and it becomes a note in your vault. ![Library](docs/screenshots/library.png) | **People.** Who you know, how you know them, and who you haven't seen in a while, based on how often you want to keep in touch. ![People](docs/screenshots/people.png) |
 | **Finance.** Accounts, subscriptions with renewal dates, and expenses by category. ![Finance](docs/screenshots/finance.png) | **Goals.** This year, this life, and the bucket list, as a board. ![Goals](docs/screenshots/goals.png) |
-| **Reader.** Any note, nicely typeset, with its properties, backlinks and an "Open in Obsidian" link. ![Reader](docs/screenshots/reader.png) | **Log.** The quick way in from your phone: "had coffee with Ana", "finished Dune", "spent 120 kr on books". Each one is a commit to your vault. ![Log](docs/screenshots/log.png) |
+| **Reader.** Any note, nicely typeset, with its properties, backlinks and an "Open in Obsidian" link. ![Reader](docs/screenshots/reader.png) | **Log.** The quick way in: "had coffee with Ana", "finished Dune", "spent 120 kr on books". Each one is a commit to your vault. ![Log](docs/screenshots/log.png) |
 
-It follows your light or dark setting. If you deploy a copy to Vercel (optional), it is also a home-screen app on your phone, with a bottom bar.
+It follows your light or dark setting, and in a narrow window it switches to a bottom bar.
 
 <p>
   <img src="docs/screenshots/phone-today.png" width="230" alt="soii on a phone: Today">
@@ -46,22 +47,16 @@ your vault (a folder, a git repo) ──watched──▶ soii on localhost:5011 
 - **It follows your notes.** Edit in Obsidian, in Claude Code or in soii: the change shows up within a second or two.
 - **Writes are commits.** Log, Add and property edits go into your vault files as local git commits. **Sync** pulls, then pushes, and never merges or forces.
 - **Your settings live in your vault.** Workspaces, tabs and labels are in `soii.config.yml`; API keys in `.soii/.env.local`. `soii update` moves to a new release without touching either. See [docs/updating.md](docs/updating.md).
-- **On your phone?** Deploy a copy to Vercel (optional): [docs/deploy-vercel.md](docs/deploy-vercel.md).
 
 ## Install
 
-You need a Mac (Linux works as a background process), [Bun](https://bun.sh), git, and a GitHub login that can read the private `westsoever/soii` repo. About 10 minutes.
+You need a Mac (Linux works as a background process), [Bun](https://bun.sh) and git. About 10 minutes.
 
 ```bash
-gh auth login && gh auth setup-git      # once, so git can read the soii repo
-git clone --depth 1 https://github.com/westsoever/soii.git ~/soii-installer
-
-# new to soii: a vault made from the starter (add --empty for no sample notes)
-bun ~/soii-installer/bin/soii.ts init ~/my-vault
-
-# or you already have a vault
-cd ~/my-vault && bun ~/soii-installer/bin/soii.ts install
+curl -fsSL https://raw.githubusercontent.com/westsoever/soiisauce/main/install.sh | bash
 ```
+
+That is the whole install: it asks whether the vault is new or yours. To skip the questions, pass them on (`... | bash -s -- init ~/my-vault`, or `... | bash -s -- ~/my-vault --yes` for a vault you have; a new vault starts empty; add `--samples` to `init` to fill it with sample notes). Doing it by hand is in [docs/setup.md](docs/setup.md).
 
 Then `soii open`. From now on `soii status`, `soii update`, `soii logs` and the rest work from anywhere. In Claude Code, run `/soii-intro` in your vault for a tour, and `/soii-setup` if your notes lack properties soii reads. Full guide: [docs/setup.md](docs/setup.md).
 
@@ -69,7 +64,7 @@ Then `soii open`. From now on `soii status`, `soii update`, `soii logs` and the 
 
 ```bash
 bun install
-VAULT_PATH=$PWD/template SOII_DEV_AUTH=1 bun run dev   # http://localhost:13390
+VAULT_PATH=$PWD/template bun run dev   # http://localhost:13390
 ```
 
 ## Skills
@@ -81,7 +76,6 @@ soii ships with Claude Code skills for the jobs around it: preparing your vault 
 | | |
 |---|---|
 | [setup.md](docs/setup.md) | Install soii in your vault, step by step |
-| [deploy-vercel.md](docs/deploy-vercel.md) | Optional: a copy on Vercel for your phone |
 | [frontmatter.md](docs/frontmatter.md) | Which properties soii reads, per type, and `soii.config.yml` |
 | [workspaces.md](docs/workspaces.md) | The workspaces and tabs, and how to change them |
 | [briefs.md](docs/briefs.md) | Daily briefs and weekly reviews |
@@ -92,8 +86,8 @@ soii ships with Claude Code skills for the jobs around it: preparing your vault 
 
 ```bash
 bun install
-VAULT_PATH=/path/to/vault SOII_DEV_AUTH=1 bun run dev   # http://localhost:13390
+VAULT_PATH=/path/to/vault bun run dev   # http://localhost:13390
 bun test app scripts && bun run typecheck
 ```
 
-Design: [DESIGN.md](DESIGN.md) and [the spec](docs/superpowers/specs/2026-10-11-soii-design.md). Every decision is logged in [DECISIONS.md](docs/superpowers/DECISIONS.md).
+Design: [DESIGN.md](DESIGN.md). What changed in each release: [CHANGELOG.md](CHANGELOG.md). soii is MIT licensed: [LICENSE](LICENSE).

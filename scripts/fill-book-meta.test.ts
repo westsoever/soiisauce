@@ -9,7 +9,7 @@ import { fillProperties, mainTitle, pickMatch, readCandidate, run, type Candidat
 const cand = (over: Partial<Candidate> = {}): Candidate => ({ title: 'Sprint', authors: ['Jake Knapp'], isbn: '9781501121746', cover: 'https://books.google.com/x?id=1', ...over })
 
 const BOOK = (title: string, extra = '') =>
-  `---\ntype: book\ntitle: ${JSON.stringify(title)}\nauthor:\nisbn:\ncover:\nstatus: want\ndescription: Five days. Jake Knapp wrote it for $100M teams.\ncategory:\n  - Startup Methodologies\ntags:\n  - StartupBooks\n${extra}---\n\n# ${title}\n`
+  `---\ntype: book\ntitle: ${JSON.stringify(title)}\nauthor:\nisbn:\ncover:\nstatus: want\ndescription: Five days. Jake Knapp wrote it for $100M teams.\ncategory:\n  - Startup Methodologies\ntags:\n  - ReadingList\n${extra}---\n\n# ${title}\n`
 
 describe('mainTitle', () => {
   test('drops the subtitle and a trailing "by Author"', () => {
@@ -78,7 +78,7 @@ describe('run', () => {
   function setup(titles: string[]) {
     const root = mkdtempSync(join(tmpdir(), 'soii-bookmeta-'))
     dirs.push(root)
-    const folder = join(root, 'vault', '04-Resources/Library/Books/StartupBooks')
+    const folder = join(root, 'vault', '04-Resources/Library/Books/ReadingList')
     mkdirSync(folder, { recursive: true })
     for (const t of titles) writeFileSync(join(folder, `${t}.md`), BOOK(t))
     return { vault: join(root, 'vault'), folder, statePath: join(root, 'state.json') }
@@ -116,7 +116,7 @@ describe('run', () => {
     expect(text).toContain('cover: https://books.google.com/b?id=1\n')
     expect(text).toContain('author: Jake Knapp')
     expect(text).toContain('isbn: "9781"')
-    expect(JSON.parse(readFileSync(s.statePath, 'utf8'))['04-Resources/Library/Books/StartupBooks/Alpha Beta Gamma.md'].status).toBe('filled')
+    expect(JSON.parse(readFileSync(s.statePath, 'utf8'))['04-Resources/Library/Books/ReadingList/Alpha Beta Gamma.md'].status).toBe('filled')
   })
 
   test('respects the limit, and the next run takes the next books', async () => {
@@ -159,15 +159,15 @@ describe('run', () => {
     const g = deps({
       git: async (_c, args) => {
         g.calls.push(args)
-        return args[0] === 'status' && args.includes('04-Resources/Library/Books/StartupBooks/Four Five Six.md') ? ' M file' : ''
+        return args[0] === 'status' && args.includes('04-Resources/Library/Books/ReadingList/Four Five Six.md') ? ' M file' : ''
       }
     }) as ReturnType<typeof deps> & { calls: string[][] }
     g.calls = []
     const report = await run({ vault: s.vault, apiKey: 'k', commit: true, statePath: s.statePath }, g.d)
-    expect(report.skippedDirty).toEqual(['04-Resources/Library/Books/StartupBooks/Four Five Six.md'])
+    expect(report.skippedDirty).toEqual(['04-Resources/Library/Books/ReadingList/Four Five Six.md'])
     expect(report.committed).toBe(true)
     const commit = g.calls.find(c => c[0] === 'commit')!
-    expect(commit.slice(commit.indexOf('--') + 1)).toEqual(['04-Resources/Library/Books/StartupBooks/Alpha Beta Gamma.md'])
+    expect(commit.slice(commit.indexOf('--') + 1)).toEqual(['04-Resources/Library/Books/ReadingList/Alpha Beta Gamma.md'])
   })
 
   test('an unrelated upstream error is skipped, and three in a row stop the run', async () => {

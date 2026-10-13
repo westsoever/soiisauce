@@ -26,7 +26,7 @@ soii update
 It looks for the newest release tag on GitHub, and if yours is older:
 
 1. fetches that release into `.soii/soii/` with git and installs its packages,
-2. shows **what's new** (the new entries of soii's `DECISIONS.md`, one line each) with the links to the release notes on GitHub and to what changed since your version,
+2. shows **what's new** (the new sections of soii's `CHANGELOG.md`) with the links to the release notes on GitHub and to what changed since your version,
 3. moves the pin in `.soii/package.json`,
 4. rebuilds, refreshes the skills, commits what it changed in your vault (`soii: update to v0.1.1`: the pin, `.soii/skills.json` and the skill folders, nothing else) and restarts soii.
 
@@ -48,17 +48,8 @@ soii install --from v0.1.0      # pins that tag, fetches it, rebuilds, restarts
 
 ## What's new?
 
-`docs/superpowers/DECISIONS.md` in soii has one numbered entry per feature or change, newest at the bottom; `soii update` prints the new ones. After an update you can read the full file in `.soii/soii/docs/superpowers/DECISIONS.md`.
+soii's `CHANGELOG.md` has one section per release, newest first, in plain words. `soii update` prints the sections that are newer than the version you had. The full file is in `.soii/soii/CHANGELOG.md` after an update, and on GitHub.
 
-## If you deployed to Vercel too
+## Where releases come from
 
-A Vercel deployment runs the code of your soii **fork**, so it updates separately:
-
-- **GitHub button:** your fork → **Sync fork** → **Update branch**. Vercel redeploys.
-- **Automatically every week:** copy [`templates/soii-update-workflow.yml`](../templates/soii-update-workflow.yml) into your fork as `.github/workflows/soii-update.yml` and enable Actions. If your fork has conflicting code changes, the run fails and changes nothing.
-
-See [deploy-vercel.md](deploy-vercel.md).
-
-## For the soii maintainer
-
-A release is a tag `vX.Y.Z` on `main` whose `package.json` says the same version. Keep `main` releasable: merge only with `bun test app scripts` and `bun run typecheck` green, add a `DECISIONS.md` entry for anything an owner will notice, and mention any new setting in `.env.example` and [setup.md](setup.md). The full release flow, with the commands, is in [releasing.md](releasing.md).
+A release is a tag `vX.Y.Z` on `westsoever/soiisauce` whose `package.json` says the same version, with a section in `CHANGELOG.md`. The public repo has one commit per release; soii is developed elsewhere and published there.

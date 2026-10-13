@@ -1,6 +1,6 @@
 // app/client/log/LogDone.tsx
-// After a 201: where it went, whether it's committed and pulled, and what to do next.
-// "Open note" waits until the note is in soii's index (after the pull and rebuild).
+// After a 201: where it went and what to do next.
+// "Open note" waits until the note is in soii's index (after the rebuild).
 import { IconCircleCheck } from '@tabler/icons-react'
 import type { LogKind, LogResponse } from '../../lib/log'
 import { notePath } from '../../lib/paths'
@@ -18,18 +18,7 @@ export function LogDone({ kind, title, response, index, onAgain }: { kind: LogKi
           <IconCircleCheck size={44} stroke={1.5} className="mx-auto text-success" />
           <h1 className="text-xl font-medium tracking-tight">Logged {response.mode === 'append' ? `to ${title}` : title}</h1>
           <p className="text-sm break-all text-muted-foreground">{response.path}</p>
-          <p className="text-sm">
-            {response.via === 'github' ? 'Committed to GitHub.' : 'Saved in your local vault.'}{' '}
-            {response.commitUrl && (
-              <a href={response.commitUrl} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">
-                View commit
-              </a>
-            )}
-          </p>
-          {response.pulled === true && <p className="text-sm text-muted-foreground">Pulled into your local vault. soii is reloading it.</p>}
-          {response.pulled === null && response.via === 'github' && (
-            <p className="text-sm text-muted-foreground">It shows up in soii after the next deploy, in about 2 minutes.</p>
-          )}
+          <p className="text-sm">Saved in your local vault.</p>
           {response.warning && <p className="text-sm text-muted-foreground">{response.warning}</p>}
           <div className="mt-4 grid gap-2">
             <Button size="lg" onClick={onAgain}>

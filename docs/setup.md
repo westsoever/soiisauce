@@ -2,15 +2,28 @@
 
 soii runs **on your own computer**, inside your vault, at `http://localhost:5011`. It starts when you log in, restarts if it stops, and never leaves your machine. There is no sign-in, because nothing but your computer can reach it. Allow about 10 minutes.
 
-**You need:** a Mac (Linux works too, as a background process), [Bun](https://bun.sh) (`curl -fsSL https://bun.sh/install | bash`), git, and access to the private `westsoever/soii` repo from the command line (step 1).
+**You need:** a Mac (Linux works too, as a background process), [Bun](https://bun.sh) (`curl -fsSL https://bun.sh/install | bash`), and git.
 
-## 1. Let git read the soii repo (once)
+## The short way
 
-soii is released as git tags on a private GitHub repo, and git fetches it with your GitHub login.
+In a terminal:
 
 ```bash
-gh auth login           # if you aren't signed in to GitHub yet
-gh auth setup-git       # lets git use that login
+curl -fsSL https://raw.githubusercontent.com/westsoever/soiisauce/main/install.sh | bash
+```
+
+`install.sh` checks that git, Bun and GitHub can be reached (and prints the exact fix if not), clones soii to a temporary folder, runs the plain-questions install described in [Set up without AI](#set-up-without-ai), and deletes the clone. You are left with the vault, `.soii/` in it and the `soii` command. Nothing needs Claude Code.
+
+Arguments go to soii: `... | bash -s -- init ~/my-vault --samples`, `... | bash -s -- ~/my-vault --yes`, `... | bash -s -- --no-service`. With no terminal to ask on (a pipe into a script, CI) a bare run stops and says so; name the vault or add `--yes`. If Bun is missing it offers to install it. `SOII_REF=v0.1.9` installs a given tag or branch of the installer.
+
+Steps 2 to 4 below are the same thing by hand: use them if you'd rather clone the repo yourself.
+
+## 1. Check that git can reach soii
+
+soii is released as git tags on a public GitHub repo, so git fetches it without a login. Check that git can reach it:
+
+```bash
+git ls-remote https://github.com/westsoever/soiisauce.git HEAD
 ```
 
 ## 2. Get the `soii` command
@@ -18,14 +31,14 @@ gh auth setup-git       # lets git use that login
 Clone soii once, only to run its installer. The installer puts everything in your vault, so you can delete this clone afterwards.
 
 ```bash
-git clone --depth 1 https://github.com/westsoever/soii.git ~/soii-installer
+git clone --depth 1 https://github.com/westsoever/soiisauce.git ~/soii-installer
 ```
 
 ## 3a. New to soii: make a vault from the starter
 
 ```bash
-bun ~/soii-installer/bin/soii.ts init ~/my-vault           # with sample notes, to look around
-bun ~/soii-installer/bin/soii.ts init ~/my-vault --empty   # or empty, with the structure and templates
+bun ~/soii-installer/bin/soii.ts init ~/my-vault             # empty: the top folders and the templates
+bun ~/soii-installer/bin/soii.ts init ~/my-vault --samples   # or with Sam's sample notes, to look around
 ```
 
 The vault's title in `soii.config.yml` is the folder's name; `--title "Ana's notes"` sets another.
@@ -43,17 +56,17 @@ Your notes aren't touched. soii adds a `.soii/` folder (its code, build and sett
 
 ## Set up without AI
 
-You don't need Claude Code. In a terminal, `soii install` with no vault named asks a few plain questions and does the rest. From a fresh clone (after step 1):
+You don't need Claude Code. In a terminal, `soii install` with no vault named asks a few plain questions and does the rest. `install.sh` above starts it for you; from a fresh clone you start it yourself (after step 1):
 
 ```bash
-git clone --depth 1 https://github.com/westsoever/soii.git ~/soii-installer
+git clone --depth 1 https://github.com/westsoever/soiisauce.git ~/soii-installer
 cd ~/soii-installer && bun bin/soii.ts install
 ```
 
 It checks first that Bun, git and GitHub access to the soii repo work, and prints the exact fix if not. Then, with the answer in `[brackets]` if you press Enter:
 
 1. **New vault or existing?** [new]
-2. New: the **folder** [`~`] and the **name** [`soii-vault`], then the full path to confirm (it must not exist yet, or be empty), and whether to add the sample notes [Y].
+2. New: the **folder** [`~`] and the **name** [`soii-vault`], then the full path to confirm (it must not exist yet, or be empty), and whether to fill it with Sam's sample notes [N]. Without them the vault starts empty: the top folders and the templates.
 3. Existing: the path to your notes, then **in place** (soii adds `.soii/` and `.claude/skills/`; your notes aren't moved) or **copy** (your notes are copied into a new soii vault and the old one is never touched; the default, unless the folder already runs soii).
 4. In place with no git yet: start a repository? [Y]
 5. Start soii at login? [Y] (macOS) If no, run `soii start` whenever you want it.
@@ -92,7 +105,7 @@ soii open       # http://localhost:5011
 | `soii restart` | Restarts it (after editing `.soii/.env.local`, say) |
 | `soii stop` / `soii start` | Stops it until you start it again or log in |
 | `soii logs -f` | Shows the log; on a Mac it is `~/Library/Logs/soii.log` |
-| `soii update` | Moves to the newest release: see [updating.md](updating.md) |
+| `soii update` | Moves to the newest release and prints what's new from `CHANGELOG.md`: see [updating.md](updating.md) |
 | `soii check` | Checks your notes' properties and structure |
 | `soii uninstall` | Removes the service and the `soii` command. Your notes and `.soii/` stay |
 
@@ -130,7 +143,7 @@ It fills only a bare `cover:`, `author:` or `isbn:`; anything you've written sta
 
 ## On your phone
 
-`localhost` is your computer only, by design: your phone can't reach it, and soii has no sign-in to protect it if it could. To use soii on your phone, deploy a copy to Vercel: [deploy-vercel.md](deploy-vercel.md). That is optional, and independent of the local install.
+`localhost` is your computer only, by design: your phone can't reach it, and soii has no sign-in to protect it if it could. soii has no hosted version.
 
 ## Light and dark
 
@@ -140,7 +153,7 @@ soii follows your device's colour scheme. There is no in-app toggle.
 
 | Symptom | Fix |
 |---|---|
-| `soii init`/`install`: "git could not fetch soii …" | Run `gh auth login` and `gh auth setup-git`, and check you have access to `westsoever/soii`. |
+| `soii init`/`install`: "git could not fetch soii …" | Check the connection (`git ls-remote https://github.com/westsoever/soiisauce.git HEAD`). From a private fork: `gh auth login` and `gh auth setup-git`. |
 | `soii: something else already answers on port 5011` | An old `bun app/serve.ts` or another program holds the port. Stop it, or install with `--port 5012`. |
 | `soii status` says not running | `soii logs` shows why (a typo in `soii.config.yml` stops the first build). Fix it, then `soii restart`. |
 | `soii: command not found` | The folder named in the install output isn't on your PATH. Add the `export PATH=…` line it printed to your shell profile. |
@@ -159,8 +172,8 @@ From a checkout of this repo (not an installed vault):
 
 ```bash
 bun install
-VAULT_PATH=/path/to/vault SOII_DEV_AUTH=1 bun run dev   # http://localhost:13390 (set PORT to change)
+VAULT_PATH=/path/to/vault bun run dev   # http://localhost:13390 (set PORT to change)
 bun test app scripts && bun run typecheck
 ```
 
-`SOII_LOCAL=1` is what an installed soii runs with: no sign-in, port 5011, loopback only. Developing, use `SOII_DEV_AUTH=1` and port 13390 so it never collides with your installed one.
+`SOII_LOCAL=1` is what an installed soii runs with: no sign-in, port 5011, loopback only. Developing, `bun run dev` uses port 13390 so it never collides with your installed one.

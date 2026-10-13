@@ -1,7 +1,7 @@
 // app/cli/checkout.ts
 // soii's code lives in <vault>/.soii/soii: a shallow git checkout of the pinned tag. It is fetched with git, not with
-// `bun install github:…`, because bun asks GitHub's API for a tarball without credentials, which a private repo refuses.
-// git uses whatever login the machine already has (`gh auth setup-git`, the keychain, ssh).
+// `bun install github:…`: git works the same for the public repo and for a private fork, with whatever login the
+// machine already has (`gh auth setup-git`, the keychain, ssh).
 import { existsSync, readFileSync, renameSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import type { Ctx } from './context'

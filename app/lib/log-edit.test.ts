@@ -60,9 +60,9 @@ describe('appendEntry', () => {
 
 describe('patchFrontmatter', () => {
   test('a list replaces the old value as a block list, the Library style', () => {
-    const src = '---\ntype: book\ncategory:\n  - Biographies\ntags:\n  - StartupBooks\n---\n\n# T\n'
-    expect(patchFrontmatter(src, { category: ['Leadership & Management'], collection: ['StartupBooks'] }).content).toBe(
-      '---\ntype: book\ncategory:\n  - Leadership & Management\ntags:\n  - StartupBooks\ncollection:\n  - StartupBooks\n---\n\n# T\n'
+    const src = '---\ntype: book\ncategory:\n  - Biographies\ntags:\n  - ReadingList\n---\n\n# T\n'
+    expect(patchFrontmatter(src, { category: ['Leadership & Management'], collection: ['ReadingList'] }).content).toBe(
+      '---\ntype: book\ncategory:\n  - Leadership & Management\ntags:\n  - ReadingList\ncollection:\n  - ReadingList\n---\n\n# T\n'
     )
     // An empty `category:` (the imported template) and a plain string both become a list.
     expect(patchFrontmatter('---\ncategory:\n---\n', { category: ['Biographies'] }).content).toBe('---\ncategory:\n  - Biographies\n---\n')

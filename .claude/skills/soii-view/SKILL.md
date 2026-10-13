@@ -1,6 +1,6 @@
 ---
 name: soii-view
-description: Create, re-filter, re-sort or remove a view (a tab) in soii from a plain description, like "a board of my sci-fi books by status in Library" or "a table of my TechBBQ contacts in People". Maps your words to the types, fields and values your vault actually uses, previews the notes it would show, suggests an existing tab when one already shows mostly the same notes, and only saves after you say so. Question-shaped requests ("who haven't I seen in a while?") get an answer in chat instead of a new tab, so soii doesn't fill up with one-off views. Writes only soii.config.yml, one local commit per change. Use when the owner says "make a view", "add a tab", "I want a view of", "filter this tab", "sort this tab by", "remove the tab", or types /soii-view.
+description: Create, re-filter, re-sort or remove a view (a tab) in soii from a plain description, like "a board of my sci-fi books by status in Library" or "a table of my book club contacts in People". Maps your words to the types, fields and values your vault actually uses, previews the notes it would show, suggests an existing tab when one already shows mostly the same notes, and only saves after you say so. Question-shaped requests ("who haven't I seen in a while?") get an answer in chat instead of a new tab, so soii doesn't fill up with one-off views. Writes only soii.config.yml, one local commit per change. Use when the owner says "make a view", "add a tab", "I want a view of", "filter this tab", "sort this tab by", "remove the tab", or types /soii-view.
 ---
 
 # soii view

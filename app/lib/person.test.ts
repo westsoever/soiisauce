@@ -57,7 +57,7 @@ describe('personFacts', () => {
   test('full person', () => {
     const facts = personFacts(
       note('People/Anna Berg', {
-        type: 'person', relationship: ['partner', 'friend'], company: 'Pico', role: 'Designer',
+        type: 'person', relationship: ['partner', 'friend'], company: 'Lumen', role: 'Designer',
         location: 'Copenhagen', last_contact: '2026-10-08', email: 'anna@example.com',
         phone: '+45 12 34 56 78', birthday: '1994-10-16'
       }),
@@ -66,7 +66,7 @@ describe('personFacts', () => {
     expect(facts).toEqual({
       initials: 'AB',
       relationship: 'partner, friend',
-      work: 'Designer at Pico',
+      work: 'Designer at Lumen',
       location: 'Copenhagen',
       lastContact: '2026-10-08',
       email: 'anna@example.com',
@@ -88,7 +88,7 @@ describe('personFacts', () => {
   })
 
   test('partial work info and unusable contact fields', () => {
-    expect(personFacts(note('P/a', { company: 'Pico' }), today).work).toBe('Pico')
+    expect(personFacts(note('P/a', { company: 'Lumen' }), today).work).toBe('Lumen')
     expect(personFacts(note('P/b', { role: 'CTO' }), today).work).toBe('CTO')
     const odd = personFacts(note('P/c', { email: 'not an email', phone: 'ask Anna', birthday: 'unknown' }), today)
     expect(odd.email).toBe('not an email')

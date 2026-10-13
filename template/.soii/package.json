@@ -1,6 +1,6 @@
 {
   "private": true,
   "dependencies": {
-    "soii": "github:westsoever/soii#v0.1.0"
+    "soii": "github:westsoever/soiisauce#v0.1.0"
   }
 }

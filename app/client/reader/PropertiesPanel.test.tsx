@@ -24,7 +24,7 @@ const peopleConfig = {
 function render(ui: ReactNode, write: boolean): string {
   const client = new QueryClient()
   client.setQueryData(keys.vault, { config: peopleConfig, notes: [marvin] } as unknown as VaultIndex)
-  client.setQueryData<Capabilities>(keys.capabilities, { write, writeVia: write ? 'local' : null, sync: false })
+  client.setQueryData<Capabilities>(keys.capabilities, { write, sync: false })
   return renderToStaticMarkup(<QueryClientProvider client={client}>{ui}</QueryClientProvider>)
 }
 

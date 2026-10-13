@@ -3,10 +3,11 @@
 import { describe, expect, test } from 'bun:test'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { NOT_FOR_VAULTS } from '../app/cli/copy'
 
 const root = join(import.meta.dir, '..')
 const skillsDir = join(root, '.claude', 'skills')
-const shipped = readdirSync(skillsDir).filter(name => existsSync(join(skillsDir, name, 'SKILL.md')))
+const shipped = readdirSync(skillsDir).filter(name => existsSync(join(skillsDir, name, 'SKILL.md')) && !NOT_FOR_VAULTS.includes(name))
 const cheatsheet = readFileSync(join(root, 'docs', 'skills.md'), 'utf8')
 const listed = [...cheatsheet.matchAll(/^\| `\/([a-z0-9-]+)` \|/gm)].map(m => m[1])
 
@@ -52,40 +53,10 @@ describe('docs/skills.md', () => {
     expect(learn).toMatch(/\(learn\)/)
     expect(learn).not.toMatch(/nothing to drill/)
   })
-  test('the release flow is wired together: doc, script, skill, cheatsheet row, link from updating.md', () => {
-    const doc = readFileSync(join(root, 'docs', 'releasing.md'), 'utf8')
-    const skill = readFileSync(join(skillsDir, 'soii-release', 'SKILL.md'), 'utf8')
-    for (const text of [doc, skill]) {
-      expect(text).toContain('scripts/release-notes.ts')
-      expect(text).toContain('gh release create')
-      expect(text).toContain('git tag -a')
-    }
-    for (const text of [doc, skill]) {
-      expect(text).toContain('merge-base --is-ancestor origin/main HEAD')
-      expect(text).toContain('TODO-LEAD')
-      expect(text).toContain('--lead')
-      expect(text).toMatch(/renumber the (entry|one) that has not shipped/i)
-      expect(text).not.toMatch(/newer: v/)
-    }
-    expect(existsSync(join(root, 'scripts', 'release-notes.ts'))).toBe(true)
-    expect(skill).toContain('docs/releasing.md')
-    expect(readFileSync(join(root, 'docs', 'updating.md'), 'utf8')).toContain('releasing.md')
-    expect(cheatsheet).toMatch(/\| `\/soii-release` \| \*\*Maintainers only, not in your vault\.\*\*/)
-  })
-  test('the release is cut from a clean worktree on origin/main, never from a shared checkout\'s main', () => {
-    const doc = readFileSync(join(root, 'docs', 'releasing.md'), 'utf8')
-    const skill = readFileSync(join(skillsDir, 'soii-release', 'SKILL.md'), 'utf8')
-    for (const text of [doc, skill]) {
-      expect(text).toContain('git worktree add --detach')
-      expect(text).toContain('git push origin HEAD:main')
-      expect(text).not.toMatch(/git push origin main\b/)
-      expect(text).not.toMatch(/git switch main && git pull/)
-    }
-    // The skill accepts a detached HEAD that equals origin/main as "on main", and refuses anything else.
-    expect(skill).toMatch(/detached/i)
-    expect(skill).toContain('git rev-parse origin/main')
-    expect(skill).toMatch(/ahead|unpushed/i)
-    expect(skill).not.toMatch(/^- \*\*Only in a clone of the soii repo, on `main`\./m)
+  test('maintainer tools are not in the public cheatsheet', () => {
+    expect(cheatsheet).not.toContain('soii-release')
+    expect(cheatsheet).not.toContain('release-notes.ts')
+    expect(cheatsheet).not.toMatch(/releasing\.md/) // a regex, so this file doesn't itself name a private file
   })
   test('soii-health fills only new and changed notes, with the script option that does it', () => {
     const health = readFileSync(join(skillsDir, 'soii-health', 'SKILL.md'), 'utf8')

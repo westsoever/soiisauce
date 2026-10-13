@@ -1,14 +1,12 @@
 // app/server/edit-properties.ts
 // POST /api/notes/properties: set one frontmatter property on a note from the reader (D62).
-// Same rules as a Log append: only notes in the compiled index, one commit per save, GitHub
-// writes re-read and retry once on a conflict, local writes commit just that file.
+// Same rules as a Log append: only notes in the compiled index, and each save is a local commit of just that file.
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { cleanPropertyValue, isEditableKey, type PropertyValue } from '../lib/properties'
 import { setProperty } from '../lib/property-edit'
 import type { SoiiEnv } from './env'
-import { getFile, putFile } from './github-contents'
-import { commitLocal, githubFail, inVault, isDay, pullAfterCommit, type LogDeps } from './log-note'
-import { writeTarget } from './write-note'
+import { commitLocal, inVault, isDay, type LogDeps } from './log-note'
+import { canWrite, WRITE_NOT_CONFIGURED } from './write-note'
 
 export interface PropertyRequest {
   path: string
@@ -19,8 +17,8 @@ export interface PropertyRequest {
 }
 
 export type PropertyResult =
-  | { ok: true; path: string; via: 'github' | 'local'; commitUrl: string | null; pulled: boolean | null; warning: string | null }
-  | { ok: false; status: 400 | 404 | 409 | 422 | 501 | 502; error: string; message: string }
+  | { ok: true; path: string; warning: string | null }
+  | { ok: false; status: 400 | 404 | 422 | 501; error: string; message: string }
 
 type Fail = Extract<PropertyResult, { ok: false }>
 type Bad = Fail & { status: 400 }
@@ -49,8 +47,7 @@ const UNREADABLE = "Couldn't read this note's properties safely, so nothing was 
 export async function editProperty(env: SoiiEnv, body: unknown, deps: LogDeps): Promise<PropertyResult> {
   const parsed = parsePropertyRequest(body)
   if (!parsed.ok) return parsed
-  const target = writeTarget(env)
-  if (!target) return fail(501, 'write_not_configured', 'Writing is not set up. Add VAULT_REPO and VAULT_WRITE_TOKEN.')
+  if (!canWrite(env)) return fail(501, 'write_not_configured', WRITE_NOT_CONFIGURED)
   const { key, value, date } = parsed.req
   const meta = deps.notes().find(n => n.path === parsed.req.path)
   if (!meta || !/\.md$/i.test(meta.path)) return fail(404, 'not_found', "That note isn't in soii's copy of the vault.")
@@ -59,23 +56,6 @@ export async function editProperty(env: SoiiEnv, body: unknown, deps: LogDeps): 
   const message = `soii: edit "${meta.title}" (${key})`
   const gone = () => fail(404, 'gone', `"${meta.title}" isn't in the vault any more. It may have been moved or deleted.`)
 
-  if (target === 'github') {
-    for (let attempt = 0; attempt < 2; attempt++) {
-      const got = await getFile(env, meta.path, deps.fetch)
-      if (!got.ok) return githubFail(got)
-      if (!got.file) return gone()
-      const next = edit(got.file.content)
-      if (!next.ok) return fail(422, 'unreadable', UNREADABLE)
-      const put = await putFile(env, meta.path, next.content, message, got.file.sha, deps.fetch)
-      if (put.ok) {
-        const pull = await pullAfterCommit(env, deps.git)
-        return { ok: true, path: meta.path, via: 'github', commitUrl: put.commitUrl, pulled: pull.pulled, warning: pull.warning }
-      }
-      if (put.reason !== 'conflict') return githubFail(put)
-    }
-    return fail(409, 'conflict', 'The note changed while saving. Try again.')
-  }
-
   const file = inVault(env, meta.path)
   if (!file) return fail(400, 'bad_path', 'That note is outside the vault.')
   if (!existsSync(file)) return gone()
@@ -83,5 +63,5 @@ export async function editProperty(env: SoiiEnv, body: unknown, deps: LogDeps): 
   if (!next.ok) return fail(422, 'unreadable', UNREADABLE)
   writeFileSync(file, next.content)
   const warning = await commitLocal(env, deps.git, meta.path, message)
-  return { ok: true, path: meta.path, via: 'local', commitUrl: null, pulled: null, warning }
+  return { ok: true, path: meta.path, warning }
 }

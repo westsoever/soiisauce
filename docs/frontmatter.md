@@ -67,11 +67,11 @@ One field per job:
 | Field | Job | Shape | Example |
 |---|---|---|---|
 | `type` | what the note is | string | `book` |
-| `collection` | which list or source it belongs to (a Library **section**) | list | `[StartupBooks]` |
+| `collection` | which list or source it belongs to (a Library **section**) | list | `[ReadingList]` |
 | `category` | its subject (a **subcategory**) | list, usually one | `[Biographies]` |
 | `tags` | free cross-cutting labels only | list | `[founder-mindset]` |
 
-Without `collection`, soii uses a tag that names a folder in the note's path below its Library folder, else that nearest folder (`Books/StartupBooks/…` → StartupBooks). A note with neither is in the **No collection** section. A missing `category` is **Uncategorized**. Values are matched case-insensitively and shown humanised (`StartupBooks` → "Startup Books"); the files are never rewritten. Log and Add write both as block lists (the same style as the rest of the vault), at most 5 values of at most 60 characters. The Log shows them up front for every Library kind: on a new note to fill in, on an existing one pre-filled with what the Library shows, and changing them there patches the note.
+Without `collection`, soii uses a tag that names a folder in the note's path below its Library folder, else that nearest folder (`Books/ReadingList/…` → ReadingList). A note with neither is in the **No collection** section. A missing `category` is **Uncategorized**. Values are matched case-insensitively and shown humanised (`ReadingList` → "Reading List"); the files are never rewritten. Log and Add write both as block lists (the same style as the rest of the vault), at most 5 values of at most 60 characters. The Log shows them up front for every Library kind: on a new note to fill in, on an existing one pre-filled with what the Library shows, and changing them there patches the note.
 
 "Has my notes" in the Library means the body has any words outside headings: a single Log entry counts, a bare `# Title` or an empty template does not.
 
@@ -133,11 +133,9 @@ workspaces:
 
 ## Editing in Obsidian
 
-soii is read-only. A note you open has an **Open in Obsidian** button at the right of the reader's top bar. The Today feeds (Daily brief, Weekly review) show only **Open note**, which goes to the reader. The button opens the note through an `obsidian://open?vault=…&file=…` link. The vault name is the vault's folder name (`VAULT_PATH`), or the repo name when soii builds from `VAULT_REPO`. Set `obsidianVault` if your Obsidian vault is called something else. Known issue: Vivaldi (8.2.x, macOS) crashes when the same note's button is clicked a second time. That's a Vivaldi bug, not soii's (D66).
+soii is read-only. A note you open has an **Open in Obsidian** button at the right of the reader's top bar. The Today feeds (Daily brief, Weekly review) show only **Open note**, which goes to the reader. The button opens the note through an `obsidian://open?vault=…&file=…` link. The vault name is the vault's folder name (`VAULT_PATH`). Set `obsidianVault` if your Obsidian vault is called something else. Known issue: Vivaldi (8.2.x, macOS) crashes when the same note's button is clicked a second time. That's a Vivaldi bug, not soii's (D66).
 
-An open soii page checks for a new build every 5 seconds while it's visible, and when you switch back to it. It then refreshes in place:
-- **Local dev:** soii rebuilds about a second after you save, so the page catches up within about 6 seconds.
-- **Deployed:** the page updates once the vault push has redeployed soii.
+An open soii page checks for a new build every 5 seconds while it's visible, and when you switch back to it, then refreshes in place. soii rebuilds about a second after you save, so the page catches up within about 6 seconds.
 
 ## Covers in the Library
 
@@ -150,7 +148,7 @@ soii picks a cover for each book, audiobook, movie, documentary and video in thi
    - **Videos:** the YouTube thumbnail for `url`. No key needed. Other video sites get a title tile.
 3. **Title tile**: a typographic card in your workspace's font when nothing is found.
 
-Lookups go through your soii's `/api/cover` endpoint. It only answers URLs that soii itself signed, and the result is cached by Vercel's CDN, so each item is looked up about once.
+Lookups go through your soii's `/api/cover` endpoint. It only answers URLs that soii itself signed, and your browser keeps a found cover for a day, so an item isn't looked up on every page view.
 
 Gallery tabs accept these `options` in `soii.config.yml`:
 

@@ -2,7 +2,7 @@ import { describe, expect, test } from 'bun:test'
 import { parseArgs } from './args'
 
 test('a bare command is parsed with no positionals or flags', () => {
-  expect(parseArgs(['status'])).toEqual({ ok: true, command: 'status', positional: [], flags: { follow: false, empty: false, noService: false, help: false, json: false } })
+  expect(parseArgs(['status'])).toEqual({ ok: true, command: 'status', positional: [], flags: { follow: false, samples: false, noService: false, help: false, json: false } })
 })
 
 test('no arguments means help', () => {
@@ -22,9 +22,11 @@ test('--port=N and -f are understood', () => {
   expect(p.ok && p.flags.port).toBe(6000)
 })
 
-test('init takes a directory and --empty', () => {
+test('init makes an empty vault unless --samples; --empty still works', () => {
+  expect(parseArgs(['init', 'my-vault'])).toMatchObject({ ok: true, command: 'init', positional: ['my-vault'], flags: { samples: false } })
+  expect(parseArgs(['init', 'my-vault', '--samples'])).toMatchObject({ ok: true, flags: { samples: true } })
   const r = parseArgs(['init', 'my-vault', '--empty'])
-  expect(r).toMatchObject({ ok: true, command: 'init', positional: ['my-vault'], flags: { empty: true } })
+  expect(r).toMatchObject({ ok: true, command: 'init', positional: ['my-vault'], flags: { samples: false } })
 })
 
 test('--help and -h on any command set the help flag; --version and -v are the version command', () => {
@@ -52,7 +54,7 @@ test('a bad or missing port is an error', () => {
 })
 
 test('--from without a value is an error', () => {
-  expect(parseArgs(['install', '--from'])).toEqual({ ok: false, error: '--from needs a value, e.g. github:westsoever/soii#v0.1.0.' })
+  expect(parseArgs(['install', '--from'])).toEqual({ ok: false, error: '--from needs a value, e.g. github:westsoever/soiisauce#v0.1.0.' })
 })
 
 test('too many positionals is an error', () => {

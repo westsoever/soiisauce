@@ -11,7 +11,7 @@ export const HELP = `soii: your vault, as an app, on this machine.
 
 Usage: soii <command> [options]
 
-  init <folder>        New vault from the starter (add --empty for no sample notes), then install
+  init <folder>        New vault (empty; add --samples for Sam's sample notes), then install
   install [vault]      In a terminal, asks a few questions and sets everything up (new vault or your own notes).
                        With a vault path (or --yes, or no terminal): installs into that vault's .soii/ and starts it
   setup                The same questions as a bare "soii install", always (answers can be piped in)

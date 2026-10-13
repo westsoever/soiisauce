@@ -8,18 +8,13 @@ The notes in here belong to a made-up person, Sam Rivera, a product designer in 
 
 ## Get started
 
-You need a Mac (Linux works too), [Bun](https://bun.sh), git, and a GitHub login that can read the private `westsoever/soii` repo. About 10 minutes.
+You need a Mac (Linux works too), [Bun](https://bun.sh) and git. About 10 minutes.
 
 ```bash
-gh auth login && gh auth setup-git      # once, so git can read the soii repo
-git clone --depth 1 https://github.com/westsoever/soii.git ~/soii-installer
-
-# a new vault from this starter (add --empty to leave out Sam's notes)
-bun ~/soii-installer/bin/soii.ts init ~/my-vault
-
-# or, if you already have a vault, install soii into it
-cd ~/my-vault && bun ~/soii-installer/bin/soii.ts install
+curl -fsSL https://raw.githubusercontent.com/westsoever/soiisauce/main/install.sh | bash
 ```
+
+It asks whether to make a new vault from this starter or install soii into one you have. To skip the questions: `... | bash -s -- init ~/my-vault` (it starts empty; add `--samples` to bring Sam's notes), or `... | bash -s -- ~/my-vault --yes` for a vault you already have.
 
 Then `soii open`. From now on `soii status`, `soii update`, `soii logs` and the rest work from anywhere. soii starts when you log in.
 
@@ -52,7 +47,7 @@ soii comes with Claude Code skills, installed in `.claude/skills/` of this vault
 | `/soii-explore` | Finds new, good reading on a topic on the web, and saves what you choose into the vault. |
 | `/soii-health` | A weekly check-up: notes soii can't read, broken links, a full Inbox. Fixes the safe things on a branch. |
 
-There are more: `/soii-capture`, `/soii-save`, `/soii-synthesize`, `/soii-panel`, `/soii-sync-fix`, and `/skillfactory` to turn something you keep doing into a skill of your own. Everything is listed in the [skills cheatsheet](https://github.com/westsoever/soii/blob/main/docs/skills.md) and in the Skills page.
+There are more: `/soii-capture`, `/unbox` (files everything in your Inbox where it belongs), `/soii-save`, `/soii-synthesize`, `/soii-panel`, `/soii-sync-fix`, and `/skillfactory` to turn something you keep doing into a skill of your own. Everything is listed in the [skills cheatsheet](https://github.com/westsoever/soiisauce/blob/main/docs/skills.md) and in the Skills page.
 
 ## Layout
 

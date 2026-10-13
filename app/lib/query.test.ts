@@ -136,4 +136,17 @@ describe('fields named after Object.prototype members', () => {
       expect(sortNotes([without, withIt], [{ field: 'toString', dir }]).map(n => n.id)).toEqual(['with', 'without'])
     }
   })
+
+  test('the built-in 00 Inbox workspace lists everything under 00-Inbox, subfolders included, newest first', () => {
+    const inbox = DEFAULT_CONFIG.workspaces.find(w => w.id === 'inbox')!
+    expect(inbox.title).toBe('00 Inbox')
+    expect(inbox.tabs).toHaveLength(1)
+    const old = note('00-Inbox/old-idea', { date: '2026-10-01' })
+    const clip = note('00-Inbox/clippings/Fresh clip', { date: '2026-10-12' })
+    const mid = note('00-Inbox/mid', { date: '2026-10-05' })
+    const elsewhere = note('01-Daily/2026-10-13', { date: '2026-10-13' })
+    const lookalike = note('00-Inbox-archive/x', { date: '2026-10-13' })
+    const index = { notes: [old, elsewhere, clip, lookalike, mid], config: DEFAULT_CONFIG }
+    expect(runTab(inbox.tabs[0], index).map(n => n.id)).toEqual([clip.id, mid.id, old.id])
+  })
 })

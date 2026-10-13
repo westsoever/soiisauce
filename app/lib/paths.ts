@@ -28,3 +28,7 @@ export function noteApiPath(id: NoteId): string {
 export function fileUrl(path: string): string {
   return `/api/files/${encodePath(path)}`
 }
+
+export function texApiPath(id: NoteId): string {
+  return `/api/tex/${encodePath(id)}`
+}

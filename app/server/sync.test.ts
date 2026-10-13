@@ -13,9 +13,9 @@ function repo() {
 }
 
 describe('syncVault', () => {
-  test('is unavailable without VAULT_PATH and on Vercel', async () => {
+  test('is unavailable without VAULT_PATH', async () => {
     expect(canSync(readEnv({}))).toBe(false)
-    expect(canSync(readEnv({ VAULT_PATH: '/v', VERCEL: '1' }))).toBe(false)
+    expect(canSync(readEnv({ VAULT_PATH: '/v' }))).toBe(true)
     expect(await syncVault(readEnv({}))).toMatchObject({ ok: false, status: 501 })
   })
 

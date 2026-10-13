@@ -45,7 +45,7 @@ describe('template', () => {
   })
 
   test('keeps the built-in workspaces and adds Projects', () => {
-    expect(index.config.workspaces.map(w => w.id)).toEqual(['today', 'library', 'people', 'finance', 'goals', 'projects'])
+    expect(index.config.workspaces.map(w => w.id)).toEqual(['today', 'inbox', 'library', 'people', 'finance', 'goals', 'projects'])
     expect(index.config.workspaces.find(w => w.id === 'today')?.tabs.map(t => t.id)).toEqual(['brief', 'weekly', 'journal'])
   })
 
@@ -142,10 +142,17 @@ describe('template', () => {
   test('the README tells a new user the same install steps as the repo README, and names the key skills', () => {
     const own = readFileSync(join(VAULT, 'README.md'), 'utf8')
     const root = readFileSync(join(ROOT, 'README.md'), 'utf8')
-    for (const line of ['gh auth login && gh auth setup-git', 'git clone --depth 1 https://github.com/westsoever/soii.git ~/soii-installer', 'bun ~/soii-installer/bin/soii.ts init ~/my-vault', 'bun ~/soii-installer/bin/soii.ts install']) {
+    // The one-command install in both READMEs; the by-hand steps stay in docs/setup.md.
+    for (const line of ['curl -fsSL https://raw.githubusercontent.com/westsoever/soiisauce/main/install.sh | bash', 'bash -s -- init ~/my-vault']) {
       expect(root).toContain(line)
       expect(own).toContain(line)
     }
+    for (const text of [root, own]) {
+      expect(text).not.toContain('gh auth login')
+      expect(text).not.toMatch(/repo is private|private `westsoever\/soii`/)
+    }
+    const setup = readFileSync(join(ROOT, 'docs', 'setup.md'), 'utf8')
+    for (const line of ['git clone --depth 1 https://github.com/westsoever/soiisauce.git ~/soii-installer', 'bun ~/soii-installer/bin/soii.ts init ~/my-vault', 'bun ~/soii-installer/bin/soii.ts install']) expect(setup).toContain(line)
     for (const skill of ['soii-intro', 'soii-setup', 'soii-wrap', 'soii-chat', 'soii-learn', 'soii-explore', 'soii-health']) expect(own).toContain(`/${skill}`)
     for (const word of ['localhost:5011', 'Log', 'Sync', 'Obsidian']) expect(own).toContain(word)
   })
@@ -157,10 +164,10 @@ describe('template', () => {
   test('the starter kit pieces are there', () => {
     const pkg = JSON.parse(readFileSync(join(VAULT, '.soii', 'package.json'), 'utf8'))
     expect(pkg.private).toBe(true)
-    expect(pkg.dependencies.soii).toMatch(/^github:westsoever\/soii#v\d+\.\d+\.\d+$/)
+    expect(pkg.dependencies.soii).toMatch(/^github:westsoever\/soiisauce#v\d+\.\d+\.\d+$/)
     const ignore = readFileSync(join(VAULT, '.soii', '.gitignore'), 'utf8').split('\n')
     for (const entry of ['node_modules/', 'dist/', 'logs/', '.env.local']) expect(ignore).toContain(entry)
-    expect(existsSync(join(VAULT, '.github'))).toBe(false) // the Vercel redeploy workflow lives in templates/, not in a local-first vault
+    expect(existsSync(join(VAULT, '.github'))).toBe(false) // a local-first vault has no CI workflows
     for (const t of ['Book', 'Audiobook', 'Movie', 'Documentary', 'Video', 'Research paper', 'Article', 'Person', 'Goal', 'Account', 'Subscription', 'Expense', 'Daily brief', 'Weekly review']) {
       expect(existsSync(join(VAULT, 'Templates', `${t}.md`))).toBe(true)
     }

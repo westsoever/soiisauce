@@ -60,11 +60,11 @@ test('copyTemplate quotes a title YAML would misread', () => {
   expect(read(' padded ')).toBe('title: " padded "')
 })
 
-test('copyTemplate --empty keeps the machinery and drops Sam, leaving the folders ready', () => {
+test('an empty copy keeps the machinery and the top folders, none of Sam\'s notes or subfolders', () => {
   const dest = join(tmp(), 'vault')
   copyTemplate(fakeTemplate(), dest, { empty: true, title: 'My vault' })
   expect(tree(dest)).toEqual([
-    '.gitignore', '.obsidian/app.json', '.soii/.gitignore', '.soii/package.json', '00-Inbox/.gitkeep', '05-Knowledge/People/.gitkeep',
+    '.gitignore', '.obsidian/app.json', '.soii/.gitignore', '.soii/package.json', '00-Inbox/.gitkeep', '05-Knowledge/.gitkeep',
     'Templates/Book.md', 'soii.config.yml'
   ])
   expect(readFileSync(join(dest, 'soii.config.yml'), 'utf8')).toBe('title: My vault\nhome: today\n')

@@ -86,9 +86,9 @@ export function ViewSettingsPanel({
     try {
       const before = await builtAt()
       const result = await updateView(workspace.id, tab.id, change)
-      toast(result.via === 'github' ? `Saved ${tab.title}. It changes after the next deploy (about 2 minutes).` : `Saved ${tab.title}.`)
+      toast(`Saved ${tab.title}.`)
       if (result.warning) toast(result.warning)
-      await afterViewWrite(queryClient, before, result)
+      await afterViewWrite(queryClient, before)
       onPending({})
       onClose()
     } catch (err) {
@@ -106,13 +106,13 @@ export function ViewSettingsPanel({
     try {
       const before = await builtAt()
       const result = await removeView(workspace.id, tab.id)
-      toast(result.via === 'github' ? `Removed ${tab.title}. It disappears after the next deploy (about 2 minutes).` : `Removed ${tab.title}.`)
+      toast(`Removed ${tab.title}.`)
       if (result.warning) toast(result.warning)
       onPending({})
       onClose()
       // Only follow the removed tab out if we're still on it.
       if (!isStale()) navigate(workspacePath(workspace.id, workspace.tabs.find(t => t.id !== tab.id)!.id))
-      await afterViewWrite(queryClient, before, result)
+      await afterViewWrite(queryClient, before)
     } catch (err) {
       const message = err instanceof HttpError ? err.message : 'Removing failed. Try again.'
       if (isStale()) toast(`Couldn't remove ${tab.title}: ${message}`, 'error')

@@ -33,7 +33,7 @@ describe('latestDatedEntry', () => {
   })
 
   test('future dates, impossible dates and dates mid-sentence are ignored', () => {
-    const body = ['- 2026-11-01: planned trip', '- 2026-02-30: typo', '- Until 2026-09-30: partner', 'Met on 2026-09-15 at TechBBQ'].join('\n')
+    const body = ['- 2026-11-01: planned trip', '- 2026-02-30: typo', '- Until 2026-09-30: partner', 'Met on 2026-09-15 at the book club'].join('\n')
     expect(latestDatedEntry(body, today)).toBeNull()
   })
 
@@ -74,12 +74,12 @@ describe('linkedin', () => {
 
   test('label is the profile path', () => {
     expect(linkedinLabel('https://www.linkedin.com/in/anna-berg/')).toBe('in/anna-berg')
-    expect(linkedinLabel('https://www.linkedin.com/company/pico')).toBe('company/pico')
+    expect(linkedinLabel('https://www.linkedin.com/company/lumen')).toBe('company/lumen')
   })
 })
 
 describe('resolveCadence', () => {
-  const defaults = { friend: 30, mentor: 60, techbbq: 90 }
+  const defaults = { friend: 30, mentor: 60, 'book-club': 90 }
 
   test('relationship default, case-insensitive', () => {
     expect(resolveCadence(note('P/A', { relationship: 'Friend' }), defaults)).toBe(30)
@@ -88,7 +88,7 @@ describe('resolveCadence', () => {
   })
 
   test('several relationships take the shortest cadence', () => {
-    expect(resolveCadence(note('P/A', { relationship: ['techbbq', 'friend'] }), defaults)).toBe(30)
+    expect(resolveCadence(note('P/A', { relationship: ['book-club', 'friend'] }), defaults)).toBe(30)
   })
 
   test.each([
@@ -235,13 +235,13 @@ describe('daysSince', () => {
 describe('buildPulse', () => {
   const now = new Date(2026, 9, 12)
   const person = (id: string, fm: Record<string, unknown>, lastSeen: string | null = null) => note(`People/${id}`, { type: 'person', ...fm }, { lastSeen })
-  const options = { cadence: { friend: 30, techbbq: 90 }, recentDays: 30 }
+  const options = { cadence: { friend: 30, 'book-club': 90 }, recentDays: 30 }
 
   const notes = [
     person('Ann', { relationship: 'friend' }, '2026-10-10'), // 2 days, fine
     person('Bo', { relationship: 'friend' }, '2026-08-13'), // 60 days, 2.0×
-    person('Cy', { relationship: 'techbbq' }, '2026-03-01'), // 225 days, 2.5×
-    person('Di', { relationship: 'techbbq' }), // never logged
+    person('Cy', { relationship: 'book-club' }, '2026-03-01'), // 225 days, 2.5×
+    person('Di', { relationship: 'book-club' }), // never logged
     person('Ed', { relationship: 'friend', cadence: 'never' }, '2026-01-01'), // opted out
     person('Fi', { relationship: 'contact' }, '2026-10-01'), // no cadence, recent
     person('Gu', { relationship: 'friend' }), // never logged, shorter cadence than Di

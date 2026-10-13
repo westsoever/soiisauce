@@ -1,32 +1,21 @@
 // app/server/local.test.ts
-// Local mode (SOII_LOCAL=1): no sign-in, loopback only, writes go straight to the vault.
+// Local mode (SOII_LOCAL=1): loopback only, writes go straight to the vault.
 import { describe, expect, test } from 'bun:test'
 import { createSoiiApp } from './app'
-import { missingEnv, readEnv } from './env'
+import { readEnv } from './env'
 import { bindProblem, hostHeaderAllowed, isLoopbackHost } from './local'
 import { mkdirSync, mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { makeGeneratedFixture } from './test-fixture'
-import { writeTarget } from './write-note'
 
 describe('readEnv', () => {
-  test('SOII_LOCAL=1 means local mode and no sign-in', () => {
-    const env = readEnv({ SOII_LOCAL: '1', VAULT_PATH: '/v' })
-    expect(env.local).toBe(true)
-    expect(env.devAuth).toBe(true)
-    expect(missingEnv(env)).toEqual([])
+  test('SOII_LOCAL=1 means local mode', () => {
+    expect(readEnv({ SOII_LOCAL: '1', VAULT_PATH: '/v' })).toMatchObject({ local: true, vaultPath: '/v' })
   })
 
-  test('local mode is never on in a deployment', () => {
-    const env = readEnv({ SOII_LOCAL: '1', VERCEL: '1' })
-    expect(env.local).toBe(false)
-    expect(env.devAuth).toBe(false)
-  })
-
-  test('without it nothing changes', () => {
+  test('without it, it is plain dev mode', () => {
     expect(readEnv({}).local).toBe(false)
-    expect(readEnv({ SOII_DEV_AUTH: '1' })).toMatchObject({ local: false, devAuth: true })
   })
 })
 
@@ -68,16 +57,6 @@ describe('hostHeaderAllowed', () => {
   })
 })
 
-describe('writeTarget', () => {
-  test('local mode writes to the vault folder even if a GitHub write token is around', () => {
-    expect(writeTarget(readEnv({ SOII_LOCAL: '1', VAULT_PATH: '/v', VAULT_REPO: 'a/b', VAULT_WRITE_TOKEN: 't' }))).toBe('local')
-  })
-
-  test('outside local mode the token still wins', () => {
-    expect(writeTarget(readEnv({ VAULT_PATH: '/v', VAULT_REPO: 'a/b', VAULT_WRITE_TOKEN: 't' }))).toBe('github')
-  })
-})
-
 describe('the app in local mode', () => {
   const dir = makeGeneratedFixture()
   const local = createSoiiApp({ env: { SOII_LOCAL: '1', VAULT_PATH: '/tmp/none' }, generatedDir: dir })
@@ -86,7 +65,6 @@ describe('the app in local mode', () => {
 
   test('no cookie needed', async () => {
     expect((await hit('/api/vault', 'localhost:5011')).status).toBe(200)
-    expect(await (await hit('/api/me', 'localhost:5011')).json()).toMatchObject({ login: 'dev' })
   })
 
   test('a foreign Host header is rejected before any route runs', async () => {
@@ -103,7 +81,7 @@ describe('the app in local mode', () => {
   })
 
   test('outside local mode the Host header is not checked', async () => {
-    const dev = createSoiiApp({ env: { SOII_DEV_AUTH: '1' }, generatedDir: dir })
+    const dev = createSoiiApp({ env: {}, generatedDir: dir })
     expect((await dev.request('http://soii.test/api/vault', { headers: { Host: 'soii.test' } })).status).toBe(200)
   })
 
@@ -121,6 +99,6 @@ describe('the app in local mode', () => {
       return { status: res.status, calls }
     }
     expect(await run({ SOII_LOCAL: '1' }, 'localhost:5011')).toEqual({ status: 200, calls: ['pull', 'rev-list', 'push', 'ls-remote'] }) // the last one: Sync also looks for a newer soii release
-    expect(await run({ SOII_DEV_AUTH: '1' }, 'localhost:13390')).toEqual({ status: 200, calls: ['pull'] })
+    expect(await run({}, 'localhost:13390')).toEqual({ status: 200, calls: ['pull'] })
   })
 })

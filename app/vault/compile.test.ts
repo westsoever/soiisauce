@@ -191,7 +191,7 @@ describe('compileVault privacy', () => {
 })
 
 describe('compileVault duplicate ids', () => {
-  // Needs a filesystem that can hold Dup.md and Dup.MD side by side (Linux, so Vercel);
+  // Needs a filesystem that can hold Dup.md and Dup.MD side by side (Linux);
   // on macOS's default case-insensitive volume this returns early and walk.test.ts covers the logic.
   test('one note per id, no overwritten files, and a warning', async () => {
     const vault = tmp()

@@ -7,7 +7,7 @@ const book = (id: string, fm: Record<string, unknown> = {}, tags: string[] = [])
 
 describe('humanize and foldKey', () => {
   test('splits camel case, dashes and underscores, and capitalises the first letter', () => {
-    expect(humanize('StartupBooks')).toBe('Startup Books')
+    expect(humanize('ReadingList')).toBe('Reading List')
     expect(humanize('AIBooks')).toBe('AI Books')
     expect(humanize('self-help_books')).toBe('Self help books')
     expect(humanize(' biographies ')).toBe('Biographies')
@@ -39,21 +39,21 @@ describe('libraryRoot', () => {
 
 describe('noteCollections', () => {
   test('the collection field wins', () => {
-    expect(noteCollections(book('StartupBooks/A', { collection: ['Favourites'] }, ['StartupBooks']), ROOT)).toEqual(['Favourites'])
+    expect(noteCollections(book('ReadingList/A', { collection: ['Favourites'] }, ['ReadingList']), ROOT)).toEqual(['Favourites'])
     expect(noteCollections(book('A', { collection: 'Favourites' }), ROOT)).toEqual(['Favourites'])
   })
   test('else tags that name a folder below the root (case, spaces, dashes ignored)', () => {
-    expect(noteCollections(book('Startup-Books/A', {}, ['startupbooks', 'founder-mindset']), ROOT)).toEqual(['Startup-Books'])
+    expect(noteCollections(book('Startup-Books/A', {}, ['readinglist', 'founder-mindset']), ROOT)).toEqual(['Startup-Books'])
   })
   test('tag fallback returns the folder spelling, not the lowercased tag', () => {
-    expect(noteCollections(book('StartupBooks/A', {}, ['startupbooks']), ROOT)).toEqual(['StartupBooks'])
+    expect(noteCollections(book('ReadingList/A', {}, ['readinglist']), ROOT)).toEqual(['ReadingList'])
   })
   test('else the deepest folder below the root', () => {
-    expect(noteCollections(book('StartupBooks/A'), ROOT)).toEqual(['StartupBooks'])
+    expect(noteCollections(book('ReadingList/A'), ROOT)).toEqual(['ReadingList'])
     expect(noteCollections(book('Gifts/2024/A'), ROOT)).toEqual(['2024'])
   })
   test('none for a note at the root, even with a list-like tag', () => {
-    expect(noteCollections(book('A', {}, ['StartupBooks', 'Library']), ROOT)).toEqual([])
+    expect(noteCollections(book('A', {}, ['ReadingList', 'Library']), ROOT)).toEqual([])
   })
   test('without a root, tags restating the type never count', () => {
     expect(noteCollections(note('Notes/Books/A', { type: 'book' }, { tags: ['books'] }), null)).toEqual([])
@@ -80,8 +80,8 @@ describe('bucket', () => {
 
 describe('facetSuggestions', () => {
   test('existing values of that type, with counts, using the collection fallback', () => {
-    const notes = [book('StartupBooks/A', { category: 'Biographies' }), book('StartupBooks/B'), note('People/Anna', { type: 'person', category: 'Friends' })]
-    expect(facetSuggestions(notes, 'book', 'collection')).toEqual([{ key: 'startupbooks', value: 'StartupBooks', label: 'Startup Books', count: 2 }])
+    const notes = [book('ReadingList/A', { category: 'Biographies' }), book('ReadingList/B'), note('People/Anna', { type: 'person', category: 'Friends' })]
+    expect(facetSuggestions(notes, 'book', 'collection')).toEqual([{ key: 'readinglist', value: 'ReadingList', label: 'Reading List', count: 2 }])
     expect(facetSuggestions(notes, 'book', 'category').map(f => [f.value, f.count])).toEqual([['Biographies', 1]])
   })
 })

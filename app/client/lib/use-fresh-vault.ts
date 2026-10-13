@@ -1,5 +1,5 @@
-// Keeps an open page in step with the vault. The dev server rebuilds a second or so after a
-// file changes (an Obsidian save, an agent's edit); a deploy does the same after a push. While
+// Keeps an open page in step with the vault. The server rebuilds a second or so after a
+// file changes (an Obsidian save, an agent's edit, a Sync). While
 // the tab is visible, poll /api/health every few seconds and on focus, and when the build
 // changes, refetch the index, notes and search in place: no reload, nothing flashes.
 import { useQueryClient, type QueryClient } from '@tanstack/react-query'

@@ -67,8 +67,8 @@ describe('local mode commits every write, and only that file', () => {
     const before = git(root, 'rev-parse', 'HEAD')
     const res = await post(root, '/api/notes', { type: 'recipe', values: { title: 'Pasta al limone' } })
     expect(res.status).toBe(201)
-    const body = (await res.json()) as { path: string; via: string; warning: string | null }
-    expect(body).toMatchObject({ path: '04-Resources/Library/Recipes/Pasta al limone.md', via: 'local' })
+    const body = (await res.json()) as { path: string; warning: string | null }
+    expect(body).toMatchObject({ path: '04-Resources/Library/Recipes/Pasta al limone.md' })
     expect(body.warning).toContain('Committed')
     expect(git(root, 'rev-parse', 'HEAD')).not.toBe(before)
     expect(lastMessage(root)).toBe('soii: add recipe "Pasta al limone"')

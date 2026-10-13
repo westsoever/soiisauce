@@ -1,5 +1,5 @@
 // app/vault/walk.ts
-// Lists a vault's notes and attachments (spec §7.1): skips dot-entries,
+// Lists a vault's notes, LaTeX sources and attachments (spec §7.1): skips dot-entries,
 // node_modules, symlinks and config.exclude globs. Paths are vault-relative,
 // "/"-separated, NFC-normalised (macOS may store NFD names) and sorted;
 // fsPaths maps each back to the on-disk spelling.
@@ -12,6 +12,7 @@ export const ATTACHMENT_EXT = /\.(png|jpe?g|gif|webp|avif|svg|pdf|mp3|m4a|mp4|we
 export interface WalkResult {
   markdown: string[]
   attachments: string[]
+  tex: string[]
   fsPaths: Map<string, string>
   warnings: string[]
 }
@@ -30,24 +31,26 @@ const noteId = (path: string) => path.replace(/\.md$/i, '')
 export function collectWalk(found: Found[]): WalkResult {
   const markdown: string[] = []
   const attachments: string[] = []
+  const tex: string[] = []
   const fsPaths = new Map<string, string>()
   const warnings: string[] = []
   const owners = new Map<string, string>()
   const sorted = [...found].sort((a, b) => (a.path < b.path ? -1 : a.path > b.path ? 1 : a.onDisk < b.onDisk ? -1 : a.onDisk > b.onDisk ? 1 : 0))
   for (const { path, onDisk } of sorted) {
     const isNote = /\.md$/i.test(path)
-    if (!isNote && !ATTACHMENT_EXT.test(path)) continue
-    const key = isNote ? `note:${noteId(path)}` : `file:${path}`
+    const isTex = /\.tex$/i.test(path)
+    if (!isNote && !isTex && !ATTACHMENT_EXT.test(path)) continue
+    const key = isNote ? `note:${noteId(path)}` : isTex ? `tex:${path}` : `file:${path}`
     const owner = owners.get(key)
     if (owner !== undefined) {
       warnings.push(isNote ? `${path}: skipped, ${owner} already has the note id "${noteId(owner)}"` : `${path}: skipped, a file with the same normalised path was already found`)
       continue
     }
     owners.set(key, path)
-    ;(isNote ? markdown : attachments).push(path)
+    ;(isNote ? markdown : isTex ? tex : attachments).push(path)
     fsPaths.set(path, onDisk)
   }
-  return { markdown, attachments, fsPaths, warnings }
+  return { markdown, attachments, tex, fsPaths, warnings }
 }
 
 // A pattern whose last segment has no `*` or `?` names a folder (`Private`, `**/Private`), so it

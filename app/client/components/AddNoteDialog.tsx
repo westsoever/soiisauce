@@ -1,6 +1,6 @@
 // app/client/components/AddNoteDialog.tsx
 // "Add book", "Add movie"…: fill in the fields, get the note with its frontmatter written.
-// With writing set up (VAULT_WRITE_TOKEN, or a local VAULT_PATH) it saves to the vault;
+// With writing set up (VAULT_PATH) it saves to the vault;
 // Copy and Download always work.
 import { IconCloudUpload, IconCopy, IconDownload, IconPlus } from '@tabler/icons-react'
 import { useMemo, useState } from 'react'
@@ -59,15 +59,8 @@ function AddNoteForm({ spec, notes, onDone }: { spec: NewNoteSpec; notes: NoteMe
   async function save() {
     setSaving(true)
     try {
-      const saved = await api<{ path: string; via: 'github' | 'local'; warning?: string | null }>('/api/notes', { method: 'POST', body: { type: spec.type, values } })
-      toast(
-        saved.via === 'github'
-          ? capabilities?.sync
-            ? `Committed ${saved.path} to main. Press Sync to pull it in.`
-            : `Committed ${saved.path} to main. It shows up after the next deploy (about 2 minutes).`
-          : localAddedMessage(saved.path, saved.warning, Boolean(capabilities?.sync)),
-        'success'
-      )
+      const saved = await api<{ path: string; warning?: string | null }>('/api/notes', { method: 'POST', body: { type: spec.type, values } })
+      toast(localAddedMessage(saved.path, saved.warning, Boolean(capabilities?.sync)), 'success')
       onDone()
     } catch (err) {
       toast(err instanceof Error ? err.message : "Couldn't save the note.", 'error')

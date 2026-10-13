@@ -4,6 +4,7 @@
 import { watch } from 'node:fs'
 import { join } from 'node:path'
 import type { Subprocess } from 'bun'
+import { isIgnoredVaultPath } from './cli/watch'
 
 const ROOT = join(import.meta.dir, '..')
 const noBuild = process.argv.includes('--no-build')
@@ -26,13 +27,12 @@ if (noBuild) restart()
 else {
   if (!(await build())) process.exit(1)
   restart()
-  // Build outputs, tooling folders, and client/icons (build.ts copies it into dist/, and the PNGs are generated).
+  // The app folder: build outputs, tooling folders, and client/icons (build.ts copies it into dist/, and the PNGs are generated).
   const IGNORED = /(^|\/)(node_modules|\.generated|_generated|dist|\.git|\.vault|\.artifacts|\.obsidian)(\/|$)|(^|\/)client\/icons(\/|$)/
   let timer: ReturnType<typeof setTimeout> | undefined
   let building = false
   let again = false
-  const onChange = (_event: string, file: string | null) => {
-    if (!file || IGNORED.test(file)) return
+  const schedule = (file: string) => {
     clearTimeout(timer)
     timer = setTimeout(async () => {
       if (building) {
@@ -48,8 +48,15 @@ else {
       building = false
     }, 200)
   }
-  watch(join(ROOT, 'app'), { recursive: true }, onChange)
-  if (process.env.VAULT_PATH) watch(process.env.VAULT_PATH, { recursive: true }, onChange)
+  watch(join(ROOT, 'app'), { recursive: true }, (_event, file) => {
+    if (file && !IGNORED.test(file)) schedule(file)
+  })
+  // The vault follows the rule `soii run` uses (cli/watch.ts), so a TeX compile writing into .soii/cache doesn't restart the server.
+  if (process.env.VAULT_PATH) {
+    watch(process.env.VAULT_PATH, { recursive: true }, (_event, file) => {
+      if (file && !isIgnoredVaultPath(file)) schedule(file)
+    })
+  }
 }
 
 process.on('SIGINT', () => {

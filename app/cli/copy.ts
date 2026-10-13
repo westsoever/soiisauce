@@ -6,7 +6,7 @@ import { dirname, join } from 'node:path'
 /** Skills for the people who build and release soii, not for a vault that runs it: soii-release cuts a release. */
 export const NOT_FOR_VAULTS = ['soii-release']
 
-// What stays when you ask for an empty vault: the machinery, not Sam's notes.
+// What stays when you ask for an empty vault: the machinery, not Sam's notes. Of Sam's folders only the top ones stay, empty.
 const KEEP = ['.gitignore', '.obsidian', '.soii', 'Templates', 'soii.config.yml']
 
 function walkFiles(root: string, rel = ''): string[] {
@@ -29,7 +29,7 @@ export function copyTemplate(template: string, dest: string, opts: { empty: bool
       mkdirSync(dirname(join(dest, file)), { recursive: true })
       cpSync(join(template, file), join(dest, file))
     } else if (file.includes('/') && !file.startsWith('Attachments/')) {
-      emptyDirs.add(dirname(file))
+      emptyDirs.add(file.split('/')[0])
     }
   }
   for (const dir of emptyDirs) {

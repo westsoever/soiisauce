@@ -1,5 +1,5 @@
 // app/client/App.tsx
-// The signed-in shell: muted page, sidebar, and the routed screen (spec §6.3, §9).
+// The app shell: muted page, sidebar, and the routed screen (spec §6.3, §9).
 import { useEffect } from 'react'
 import { NothingHere } from './components/EmptyTab'
 import { MobileNav } from './components/MobileNav'

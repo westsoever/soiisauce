@@ -1,22 +1,18 @@
 // app/client/lib/queries.ts
 // Server state (TanStack Query). The vault index loads once per page view;
-// a new deploy is picked up on reload (spec §17).
+// use-fresh-vault.ts refetches it in place when the vault is rebuilt.
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { noteApiPath } from '../../lib/paths'
-import type { Me, NoteDoc, NoteId, SearchResult, VaultIndex, VersionInfo } from '../../lib/types'
-import { api } from './http'
+import { noteApiPath, texApiPath } from '../../lib/paths'
+import type { NoteDoc, NoteId, SearchResult, VaultIndex, VersionInfo } from '../../lib/types'
+import { api, fetchBlob } from './http'
 
 export const keys = {
-  me: ['me'] as const,
   vault: ['vault'] as const,
   capabilities: ['capabilities'] as const,
   version: ['version'] as const,
   note: (id: NoteId) => ['note', id] as const,
+  tex: (id: NoteId) => ['tex', id] as const,
   search: (q: string) => ['search', q] as const
-}
-
-export function useMe() {
-  return useQuery({ queryKey: keys.me, queryFn: () => api<Me>('/api/me'), staleTime: Infinity, retry: false })
 }
 
 export function useVault() {
@@ -45,7 +41,6 @@ export function useSearch(q: string) {
 
 export interface Capabilities {
   write: boolean
-  writeVia: 'github' | 'local' | null
   sync: boolean
 }
 
@@ -67,4 +62,9 @@ export function useVersion() {
     retry: false,
     refetchInterval: query => (query.state.data?.latest ? HALF_HOUR : 30_000)
   })
+}
+
+/** The compiled PDF of a .tex note. Asked for on every open; the server's cache makes an unchanged file cheap. */
+export function useTexPdf(id: NoteId) {
+  return useQuery({ queryKey: keys.tex(id), queryFn: () => fetchBlob(texApiPath(id)), staleTime: 0, gcTime: 0, retry: false })
 }

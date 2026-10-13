@@ -5,7 +5,7 @@ description: Diagnose and fix a failed soii Sync (git pull) or a failed "Add to 
 
 # Fix a failed vault Sync or Add
 
-soii never merges or rebases. Its Sync button runs `git pull --ff-only` in the local vault and shows git's message if that fails. The fix is always in the **vault repo**, not in soii. Read `docs/superpowers/DECISIONS.md` D58 if you need the design.
+soii never merges or rebases. Its Sync button runs `git pull --ff-only` in the local vault and shows git's message if that fails. The fix is always in the **vault repo**, not in soii.
 
 ## 1. Find the vault and look before touching
 
@@ -25,12 +25,10 @@ Read only `VAULT_PATH` from `.env.local`. Never print or log any `*TOKEN*` or `*
 | Message | Cause | Fix |
 |---|---|---|
 | `local changes … would be overwritten by merge` | Uncommitted edits to a file that also changed on GitHub | Stash (`git stash`), pull, `git stash pop`. If the pop conflicts, go to "Conflicts". |
-| `Not possible to fast-forward` / `diverging branches` | Local commits not on GitHub and GitHub commits not here (soii's commits count as the latter) | `git pull --rebase`, resolve conflicts if any, then `git push`. |
+| `Not possible to fast-forward` / `diverging branches` | Local commits not on GitHub (soii's own commits count) and GitHub commits not here | `git pull --rebase`, resolve conflicts if any, then `git push`. |
 | `Authentication failed` / `could not read Username` | The pull needs credentials soii can't prompt for | Ask the owner to run `git -C "$VAULT" pull` once in a terminal. You can't enter credentials. |
 | `not a git repository` | `VAULT_PATH` isn't a clone | Fix the path in `.env.local`, or ask the owner. |
 | `already exists` (Add to vault) | That title is taken; nothing was overwritten | Suggest another title, or open the existing note. No git work needed. |
-| `GitHub refused the write` (Add to vault) | `VAULT_WRITE_TOKEN` expired or lost Contents read and write on the repo | Tell the owner to make a new token and update `.env.local` (and Vercel). Don't touch the token yourself. |
-| `Couldn't reach GitHub` | Network | Retry later. Copy or Download in the dialog still works. |
 
 ## 3. Conflicts
 

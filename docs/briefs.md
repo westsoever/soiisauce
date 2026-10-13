@@ -2,7 +2,7 @@
 
 soii's **Today** workspace shows agent-written briefs as a feed: one day at a time, newest first, each rendered in full. Use the arrows (or the date list) to step back through earlier days. The address bar keeps the day you're looking at (`?d=2026-10-06`), so you can bookmark or share a specific brief. A dot on a tab means it has a note dated today, in your own timezone.
 
-soii only reads your vault. Briefs are written by your agents, scripts or by hand; soii picks them up on the next deploy.
+soii only reads your vault. Briefs are written by your agents, scripts or by hand; soii picks them up within a few seconds of the file landing in the vault.
 
 ## How soii finds a brief
 

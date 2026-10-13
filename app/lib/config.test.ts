@@ -6,6 +6,21 @@ import { resolveConfig } from './merge-config'
 
 const tab = (id: string, view = 'list') => ({ id, title: id, view, query: { type: 'book' } })
 
+describe('currency config', () => {
+  test('display currency and your own rates are kept', () => {
+    const config = resolveConfig({ currency: { display: 'DKK', rates: { USD: 1.1 } } })
+    expect(config.currency).toEqual({ display: 'DKK', rates: { USD: 1.1 } })
+  })
+  test('left out, the config has no currency key', () => {
+    expect('currency' in resolveConfig({})).toBe(false)
+  })
+  test('a bad code or a non-positive rate is an error', () => {
+    expect(() => resolveConfig({ currency: { display: 'kroner' } })).toThrow(ConfigError)
+    expect(() => resolveConfig({ currency: { rates: { USD: 0 } } })).toThrow(ConfigError)
+    expect(() => resolveConfig({ currency: { rates: { dollars: 1 } } })).toThrow(ConfigError)
+  })
+})
+
 describe('resolveConfig', () => {
   test('no config file means the defaults, validated', () => {
     expect(resolveConfig(null)).toEqual(DEFAULT_CONFIG)
@@ -16,10 +31,12 @@ describe('resolveConfig', () => {
     const ids = Object.fromEntries(DEFAULT_CONFIG.workspaces.map(w => [w.id, w.tabs.map(t => t.id)]))
     expect(ids).toEqual({
       today: ['brief', 'weekly'],
+      inbox: ['inbox'],
       library: ['books', 'audiobooks', 'movies', 'documentaries', 'videos', 'research', 'articles', 'recipes', 'journal'],
       people: ['overview', 'friends', 'network', 'all'],
       finance: ['overview', 'subscriptions', 'accounts', 'expenses', 'notes'],
-      goals: ['board', 'years', 'bucket']
+      goals: ['board', 'years', 'bucket'],
+      projects: ['board']
     })
     expect(DEFAULT_CONFIG.home).toBe('today')
   })
@@ -31,8 +48,8 @@ describe('resolveConfig', () => {
         { id: 'reading', title: 'Reading', tabs: [tab('now')] }
       ]
     })
-    expect(config.workspaces.map(w => w.id)).toEqual(['today', 'library', 'people', 'finance', 'goals', 'reading'])
-    expect(config.workspaces[2].title).toBe('Contacts')
+    expect(config.workspaces.map(w => w.id)).toEqual(['today', 'inbox', 'library', 'people', 'finance', 'goals', 'projects', 'reading'])
+    expect(config.workspaces[3].title).toBe('Contacts')
   })
 
   test('replaceDefaultWorkspaces drops the defaults', () => {

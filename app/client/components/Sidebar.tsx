@@ -1,13 +1,13 @@
 // app/client/components/Sidebar.tsx
 // The left rail (miso's Sidebar layout): soii. wordmark, workspaces from config,
-// Log, Skills, Vault, Search (⌘K), and the signed-in user with sign-out. Hidden below md.
-import { IconFolder, IconLogout, IconPencilPlus, IconRefresh, IconSearch, IconSparkles } from '@tabler/icons-react'
+// Log, Skills, Vault, Search (⌘K), Sync and the update notice. Hidden below md.
+import { IconFolder, IconPencilPlus, IconRefresh, IconSearch, IconSparkles } from '@tabler/icons-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import type { VaultIndex, WorkspaceConfig } from '../../lib/types'
-import { api, signOut } from '../lib/http'
+import { api } from '../lib/http'
 import { iconFor } from '../lib/icons'
-import { keys, useCapabilities, useMe } from '../lib/queries'
+import { keys, useCapabilities } from '../lib/queries'
 import { navigate, useRoute, workspacePath } from '../lib/router'
 import { toast } from '../lib/toast'
 import { cn } from '../ui/utils'
@@ -77,7 +77,6 @@ function SyncButton() {
 
 export function Sidebar({ index }: { index: VaultIndex }) {
   const route = useRoute()
-  const me = useMe()
   const capabilities = useCapabilities()
   return (
     <aside className="flex h-full w-56 shrink-0 flex-col gap-4 px-3 py-4 max-md:hidden">
@@ -111,13 +110,6 @@ export function Sidebar({ index }: { index: VaultIndex }) {
         </NavRow>
         {capabilities.data?.sync && <SyncButton />}
         <UpdateNoticeRow />
-        <div className="mt-2 flex h-8 items-center gap-2 px-2 text-xs text-muted-foreground">
-          {me.data?.avatarUrl ? <img src={me.data.avatarUrl} alt="" className="size-5 rounded-full" referrerPolicy="no-referrer" /> : null}
-          <span className="min-w-0 flex-1 truncate">{me.data ? `@${me.data.login}` : ''}</span>
-          <button type="button" aria-label="Sign out" title="Sign out" className="rounded-md p-1 hover:bg-accent hover:text-foreground" onClick={() => void signOut()}>
-            <IconLogout size={16} stroke={1.75} />
-          </button>
-        </div>
       </div>
     </aside>
   )

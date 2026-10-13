@@ -15,13 +15,9 @@ describe('obsidianUrl', () => {
 
 describe('vaultNameFrom', () => {
   test.each([
-    [{ VAULT_PATH: '/Users/me/cos' }, 'cos'],
+    [{ VAULT_PATH: '/Users/me/notes' }, 'notes'],
     [{ VAULT_PATH: '~/notes/my vault/' }, 'my vault'],
-    [{ VAULT_REPO: 'someone/notes' }, 'cos'],
-    [{ VAULT_GIT_URL: 'https://token@gitlab.com/me/second-brain.git' }, 'second-brain'],
-    [{ VAULT_GIT_URL: 'git@github.com:me/notes.git' }, 'notes'],
-    [{ VAULT_PATH: '/x/local', VAULT_REPO: 'me/remote' }, 'local'],
-    [{ VAULT_PATH: '  ', VAULT_REPO: '' }, null],
+    [{ VAULT_PATH: '  ' }, null],
     [{}, null]
   ])('%p → %p', (env, name) => {
     expect(vaultNameFrom(env)).toBe(name)

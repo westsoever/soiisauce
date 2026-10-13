@@ -1,6 +1,6 @@
 // app/cli/vault-files.ts
 // The few files soii keeps in a vault's .soii/ folder.
-export const REPO = 'westsoever/soii'
+export const REPO = 'westsoever/soiisauce'
 
 /** Where soii's releases live (git remote). SOII_REMOTE overrides it for tests and forks. */
 export const remoteFromEnv = (env: Record<string, string | undefined>): string => env.SOII_REMOTE?.trim() || `https://github.com/${REPO}.git`
@@ -38,7 +38,7 @@ export function setPin(packageJson: string, spec: string): string {
   return `${JSON.stringify(pkg, null, 2)}\n`
 }
 
-export const SOII_GITIGNORE_LINES = ['soii/', 'build/', 'logs/', '.env.local', 'node_modules/']
+export const SOII_GITIGNORE_LINES = ['soii/', 'build/', 'logs/', 'cache/', '.env.local', 'node_modules/']
 
 /** Add the lines that aren't already there; the file stays as the owner wrote it otherwise. */
 export function ensureLines(text: string, lines: string[]): string {

@@ -1,9 +1,8 @@
 // app/client/components/MobileNav.tsx
 // Below md: the bottom bar. The first three workspaces, a raised Log button in the middle, and
-// More (an update notice when there is one, other workspaces, Skills, Vault, Search, Sign out). Padded for the iPhone home indicator.
+// More (an update notice when there is one, other workspaces, Skills, Vault, Search). Padded for the iPhone home indicator.
 import { IconDots, IconPlus } from '@tabler/icons-react'
 import type { VaultIndex, WorkspaceConfig } from '../../lib/types'
-import { signOut } from '../lib/http'
 import { iconFor } from '../lib/icons'
 import { logPath, navigate, useRoute, workspacePath } from '../lib/router'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '../ui/dropdown-menu'
@@ -84,9 +83,6 @@ export function MobileNav({ index }: { index: VaultIndex }) {
           </DropdownMenuItem>
           <DropdownMenuItem className="min-h-11" onClick={openSearch}>
             Search
-          </DropdownMenuItem>
-          <DropdownMenuItem className="min-h-11" onClick={() => void signOut()}>
-            Sign out
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

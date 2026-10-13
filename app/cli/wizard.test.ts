@@ -25,7 +25,7 @@ const tmp = () => {
   dirs.push(d)
   return d
 }
-const flags = (f: Partial<Flags> = {}): Flags => ({ follow: false, empty: false, noService: false, help: false, json: false, ...f })
+const flags = (f: Partial<Flags> = {}): Flags => ({ follow: false, samples: false, noService: false, help: false, json: false, ...f })
 const put = (root: string, rel: string, body = 'x\n') => {
   mkdirSync(join(root, rel, '..'), { recursive: true })
   writeFileSync(join(root, rel), body)
@@ -101,18 +101,20 @@ describe('new vault', () => {
     const dest = join(parent, 'my-notes')
     expect(r.calls.init).toHaveLength(1)
     expect(r.calls.init[0].dir).toBe(dest)
-    expect(r.calls.init[0].flags.empty).toBe(false)
+    expect(r.calls.init[0].flags.samples).toBe(true)
     expect(r.calls.open).toBe(1)
     expect(said(r)).toContain(`New vault   ${dest} (with sample notes)`)
     expect(r.asked.at(-1)).toBe('Go ahead? [y/N] ')
     expect(existsSync(dest)).toBe(true)
   })
 
-  test('Enter takes the defaults: folder ~, name soii-vault, samples yes, open yes, new vault', async () => {
+  test('Enter takes the defaults: folder ~, name soii-vault, no samples, open yes, new vault', async () => {
     const r = rig(['', '', '', 'y', '', '', 'y'])
     expect(await runWizard(r.ctx, flags(), r.deps, r.ctx.prompter())).toBe(0)
     expect(r.calls.init[0].dir).toBe(join(r.home, 'soii-vault'))
-    expect(r.calls.init[0].flags.empty).toBe(false)
+    expect(r.calls.init[0].flags.samples).toBe(false)
+    expect(r.asked.some(q => q.includes("Sam's sample notes") && q.endsWith('[y/N] '))).toBe(true)
+    expect(said(r)).toContain('(empty: just the folders and templates)')
     expect(r.calls.open).toBe(1)
   })
 
@@ -120,7 +122,7 @@ describe('new vault', () => {
     const parent = tmp()
     const r = rig(['new', parent, 'v', 'y', 'n', 'n', 'y'])
     expect(await runWizard(r.ctx, flags(), r.deps, r.ctx.prompter())).toBe(0)
-    expect(r.calls.init[0].flags.empty).toBe(true)
+    expect(r.calls.init[0].flags.samples).toBe(false)
     expect(r.calls.open).toBe(0)
   })
 
@@ -224,7 +226,7 @@ describe('existing vault', () => {
     expect(await runWizard(r.ctx, flags(), r.deps, r.ctx.prompter())).toBe(0)
     const dest = join(parent, 'fresh')
     expect(r.calls.init[0].dir).toBe(dest)
-    expect(r.calls.init[0].flags.empty).toBe(true)
+    expect(r.calls.init[0].flags.samples).toBe(false)
     expect(tree(v)).toEqual(before)
     expect(before.map(f => readFileSync(join(v, f), 'utf8'))).toEqual(bodies)
     expect(existsSync(join(v, '.git'))).toBe(false)
@@ -351,10 +353,11 @@ describe('the machine', () => {
     expect(r.asked).toEqual([])
   })
 
-  test('no GitHub access: prints gh auth login && gh auth setup-git and stops', async () => {
+  test('GitHub not reachable: says to check the connection and stops', async () => {
     const r = rig(['new'], { missing: 'github' })
     expect(await runWizard(r.ctx, flags(), r.deps, r.ctx.prompter())).toBe(1)
-    expect(r.err.join('\n')).toContain('gh auth login && gh auth setup-git')
+    expect(r.err.join('\n')).toContain('online')
+    expect(r.err.join('\n')).not.toMatch(/is private/)
     expect(r.asked).toEqual([])
   })
 

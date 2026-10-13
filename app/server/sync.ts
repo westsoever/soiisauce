@@ -1,7 +1,6 @@
 // app/server/sync.ts
-// The sidebar's Sync button: `git pull --ff-only` in the local vault (VAULT_PATH). The dev
-// server already watches that folder, so pulled files trigger the rebuild. Local only: on
-// Vercel the vault is rebuilt by a deploy, so there is nothing to pull.
+// The sidebar's Sync button: `git pull --ff-only` in the local vault (VAULT_PATH). The server
+// already watches that folder, so pulled files trigger the rebuild.
 import { execFile } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
@@ -23,7 +22,7 @@ export const runGit: RunGit = (cwd, args) =>
   })
 
 export function canSync(env: SoiiEnv): boolean {
-  return Boolean(env.vaultPath) && !env.onVercel
+  return Boolean(env.vaultPath)
 }
 
 /**

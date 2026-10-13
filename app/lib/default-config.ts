@@ -5,7 +5,7 @@ import type { SoiiConfig } from './types'
 
 // People tabs overlap on purpose: a colleague who is also a friend shows in both. `circle: friends|network` adds anyone else.
 const FRIENDS = ['friend', 'partner', 'family', 'flatmate']
-const NETWORK = ['mentor', 'investor', 'techbbq', 'aiesec', 'volt', 'oasis']
+const NETWORK = ['mentor', 'investor']
 
 export const DEFAULT_CONFIG: SoiiConfig = {
   title: 'soii',
@@ -46,6 +46,13 @@ export const DEFAULT_CONFIG: SoiiConfig = {
       ]
     },
     {
+      // Everything delivered into the vault's Inbox folder, newest first (the default sort).
+      id: 'inbox',
+      title: '00 Inbox',
+      icon: 'inbox',
+      tabs: [{ id: 'inbox', title: '00 Inbox', view: 'list', query: { path: '00-Inbox/**' } }]
+    },
+    {
       id: 'library',
       title: 'Library',
       icon: 'books',
@@ -81,8 +88,7 @@ export const DEFAULT_CONFIG: SoiiConfig = {
             // Days between check-ins per relationship. Others get no reminders unless a note sets `cadence`.
             cadence: {
               friend: 30, partner: 30, family: 30, flatmate: 30,
-              mentor: 60, investor: 60,
-              techbbq: 90, aiesec: 90, volt: 90, oasis: 90
+              mentor: 60, investor: 60
             }
           }
         },
@@ -182,6 +188,20 @@ export const DEFAULT_CONFIG: SoiiConfig = {
         { id: 'board', title: 'Board', view: 'board', query: { type: 'goal' }, options: { groupBy: 'status' } },
         { id: 'years', title: 'By year', view: 'board', query: { type: 'goal' }, options: { groupBy: 'year' } },
         { id: 'bucket', title: 'Bucket list', view: 'list', query: { type: 'goal', where: { horizon: ['life', 'bucket'] } } }
+      ]
+    },
+    {
+      id: 'projects',
+      title: 'Projects',
+      icon: 'briefcase',
+      tabs: [
+        {
+          id: 'board',
+          title: 'Board',
+          view: 'board',
+          query: { type: 'project' },
+          options: { groupBy: 'status', groups: ['idea', 'active', 'done'], subtitle: 'area' }
+        }
       ]
     }
   ]

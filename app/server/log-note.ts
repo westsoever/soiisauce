@@ -1,7 +1,7 @@
 // app/server/log-note.ts
-// POST /api/log: validate a Log, then create a note or append to one through the configured
-// write target (spec §3). The browser never chooses a path for a new note, and can only append
-// to a note that is in the compiled index. GitHub appends re-read and retry once on a conflict.
+// POST /api/log: validate a Log, then create a note or append to one in the vault on disk (spec §3).
+// The browser never chooses a path for a new note, and can only append to a note that is in the
+// compiled index. Every write is a local commit of just that file.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve, sep } from 'node:path'
 import { parseListInput } from '../lib/collections'
@@ -20,11 +20,9 @@ import {
 import { appendEntry, patchFrontmatter } from '../lib/log-edit'
 import type { NoteMeta } from '../lib/types'
 import type { SoiiEnv } from './env'
-import { getFile, putFile } from './github-contents'
-import type { FetchLike } from './github-oauth'
 import { commitLocal } from './local-commit'
-import { canSync, syncVault, type RunGit } from './sync'
-import { writeTarget } from './write-note'
+import type { RunGit } from './sync'
+import { canWrite, WRITE_NOT_CONFIGURED } from './write-note'
 
 export const MAX_TEXT = 20_000
 const MAX_VALUE = 500
@@ -35,15 +33,14 @@ export type LogRequest =
   | { mode: 'append'; kind: LogKind; path: string; values: Record<string, string>; text: string; date: string; how: string | null }
 
 export interface LogDeps {
-  fetch: FetchLike
   git: RunGit
   /** The compiled index's notes; only called for appends. May throw VaultNotBuiltError (→ 503). */
   notes: () => NoteMeta[]
 }
 
 export type LogResult =
-  | { ok: true; path: string; mode: 'new' | 'append'; via: 'github' | 'local'; commitUrl: string | null; pulled: boolean | null; warning: string | null }
-  | { ok: false; status: 400 | 404 | 409 | 501 | 502; error: string; message: string; path?: string }
+  | { ok: true; path: string; mode: 'new' | 'append'; warning: string | null }
+  | { ok: false; status: 400 | 404 | 409 | 501; error: string; message: string; path?: string }
 
 type Fail = Extract<LogResult, { ok: false }>
 type Bad = { ok: false; status: 400; error: string; message: string }
@@ -120,21 +117,6 @@ export function parseLogRequest(body: unknown): { ok: true; req: LogRequest } | 
   return { ok: true, req: { mode: 'append', kind, path: b.path, values: values.values, text, date: b.date, how } }
 }
 
-export function githubFail(r: { reason: string; status: number }): Fail {
-  if (r.reason === 'unreachable') return fail(502, 'github_unreachable', "Couldn't reach GitHub.")
-  if (r.reason === 'rejected') {
-    return fail(502, 'github_rejected', 'GitHub refused the write. Check that VAULT_WRITE_TOKEN has Contents: read and write on the vault repo.')
-  }
-  if (r.reason === 'too_large') return fail(502, 'too_large', 'That note is too large to edit through GitHub.')
-  return fail(502, 'github_error', `GitHub answered ${r.status}.`)
-}
-
-export async function pullAfterCommit(env: SoiiEnv, git: RunGit): Promise<{ pulled: boolean | null; warning: string | null }> {
-  if (!canSync(env)) return { pulled: null, warning: null }
-  const s = await syncVault(env, git)
-  return s.ok ? { pulled: true, warning: null } : { pulled: false, warning: `Committed to GitHub, but your local vault didn't pull it. ${s.message}` }
-}
-
 export function inVault(env: SoiiEnv, path: string): string | null {
   const base = resolve(env.vaultPath ?? '')
   const file = resolve(join(base, path))
@@ -155,7 +137,7 @@ function typedChanges(kind: LogKind, changes: Record<string, string>): Record<st
   )
 }
 
-async function logNew(env: SoiiEnv, target: 'github' | 'local', req: Extract<LogRequest, { mode: 'new' }>, deps: LogDeps): Promise<LogResult> {
+async function logNew(env: SoiiEnv, req: Extract<LogRequest, { mode: 'new' }>, deps: LogDeps): Promise<LogResult> {
   const kind = creatingKind(req.kind)
   const note = buildNewNote(req)
   // buildNewNote only produces <folder>/<clean name>.md; this guards that promise.
@@ -163,21 +145,16 @@ async function logNew(env: SoiiEnv, target: 'github' | 'local', req: Extract<Log
     return fail(400, 'bad_path', 'That name makes an invalid file name.')
   }
   const message = `soii log: ${kind.id} "${note.title}"`
-  if (target === 'github') {
-    const put = await putFile(env, note.path, note.content, message, null, deps.fetch)
-    if (!put.ok) return put.reason === 'exists' ? fail(409, 'exists', `"${note.title}" already exists.`, note.path) : githubFail(put)
-    return { ok: true, path: note.path, mode: 'new', via: 'github', commitUrl: put.commitUrl, ...(await pullAfterCommit(env, deps.git)) }
-  }
   const file = inVault(env, note.path)
   if (!file) return fail(400, 'bad_path', 'That name makes an invalid file name.')
   if (existsSync(file)) return fail(409, 'exists', `"${note.title}" already exists.`, note.path)
   mkdirSync(dirname(file), { recursive: true })
   writeFileSync(file, note.content, { flag: 'wx' })
   const warning = await commitLocal(env, deps.git, note.path, message)
-  return { ok: true, path: note.path, mode: 'new', via: 'local', commitUrl: null, pulled: null, warning }
+  return { ok: true, path: note.path, mode: 'new', warning }
 }
 
-async function logAppend(env: SoiiEnv, target: 'github' | 'local', req: Extract<LogRequest, { mode: 'append' }>, deps: LogDeps): Promise<LogResult> {
+async function logAppend(env: SoiiEnv, req: Extract<LogRequest, { mode: 'append' }>, deps: LogDeps): Promise<LogResult> {
   const meta = deps.notes().find(n => n.path === req.path)
   if (!meta || !/\.md$/i.test(meta.path)) return fail(404, 'not_found', "That note isn't in soii's copy of the vault.")
   if (req.kind.type && meta.type !== req.kind.type) return fail(400, 'wrong_type', `That note isn't a ${req.kind.type}.`)
@@ -193,36 +170,18 @@ async function logAppend(env: SoiiEnv, target: 'github' | 'local', req: Extract<
   const message = `soii log: ${req.kind.id} "${meta.title}"`
   const gone = () => fail(404, 'gone', `"${meta.title}" isn't in the vault any more. It may have been moved or deleted.`)
 
-  if (target === 'github') {
-    for (let attempt = 0; attempt < 2; attempt++) {
-      const got = await getFile(env, meta.path, deps.fetch)
-      if (!got.ok) return githubFail(got)
-      if (!got.file) return gone()
-      const next = edit(got.file.content)
-      const put = await putFile(env, meta.path, next.content, message, got.file.sha, deps.fetch)
-      if (put.ok) {
-        const pull = await pullAfterCommit(env, deps.git)
-        const warning = [next.warning, pull.warning].filter(Boolean).join(' ') || null
-        return { ok: true, path: meta.path, mode: 'append', via: 'github', commitUrl: put.commitUrl, pulled: pull.pulled, warning }
-      }
-      if (put.reason !== 'conflict') return githubFail(put)
-    }
-    return fail(409, 'conflict', 'The note changed while saving. Try again.')
-  }
-
   const file = inVault(env, meta.path)
   if (!file) return fail(400, 'bad_path', 'That note is outside the vault.')
   if (!existsSync(file)) return gone()
   const next = edit(readFileSync(file, 'utf8'))
   writeFileSync(file, next.content)
   const committed = await commitLocal(env, deps.git, meta.path, message)
-  return { ok: true, path: meta.path, mode: 'append', via: 'local', commitUrl: null, pulled: null, warning: [next.warning, committed].filter(Boolean).join(' ') }
+  return { ok: true, path: meta.path, mode: 'append', warning: [next.warning, committed].filter(Boolean).join(' ') }
 }
 
 export async function logNote(env: SoiiEnv, body: unknown, deps: LogDeps): Promise<LogResult> {
   const parsed = parseLogRequest(body)
   if (!parsed.ok) return parsed
-  const target = writeTarget(env)
-  if (!target) return fail(501, 'write_not_configured', 'Writing is not set up. Add VAULT_REPO and VAULT_WRITE_TOKEN.')
-  return parsed.req.mode === 'new' ? logNew(env, target, parsed.req, deps) : logAppend(env, target, parsed.req, deps)
+  if (!canWrite(env)) return fail(501, 'write_not_configured', WRITE_NOT_CONFIGURED)
+  return parsed.req.mode === 'new' ? logNew(env, parsed.req, deps) : logAppend(env, parsed.req, deps)
 }

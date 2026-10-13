@@ -1,4 +1,4 @@
-// Serves a finished build locally the way Vercel does: dist/ as static files
+// Serves a finished build on this machine: dist/ as static files
 // with an index.html fallback, and /api/* through the bundled API. Bun loads
 // .env.local itself. PORT defaults to 13390 (an empty PORT counts as unset).
 import { existsSync, statSync } from 'node:fs'
