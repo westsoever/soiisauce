@@ -2,6 +2,13 @@
 
 What's new in each soii release, newest first. `soii update` prints the sections that are newer than the version you had.
 
+## v0.2.1
+
+A fix for the one-line install: on a first run it could stop with "Cannot find module 'unist-util-visit-parents/do-not-use-color'". It now installs soii's packages before it starts.
+
+- The one-line install sets up soii's packages first, so it works on a computer that has never run soii.
+- An update or install that can't download soii's packages (no internet, for instance) now changes nothing: the soii you have keeps working, and the message says to try again.
+
 ## v0.2.0
 
 soii is now open source under the MIT licence, and installing it takes one line in a terminal: no GitHub account and no access to ask for. New vaults start empty, with sample notes only if you want them, and soii can show LaTeX files as PDFs.

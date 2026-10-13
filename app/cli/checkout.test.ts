@@ -76,3 +76,50 @@ test('a folder in the way that is not a soii checkout is never deleted', async (
   expect(r.ok).toBe(false)
   expect(readFileSync(join(vault, '.soii', 'soii', 'precious.txt'), 'utf8')).toBe('mine')
 })
+
+// ---- packages are installed before the swap, so .soii/soii never holds a tree the CLI can't start from ----
+
+test('prepare runs on the new copy, before it is swapped in, with the old install still in place', async () => {
+  const vault = join(root, 'v7')
+  await checkoutSoii(ctx, vault, 'v0.1.0')
+  const seen: { dir: string; marker: string; liveMarker: string }[] = []
+  const r = await checkoutSoii(ctx, vault, 'v0.2.0', async dir => {
+    seen.push({ dir, marker: readFileSync(join(dir, 'marker.txt'), 'utf8'), liveMarker: readFileSync(join(vault, '.soii', 'soii', 'marker.txt'), 'utf8') })
+    writeFileSync(join(dir, 'installed.txt'), 'packages')
+    return true
+  })
+  expect(r).toEqual({ ok: true, changed: true })
+  expect(seen).toEqual([{ dir: join(vault, '.soii', 'soii.new'), marker: 'two', liveMarker: 'one' }])
+  expect(readFileSync(join(vault, '.soii', 'soii', 'installed.txt'), 'utf8')).toBe('packages')
+  expect(readFileSync(join(vault, '.soii', 'soii', 'marker.txt'), 'utf8')).toBe('two')
+})
+
+test('prepare failing keeps the old install, removes the new copy and says so', async () => {
+  const vault = join(root, 'v8')
+  await checkoutSoii(ctx, vault, 'v0.1.0')
+  writeFileSync(join(vault, '.soii', 'soii', 'node_modules-stand-in'), 'old packages')
+  const r = await checkoutSoii(ctx, vault, 'v0.2.0', async () => false)
+  expect(r.ok).toBe(false)
+  if (!r.ok) expect(r.message).toMatch(/packages.*not (been )?(installed|put in place)|nothing was changed/i)
+  expect(readFileSync(join(vault, '.soii', 'soii', 'marker.txt'), 'utf8')).toBe('one')
+  expect(readFileSync(join(vault, '.soii', 'soii', 'node_modules-stand-in'), 'utf8')).toBe('old packages')
+  expect(await installedRef(ctx, vault)).toBe('v0.1.0')
+  expect(existsSync(join(vault, '.soii', 'soii.new'))).toBe(false)
+  expect(existsSync(join(vault, '.soii', 'soii.old'))).toBe(false)
+})
+
+test('prepare failing on a first install leaves no .soii/soii at all', async () => {
+  const vault = join(root, 'v9')
+  const r = await checkoutSoii(ctx, vault, 'v0.1.0', async () => false)
+  expect(r.ok).toBe(false)
+  expect(existsSync(join(vault, '.soii', 'soii'))).toBe(false)
+  expect(existsSync(join(vault, '.soii', 'soii.new'))).toBe(false)
+})
+
+test('prepare is not called when the tag is already there', async () => {
+  const vault = join(root, 'v10')
+  await checkoutSoii(ctx, vault, 'v0.1.0')
+  let calls = 0
+  expect(await checkoutSoii(ctx, vault, 'v0.1.0', async () => { calls++; return true })).toEqual({ ok: true, changed: false })
+  expect(calls).toBe(0)
+})

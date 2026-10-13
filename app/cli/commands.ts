@@ -86,13 +86,15 @@ export async function install(ctx: Ctx, vaultArg: string | undefined, flags: Fla
 
   const ref = prepareSoiiDir(ctx, vault, flags)
   ctx.out(`Installing soii ${ref} into ${here} …`)
-  const fetched = await checkoutSoii(ctx, vault, ref)
+  // The packages are installed in the new copy before it is put in place, so a failed install changes nothing.
+  const fetched = await checkoutSoii(ctx, vault, ref, dir => installDeps(ctx, dir))
   if (!fetched.ok) {
     ctx.err(`soii: ${fetched.message}\n${FETCH_HINT}`)
     return 1
   }
   const root = installedRoot(vault)
-  if (!(await installDeps(ctx, root))) return 1
+  // A tag that was already there wasn't fetched, so its packages are checked in place (this also repairs a deleted node_modules).
+  if (!fetched.changed && !(await installDeps(ctx, root))) return 1
 
   const previous = readRegistry(configDir(ctx.env))
   const port = flags.port ?? (previous && previous.vault === vault ? previous.port : DEFAULT_PORT)
@@ -324,13 +326,13 @@ export async function update(ctx: Ctx, flags: Flags): Promise<number> {
   const read = (f: string) => (existsSync(f) ? readFileSync(f, 'utf8') : '')
   const before = read(changelogFile(installedRoot(reg.vault)))
 
-  const fetched = await checkoutSoii(ctx, reg.vault, latest)
+  // The new checkout has no node_modules yet, and the CLI run below can't start without them: they are installed in the
+  // new copy before it replaces the old one, so a failed install leaves the working soii (and the pin) as they were.
+  const fetched = await checkoutSoii(ctx, reg.vault, latest, dir => installDeps(ctx, dir))
   if (!fetched.ok) {
     ctx.err(`soii: ${fetched.message}\n${FETCH_HINT}`)
     return 1
   }
-  // The new checkout has no node_modules yet, and the CLI run below can't start without them.
-  if (!(await installDeps(ctx, installedRoot(reg.vault)))) return 1
   writeFileSync(pkgFile, setPin(readFileSync(pkgFile, 'utf8'), pinSpec(latest)))
   const news = newChangelog(before, read(changelogFile(installedRoot(reg.vault))))
   if (news.length) ctx.out(`\nWhat's new:\n\n${news.join('\n\n')}`)

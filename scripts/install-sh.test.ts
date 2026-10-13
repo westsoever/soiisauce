@@ -30,18 +30,36 @@ const ALL = toolbox('all', ['git', 'bun', 'mktemp', 'rm'])
 const NO_BUN = toolbox('no-bun', ['git', 'mktemp', 'rm'])
 const NO_GIT = toolbox('no-git', ['bun', 'mktemp', 'rm'])
 
-/** A git repo shaped like soii for the script's purposes: bin/soii.ts writes argv, stdin and cwd to $FAKE_OUT. */
-function fakeRepo(): string {
-  const dir = join(root, 'fake-soii')
+/**
+ * A git repo shaped like soii for the script's purposes: bin/soii.ts writes argv, stdin, cwd and whether the packages were
+ * installed to $FAKE_OUT. Its package.json has a postinstall that leaves an `installed` marker, so a test can see that
+ * install.sh ran `bun install` in the clone before soii. `extraDeps` makes package.json disagree with bun.lock.
+ */
+function fakeRepo(name: string, extraDeps: Record<string, string> = {}): string {
+  const dir = join(root, name)
   mkdirSync(join(dir, 'bin'), { recursive: true })
   writeFileSync(
     join(dir, 'bin', 'soii.ts'),
-    `import { writeFileSync } from 'node:fs'
+    `import { existsSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
 const stdin = await new Response(Bun.stdin.stream()).text()
-writeFileSync(process.env.FAKE_OUT!, JSON.stringify({ argv: process.argv.slice(2), stdin, script: process.argv[1] }))
+const installed = existsSync(join(import.meta.dir, '..', 'installed'))
+writeFileSync(process.env.FAKE_OUT!, JSON.stringify({ argv: process.argv.slice(2), stdin, script: process.argv[1], installed }))
 process.exit(Number(process.env.FAKE_EXIT ?? 0))
 `
   )
+  const pkg = (deps: Record<string, string>) =>
+    JSON.stringify({ name: 'fake-soii', private: true, scripts: { postinstall: 'bun -e "require(\'fs\').writeFileSync(\'installed\', \'\')"' }, dependencies: deps })
+  // A local package keeps bun.lock real (Bun writes none for zero dependencies) without going online.
+  for (const local of ['dep', 'other']) {
+    mkdirSync(join(dir, local), { recursive: true })
+    writeFileSync(join(dir, local, 'package.json'), JSON.stringify({ name: local, version: '1.0.0' }))
+  }
+  writeFileSync(join(dir, 'package.json'), pkg({ dep: 'file:./dep' }))
+  const lock = Bun.spawnSync(['bun', 'install', '--ignore-scripts'], { cwd: dir })
+  if (lock.exitCode !== 0) throw new Error(lock.stderr.toString())
+  writeFileSync(join(dir, 'package.json'), pkg({ dep: 'file:./dep', ...extraDeps }))
+  writeFileSync(join(dir, '.gitignore'), 'node_modules/\ninstalled\n')
   const git = (...args: string[]) => {
     const r = Bun.spawnSync(['git', '-C', dir, '-c', 'user.name=t', '-c', 'user.email=t@t', '-c', 'commit.gpgsign=false', ...args])
     if (r.exitCode !== 0) throw new Error(r.stderr.toString())
@@ -52,14 +70,18 @@ process.exit(Number(process.env.FAKE_EXIT ?? 0))
   git('branch', 'v9.9.9')
   return `file://${dir}`
 }
-const FAKE = fakeRepo()
+const FAKE = fakeRepo('fake-soii')
+/** package.json asks for a package bun.lock doesn't have: `--frozen-lockfile` fails, a plain `bun install` works. */
+const STALE_LOCK = fakeRepo('fake-soii-stale-lock', { other: 'file:./other' })
+/** package.json asks for a package that doesn't exist: every `bun install` fails. */
+const BROKEN = fakeRepo('fake-soii-broken', { gone: 'file:./no-such-package' })
 
 interface Run {
   code: number
   out: string
   err: string
   /** What the fake soii recorded, or null if it never ran. */
-  soii: { argv: string[]; stdin: string; script: string } | null
+  soii: { argv: string[]; stdin: string; script: string; installed: boolean } | null
   /** Temporary clones the script left behind. */
   leftovers: string[]
 }
@@ -101,10 +123,31 @@ describe('install.sh', () => {
     expect(r.leftovers).toEqual([])
   })
 
-  test('init as the first word runs init, and needs no terminal', () => {
-    const r = run(['init', '~/my-vault', '--empty'])
+  test("soii's packages are installed in the clone before soii runs, so nothing loads from Bun's global cache", () => {
+    const r = run(['--yes'])
     expect(r.code).toBe(0)
-    expect(r.soii?.argv).toEqual(['init', '~/my-vault', '--empty'])
+    expect(r.soii?.installed).toBe(true)
+    expect(r.out).toContain("Installing soii's packages")
+  })
+
+  test("a lockfile this Bun can't use falls back to a plain install, as `soii install` does", () => {
+    const r = run(['--yes'], { env: { SOII_CLONE_URL: STALE_LOCK } })
+    expect(r.code).toBe(0)
+    expect(r.soii?.installed).toBe(true)
+  })
+
+  test('if the packages cannot be installed, it says so, soii never runs, and the clone is removed', () => {
+    const r = run(['--yes'], { env: { SOII_CLONE_URL: BROKEN } })
+    expect(r.code).toBe(1)
+    expect(r.err).toContain("couldn't install soii's packages")
+    expect(r.soii).toBeNull()
+    expect(r.leftovers).toEqual([])
+  })
+
+  test('init as the first word runs init, and needs no terminal', () => {
+    const r = run(['init', '~/my-vault', '--samples'])
+    expect(r.code).toBe(0)
+    expect(r.soii?.argv).toEqual(['init', '~/my-vault', '--samples'])
   })
 
   test('--yes never needs a terminal', () => {

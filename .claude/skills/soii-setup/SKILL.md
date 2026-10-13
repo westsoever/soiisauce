@@ -35,8 +35,8 @@ Use `$SOII_CLI init <folder>` and `$SOII_CLI install` wherever this skill says `
 
 Ask, unless it's obvious.
 
-- **A. New vault, no notes yet.** `soii init <folder>` copies the template (sample notes included; add `--empty` to leave Sam's notes out) and installs soii in it. (From a fresh clone, use `$SOII_CLI` as above.) Then help them create a **private** GitHub repo if they want one (`gh repo create <name> --private --source . --push`). The template is already complete: skip to step 6.
-- **B. Import an existing vault into a soii vault.** The old vault stays exactly as it is; its notes are copied into a fresh soii vault (`soii init <folder> --empty`) and fixed up there. Best when they want soii's folders, templates and `.soii/` in one place. Do steps 1–7.
+- **A. New vault, no notes yet.** `soii init <folder>` copies the template, empty (the top folders and the templates; add `--samples` for Sam's sample notes), and installs soii in it. (From a fresh clone, use `$SOII_CLI` as above.) Then help them create a **private** GitHub repo if they want one (`gh repo create <name> --private --source . --push`). The template is already complete: skip to step 6.
+- **B. Import an existing vault into a soii vault.** The old vault stays exactly as it is; its notes are copied into a fresh, empty soii vault (`soii init <folder>`) and fixed up there. Best when they want soii's folders, templates and `.soii/` in one place. Do steps 1–7.
 - **C. Set up in place.** soii goes into the existing vault, and its notes are fixed up where they are. Best when the vault is already a git repo they push to (for example one a deploy or another tool reads). Do steps 1 and 3–7.
 
 ## 1. Make it safe to edit

@@ -28,10 +28,11 @@ git ls-remote https://github.com/westsoever/soiisauce.git HEAD
 
 ## 2. Get the `soii` command
 
-Clone soii once, only to run its installer. The installer puts everything in your vault, so you can delete this clone afterwards.
+Clone soii once, only to run its installer, and install its packages in the clone (soii can't run without them). The installer puts everything in your vault, so you can delete this clone afterwards.
 
 ```bash
 git clone --depth 1 https://github.com/westsoever/soiisauce.git ~/soii-installer
+(cd ~/soii-installer && bun install --frozen-lockfile)
 ```
 
 ## 3a. New to soii: make a vault from the starter
@@ -60,7 +61,7 @@ You don't need Claude Code. In a terminal, `soii install` with no vault named as
 
 ```bash
 git clone --depth 1 https://github.com/westsoever/soiisauce.git ~/soii-installer
-cd ~/soii-installer && bun bin/soii.ts install
+cd ~/soii-installer && bun install --frozen-lockfile && bun bin/soii.ts install
 ```
 
 It checks first that Bun, git and GitHub access to the soii repo work, and prints the exact fix if not. Then, with the answer in `[brackets]` if you press Enter:

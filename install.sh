@@ -89,6 +89,12 @@ clone=(git clone --quiet --depth 1)
 if [ -n "$REF" ]; then clone+=(--branch "$REF"); fi
 GIT_TERMINAL_PROMPT=0 "${clone[@]}" "$URL" "$tmp/soii" || die "git could not fetch soii. $FETCH_HINT"
 
+# soii's own packages, in the clone. Without node_modules Bun fetches imports from its global cache on the fly, and
+# some packages (they import themselves by name) can't be loaded that way. Never from the keyboard: that's soii's.
+say "Installing soii's packages..."
+# The lockfile is the lock; an older Bun that can't read it falls back to a plain install, as `soii install` does.
+(cd "$tmp/soii" && { TMPDIR="$tmp" bun install --frozen-lockfile --silent < /dev/null || TMPDIR="$tmp" bun install --silent < /dev/null; }) || die "couldn't install soii's packages (bun install failed; the lines above say why). Check that you are online, then run this again."
+
 # 3. Hand over to soii. It asks its questions on the keyboard, and the clone is deleted when it ends.
 # Not `exec`: the trap must run afterwards. Its exit code is ours.
 if [ ! -t 0 ] && have_tty; then

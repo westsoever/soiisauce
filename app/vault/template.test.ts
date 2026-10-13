@@ -152,7 +152,7 @@ describe('template', () => {
       expect(text).not.toMatch(/repo is private|private `westsoever\/soii`/)
     }
     const setup = readFileSync(join(ROOT, 'docs', 'setup.md'), 'utf8')
-    for (const line of ['git clone --depth 1 https://github.com/westsoever/soiisauce.git ~/soii-installer', 'bun ~/soii-installer/bin/soii.ts init ~/my-vault', 'bun ~/soii-installer/bin/soii.ts install']) expect(setup).toContain(line)
+    for (const line of ['git clone --depth 1 https://github.com/westsoever/soiisauce.git ~/soii-installer', '(cd ~/soii-installer && bun install --frozen-lockfile)', 'bun ~/soii-installer/bin/soii.ts init ~/my-vault', 'bun ~/soii-installer/bin/soii.ts install']) expect(setup).toContain(line)
     for (const skill of ['soii-intro', 'soii-setup', 'soii-wrap', 'soii-chat', 'soii-learn', 'soii-explore', 'soii-health']) expect(own).toContain(`/${skill}`)
     for (const word of ['localhost:5011', 'Log', 'Sync', 'Obsidian']) expect(own).toContain(word)
   })

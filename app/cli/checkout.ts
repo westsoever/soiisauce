@@ -30,8 +30,15 @@ const isSoiiCheckout = (dir: string): boolean => {
 /**
  * Put `ref` (a release tag, or a branch for testing) in <vault>/.soii/soii. A tag that is already there is left alone.
  * The new copy is cloned beside the old one and swapped in, so a failed fetch keeps the working install.
+ * `prepare` runs on the new copy before the swap (it installs the packages): a CLI without node_modules can't start, and
+ * the `soii` command and the service run whatever is in .soii/soii. If it returns false, nothing is swapped.
  */
-export async function checkoutSoii(ctx: Ctx, vault: string, ref: string): Promise<{ ok: true; changed: boolean } | { ok: false; message: string }> {
+export async function checkoutSoii(
+  ctx: Ctx,
+  vault: string,
+  ref: string,
+  prepare?: (dir: string) => Promise<boolean>
+): Promise<{ ok: true; changed: boolean } | { ok: false; message: string }> {
   const dir = soiiCheckout(vault)
   const next = `${dir}.new`
   const old = `${dir}.old`
@@ -44,6 +51,10 @@ export async function checkoutSoii(ctx: Ctx, vault: string, ref: string): Promis
   if (clone.code !== 0) {
     rmSync(next, { recursive: true, force: true })
     return { ok: false, message: `git could not fetch soii ${ref} from ${remoteUrl(ctx)}: ${clone.out.split('\n').pop() ?? 'unknown error'}` }
+  }
+  if (prepare && !(await prepare(next))) {
+    rmSync(next, { recursive: true, force: true })
+    return { ok: false, message: `soii ${ref} was fetched but its packages could not be installed, so nothing was changed${existsSync(dir) ? ' and the soii you have keeps working' : ''}.` }
   }
   rmSync(old, { recursive: true, force: true })
   if (existsSync(dir)) renameSync(dir, old)
