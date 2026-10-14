@@ -13,9 +13,9 @@ Both write a tab into `soii.config.yml` and make a commit in your local vault. T
 
 Option names are checked. A misspelt key (say `groupby` instead of `groupBy`) shows an inline error naming it on that tab, instead of being ignored.
 
-## 00 Inbox
+## Inbox
 
-**00 Inbox** sits right after Today in the sidebar. It is a single list of every note under `00-Inbox/`, subfolders included (a `clippings/` folder, say), newest first. "Newest" is the note's `date`, then its `created` property, then a date in its file name. Notes with none of those go to the bottom.
+**Inbox** is the first workspace in the sidebar, above Today. It is a single list of every note under `00-Inbox/`, subfolders included (a `clippings/` folder, say), newest first. "Newest" is the note's `date`, then its `created` property, then a date in its file name. Notes with none of those go to the bottom.
 
 It reads that folder and nothing else, so a note leaves the list when you file it somewhere else. soii doesn't track read or unread: the list is what is in the folder.
 

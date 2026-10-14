@@ -48,7 +48,7 @@ describe('resolveConfig', () => {
         { id: 'reading', title: 'Reading', tabs: [tab('now')] }
       ]
     })
-    expect(config.workspaces.map(w => w.id)).toEqual(['today', 'inbox', 'library', 'people', 'finance', 'goals', 'projects', 'reading'])
+    expect(config.workspaces.map(w => w.id)).toEqual(['inbox', 'today', 'library', 'people', 'finance', 'goals', 'projects', 'reading'])
     expect(config.workspaces[3].title).toBe('Contacts')
   })
 

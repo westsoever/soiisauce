@@ -137,9 +137,10 @@ describe('fields named after Object.prototype members', () => {
     }
   })
 
-  test('the built-in 00 Inbox workspace lists everything under 00-Inbox, subfolders included, newest first', () => {
+  test('the built-in Inbox workspace lists everything under 00-Inbox, subfolders included, newest first', () => {
     const inbox = DEFAULT_CONFIG.workspaces.find(w => w.id === 'inbox')!
-    expect(inbox.title).toBe('00 Inbox')
+    expect(inbox.title).toBe('Inbox')
+    expect(inbox.tabs[0].title).toBe('Inbox')
     expect(inbox.tabs).toHaveLength(1)
     const old = note('00-Inbox/old-idea', { date: '2026-10-01' })
     const clip = note('00-Inbox/clippings/Fresh clip', { date: '2026-10-12' })

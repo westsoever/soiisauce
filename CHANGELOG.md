@@ -2,6 +2,13 @@
 
 What's new in each soii release, newest first. `soii update` prints the sections that are newer than the version you had.
 
+## v0.2.3
+
+Inbox now comes first in the sidebar, and "Save with text" in /soii-explore keeps the whole page instead of a summary.
+
+- The sidebar reads Inbox, Today, Library. "00 Inbox" is now just "Inbox". soii still opens on Today.
+- "Save with text" in /soii-explore saves the full page into the note (text, links and images) the way the Obsidian Web Clipper does, with the clipper's properties. Pages that block it get a link and a short summary instead.
+
 ## v0.2.2
 
 The one-line install checks your Bun first and shows its progress.

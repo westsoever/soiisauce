@@ -32,6 +32,13 @@ export const DEFAULT_CONFIG: SoiiConfig = {
   },
   workspaces: [
     {
+      // Everything delivered into the vault's Inbox folder, newest first (the default sort).
+      id: 'inbox',
+      title: 'Inbox',
+      icon: 'inbox',
+      tabs: [{ id: 'inbox', title: 'Inbox', view: 'list', query: { path: '00-Inbox/**' } }]
+    },
+    {
       id: 'today',
       title: 'Today',
       icon: 'sun',
@@ -44,13 +51,6 @@ export const DEFAULT_CONFIG: SoiiConfig = {
           query: [{ type: 'weekly-review' }, { path: ['**/week_report/**', '**/week_logs/**'] }]
         }
       ]
-    },
-    {
-      // Everything delivered into the vault's Inbox folder, newest first (the default sort).
-      id: 'inbox',
-      title: '00 Inbox',
-      icon: 'inbox',
-      tabs: [{ id: 'inbox', title: '00 Inbox', view: 'list', query: { path: '00-Inbox/**' } }]
     },
     {
       id: 'library',

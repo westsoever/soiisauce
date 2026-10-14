@@ -45,7 +45,7 @@ describe('template', () => {
   })
 
   test('keeps the built-in workspaces and adds Projects', () => {
-    expect(index.config.workspaces.map(w => w.id)).toEqual(['today', 'inbox', 'library', 'people', 'finance', 'goals', 'projects'])
+    expect(index.config.workspaces.map(w => w.id)).toEqual(['inbox', 'today', 'library', 'people', 'finance', 'goals', 'projects'])
     expect(index.config.workspaces.find(w => w.id === 'today')?.tabs.map(t => t.id)).toEqual(['brief', 'weekly', 'journal'])
   })
 
