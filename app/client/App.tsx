@@ -1,6 +1,7 @@
 // app/client/App.tsx
 // The app shell: muted page, sidebar, and the routed screen (spec §6.3, §9).
 import { useEffect } from 'react'
+import { CaptureDialog } from './components/CaptureDialog'
 import { NothingHere } from './components/EmptyTab'
 import { MobileNav } from './components/MobileNav'
 import { SearchPalette } from './components/SearchPalette'
@@ -74,6 +75,7 @@ export function App() {
         {route.page !== 'log' && <MobileNav index={index} />}
       </div>
       <SearchPalette />
+      <CaptureDialog />
     </div>
   )
 }

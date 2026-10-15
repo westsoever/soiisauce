@@ -2,6 +2,13 @@
 
 What's new in each soii release, newest first. `soii update` prints the sections that are newer than the version you had.
 
+## v0.2.4
+
+Press Option-P anywhere in soii to jot a thought straight into your Inbox, without leaving what you're doing.
+
+- Option-P opens a small capture box. Enter saves, Shift-Enter starts a new line, Esc closes it, and what you'd typed is still there when you open it again.
+- The note lands in your Inbox in the same format as /soii-capture, named after today's date and its first words. An existing note is never overwritten, and Sync pushes it like anything else you add.
+
 ## v0.2.3
 
 Inbox now comes first in the sidebar, and "Save with text" in /soii-explore keeps the whole page instead of a summary.

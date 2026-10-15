@@ -101,6 +101,16 @@ describe('local mode commits every write, and only that file', () => {
     expect(((await res.json()) as { warning: string }).warning).toContain('not a git repository')
   })
 
+  test('Capture (POST /api/capture): "soii: capture …"', async () => {
+    const root = vault()
+    const res = await post(root, '/api/capture', { text: 'Ask Anna about the trip\nand the dates', date: '2026-10-16' })
+    expect(res.status).toBe(201)
+    expect(((await res.json()) as { warning: string }).warning).toContain('Committed')
+    expect(lastMessage(root)).toBe('soii: capture "Ask Anna about the trip"')
+    expect(lastFiles(root)).toEqual(['00-Inbox/2026-10-16-ask-anna-about-the-trip.md'])
+    expect(status(root)).toEqual([...LOOSE].sort())
+  })
+
   test('Log, a new note: "soii log: …"', async () => {
     const root = vault()
     const res = await post(root, '/api/log', { mode: 'new', kind: 'book', title: 'Dune', values: { status: 'reading' }, text: '', date: '2026-10-12', how: null })

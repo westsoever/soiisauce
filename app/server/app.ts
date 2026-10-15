@@ -3,6 +3,7 @@
 import { Hono, type Context, type MiddlewareHandler } from 'hono'
 import { join } from 'node:path'
 import { decodePath } from '../lib/paths'
+import { captureNote } from './capture-note'
 import { createCoverRoute } from './covers/route'
 import type { FetchLike } from './covers/types'
 import { applyDecorators } from './decorate'
@@ -121,6 +122,14 @@ export function createSoiiApp(opts: AppOptions = {}): Hono {
     if (!result.ok) return c.json({ error: result.error, message: result.message, ...(result.path ? { path: result.path } : {}) }, result.status)
     const { path, mode, warning } = result
     return c.json({ path, mode, warning }, 201)
+  })
+
+  // Quick capture (Option-P): one note in the Inbox, named by the server.
+  app.post('/api/capture', sameOrigin, async c => {
+    const body = await c.req.json().catch(() => null)
+    const result = await captureNote(env, body, opts.git ?? runGit)
+    if (!result.ok) return c.json({ error: result.error, message: result.message }, result.status)
+    return c.json({ path: result.path, warning: result.warning }, 201)
   })
 
   app.post('/api/notes/properties', sameOrigin, async c => {
