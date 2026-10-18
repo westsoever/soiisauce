@@ -1,5 +1,5 @@
 // soii's API (spec §6.3): one Hono app, served by app/serve.ts on this machine. There is no sign-in: local mode
-// only listens on localhost and refuses requests for any other Host (app/server/local.ts).
+// only listens on localhost and refuses requests for any other Host (app/server/local.ts), in dev mode too.
 import { Hono, type Context, type MiddlewareHandler } from 'hono'
 import { join } from 'node:path'
 import { decodePath } from '../lib/paths'
@@ -13,12 +13,13 @@ import { readEnv, SIGNING_SECRET } from './env'
 import { serveFile } from './files'
 import { logNote } from './log-note'
 import { createRatesProvider } from './rates'
-import { canSync, runGit, syncVault, type RunGit } from './sync'
+import { canSync, runGit, syncSetup, syncVault, type RunGit } from './sync'
 import { createTexCompiler, type TexCompiler } from './tex'
 import { createVersionChecker, gitLsRemote, type VersionChecker } from './version'
 import { remoteFromEnv } from '../cli/vault-files'
 import { hostHeaderAllowed } from './local'
 import { requestOrigin } from './origin'
+import { addMissingHeaders, API_HEADERS } from './security-headers'
 import { createVaultStore, defaultGeneratedDir, VaultNotBuiltError, type VaultStore } from './vault-store'
 import { canWrite, writeNote } from './write-note'
 
@@ -46,15 +47,27 @@ export function createSoiiApp(opts: AppOptions = {}): Hono {
   const source = opts.env ?? process.env
   const env = readEnv(source)
   const now = opts.now ?? Date.now
-  const fetchImpl: FetchLike = opts.fetch ?? ((input, init) => fetch(input, init))
+  // Offline, every outside request fails at once, and the callers fall back (built-in rates, title tiles for covers).
+  const fetchImpl: FetchLike = env.offline ? () => Promise.reject(new Error('soii is offline (SOII_OFFLINE=1)')) : (opts.fetch ?? ((input, init) => fetch(input, init)))
   const store = opts.store ?? createVaultStore(opts.generatedDir ?? defaultGeneratedDir(source))
   const tex = opts.tex !== undefined ? opts.tex : env.vaultPath ? createTexCompiler({ vaultDir: env.vaultPath, cacheDir: join(env.vaultPath, '.soii', 'cache', 'tex') }) : null
   const rates = createRatesProvider({ fetch: fetchImpl, now })
   const version =
-    opts.version ?? (env.local ? createVersionChecker({ installed: env.soiiVersion, lsRemote: gitLsRemote(remoteFromEnv(source), opts.git ?? runGit) }) : null)
+    opts.version ?? (env.local && !env.offline ? createVersionChecker({ installed: env.soiiVersion, lsRemote: gitLsRemote(remoteFromEnv(source), opts.git ?? runGit) }) : null)
   const app = new Hono()
-  if (env.local && !env.localForce) {
-    app.use('*', async (c, next) => (hostHeaderAllowed(c.req.header('host')) ? next() : c.json({ error: 'bad_host' }, 403)))
+  // First, so that a refused Host and an error answer carry them too.
+  app.use('*', async (c, next) => {
+    await next()
+    addMissingHeaders(c.res.headers, API_HEADERS)
+  })
+  // Local and dev mode alike: a web page can point its own hostname at 127.0.0.1 ("DNS rebinding") and read the vault.
+  // A request with no Host header at all is let through: a browser always sends one, so that can only be a program
+  // on this machine (which could send any Host it liked) or a test calling the app in-process.
+  if (!env.localForce) {
+    app.use('*', async (c, next) => {
+      const host = c.req.header('host')
+      return host === undefined || hostHeaderAllowed(host) ? next() : c.json({ error: 'bad_host' }, 403)
+    })
   }
   const decorateCtx = (c: Context) => ({ secret: SIGNING_SECRET, origin: requestOrigin(c) })
 
@@ -66,7 +79,7 @@ export function createSoiiApp(opts: AppOptions = {}): Hono {
   // The installed and the newest release, for the sidebar's "Update available". Only an installed (local mode) soii has
   // anything to update from; asking starts the checks, and serve.ts asks once at startup.
   app.get('/api/version', c => {
-    if (!env.local || !version) return c.json({ installed: null, latest: null, updateAvailable: false, releaseUrl: null })
+    if (!env.local || !version || env.offline) return c.json({ installed: null, latest: null, updateAvailable: false, releaseUrl: null })
     version.ensureStarted()
     return c.json(version.info())
   })
@@ -95,7 +108,11 @@ export function createSoiiApp(opts: AppOptions = {}): Hono {
     await next()
   }
 
-  app.get('/api/capabilities', c => c.json({ write: canWrite(env), sync: canSync(env) }))
+  // `remote`: where Sync pulls from and pushes to (credentials removed), or null when the vault isn't connected to one yet.
+  app.get('/api/capabilities', async c => {
+    const setup = canSync(env) ? await syncSetup(env, opts.git ?? runGit, { withRemote: true }) : null
+    return c.json({ write: canWrite(env), sync: canSync(env), remote: setup?.state === 'ready' ? setup.remote : null })
+  })
 
   app.post('/api/notes', sameOrigin, async c => {
     const body = await c.req.json().catch(() => null)
@@ -181,7 +198,7 @@ export function createSoiiApp(opts: AppOptions = {}): Hono {
   })
 
   // ---- extension mounts (Plan 2 adds `app.route('/api/cover', …)` on the line below) ----
-  app.route('/api/cover', createCoverRoute({ secret: () => SIGNING_SECRET, googleBooksKey: () => source.GOOGLE_BOOKS_API_KEY, tmdbKey: () => source.TMDB_API_KEY }))
+  app.route('/api/cover', createCoverRoute({ secret: () => SIGNING_SECRET, offline: env.offline, fetch: fetchImpl, googleBooksKey: () => source.GOOGLE_BOOKS_API_KEY, tmdbKey: () => source.TMDB_API_KEY }))
 
   app.notFound(c => c.json({ error: 'not_found' }, 404))
   app.onError((err, c) => {

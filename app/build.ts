@@ -8,6 +8,7 @@
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { basename, dirname, join, relative, resolve } from 'node:path'
 import tailwind from 'bun-plugin-tailwind'
+import { FONT_SHEETS, fontSheet } from './lib/fonts'
 import { vaultNameFrom } from './lib/obsidian'
 import { compileVault } from './vault/compile'
 
@@ -107,6 +108,22 @@ function copyPublic(): void {
   copyFileSync(join(CLIENT, 'manifest.webmanifest'), join(DIST, 'manifest.webmanifest'))
   copyFileSync(join(CLIENT, 'theme-init.js'), join(DIST, 'theme-init.js'))
   copyTree(join(CLIENT, 'icons'), join(DIST, 'icons'))
+  copyFonts()
+}
+
+// dist/fonts/<id>.css and its woff2 files, so workspace fonts load from soii, not Google Fonts (app/lib/fonts.ts).
+// Read and write rather than copyFileSync: copying a file this size makes Bun's watcher see an edit to the source.
+function copyFonts(): void {
+  for (const [id, sources] of Object.entries(FONT_SHEETS)) {
+    mkdirSync(join(DIST, 'fonts', id), { recursive: true })
+    const sheets = sources.map(source => {
+      const file = Bun.resolveSync(source, ROOT)
+      const sheet = fontSheet(readFileSync(file, 'utf8'), id)
+      for (const f of sheet.files) writeFileSync(join(DIST, 'fonts', id, f), readFileSync(join(dirname(file), 'files', f)))
+      return sheet.css
+    })
+    writeFileSync(join(DIST, 'fonts', `${id}.css`), sheets.join('\n'))
+  }
 }
 
 async function buildServer(): Promise<void> {

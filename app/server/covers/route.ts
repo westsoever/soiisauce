@@ -21,6 +21,8 @@ export type CoverDeps = {
   tmdbKey?: () => string | undefined
   fetch?: FetchLike
   timeoutMs?: number
+  /** SOII_OFFLINE=1: look nothing up, so every cover falls back to the title tile. */
+  offline?: boolean
 }
 
 function isAbort(error: unknown): boolean {
@@ -48,6 +50,7 @@ export function createCoverRoute(deps: CoverDeps): Hono {
     } catch {
       return c.json({ error: 'bad_params' }, 400, { 'Cache-Control': NO_STORE })
     }
+    if (deps.offline) return c.json({ error: 'not_found' }, 404, { 'Cache-Control': NO_STORE })
 
     const controller = new AbortController()
     const timer = setTimeout(() => controller.abort(), deps.timeoutMs ?? 4000)

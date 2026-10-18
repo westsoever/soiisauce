@@ -60,7 +60,7 @@ Two briefs on the same date are shown together on that day, ordered by title.
 
 ## Pointing soii at an existing layout
 
-Override the `today` workspace in your vault's `soii.config.yml`. `examples/cos.soii.config.yml` is a worked example for a vault whose briefs have no frontmatter. It matches them by folder:
+Override the `today` workspace in your vault's `soii.config.yml`. For a vault whose briefs have no frontmatter, match them by folder:
 
 ```yaml
 workspaces:
@@ -76,7 +76,7 @@ workspaces:
           - { path: "06-Wiki/daily_report/*.md" }
 ```
 
-The same example keeps your own daily notes, morning sets and evening reflections (`type: daily`, `daily-morning`, `daily-evening`) out of the brief feed. It aliases them to one `journal` type and gives them a **Journal** tab:
+To keep your own daily notes, morning sets and evening reflections (`type: daily`, `daily-morning`, `daily-evening`) out of the brief feed, alias them to one `journal` type; they get a **Journal** tab:
 
 ```yaml
 types:
@@ -85,16 +85,9 @@ types:
 
 ## Known vault data issue: notes stored as base64
 
-Some agents have written a note's base64-encoded payload instead of its markdown. soii shows those notes as one long unreadable line. In the owner's vault (checked 2026-10-11) these six files are affected:
+Some agents have written a note's base64-encoded payload instead of its markdown. soii shows those notes as one long unreadable line.
 
-- `01-Daily/2026-07-19.md`
-- `01-Daily/2026-07-31.md`
-- `01-Daily/2026-08-06.md`
-- `01-Daily/2026-08-08.md`
-- `01-Daily/2026-08-10.md`
-- `01-Daily/_Templates/daily.md`
-
-Find them in any vault (read-only, changes nothing):
+Find them in your vault (read-only, changes nothing):
 
 ```bash
 bun scripts/find-base64-notes.ts /path/to/vault

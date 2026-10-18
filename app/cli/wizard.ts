@@ -10,6 +10,8 @@ import type { Flags } from './args'
 import { remoteUrl } from './checkout'
 import * as commands from './commands'
 import type { Ctx } from './context'
+import { identityNote, isIdentityProblem } from './git-identity'
+import { addNote } from './notes'
 import { Aborted, askYesNo, type Prompter } from './prompt'
 import { countNotes, scanVault, summariseVault, TYPE_CHOICES, type FolderStat } from './vault-scan'
 
@@ -281,7 +283,11 @@ async function startRepo(ctx: Ctx, dir: string): Promise<boolean> {
   }
   await git(ctx, dir, ['add', '-A', '--', '.', ':(exclude).soii'])
   const commit = await git(ctx, dir, ['commit', '-q', '-m', 'Initial commit of the vault, before soii'])
-  ctx.out(commit.code === 0 ? 'Started a git repository and committed your notes as they are.' : `Started a git repository. The first commit did not happen (${commit.out.split('\n')[0]}); commit your notes yourself.`)
+  if (commit.code === 0) ctx.out('Started a git repository and committed your notes as they are.')
+  else if (isIdentityProblem(commit.out)) {
+    ctx.out("Started a git repository. Committing your notes has to wait: git doesn't know who you are yet (what to type is at the end).")
+    addNote(ctx, 'git-identity', identityNote(dir, { firstCommit: true, message: '' }))
+  } else ctx.out(`Started a git repository. The first commit did not happen (${commit.out.split('\n')[0]}); commit your notes yourself.`)
   return true
 }
 

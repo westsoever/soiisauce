@@ -189,8 +189,11 @@ describe('todayIn / hasToday (timezone edges)', () => {
 })
 
 describe('emptyMessage / undatedLabel', () => {
-  test('brief-shaped queries get the brief copy from the spec', () => {
-    expect(BRIEF_EMPTY).toBe('Briefs appear here when notes have `type: daily-brief` or live in a `daily_report` folder.')
+  test('brief-shaped queries get the brief copy', () => {
+    expect(BRIEF_EMPTY).toContain('No briefs yet.')
+    expect(BRIEF_EMPTY).toContain('/soii-intro') // where a newcomer goes next
+    expect(BRIEF_EMPTY).toContain('Log')
+    expect(BRIEF_EMPTY).toContain('`type: daily-brief`') // and how a note becomes a brief
     expect(emptyMessage({ type: 'daily-brief' })).toBe(BRIEF_EMPTY)
     expect(emptyMessage([{ type: ['weekly-review'] }, { path: '**/daily_report/**' }])).toBe(BRIEF_EMPTY)
   })

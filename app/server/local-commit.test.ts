@@ -6,6 +6,9 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { createSoiiApp } from './app'
+import { readEnv } from './env'
+import { commitLocal } from './local-commit'
+import type { RunGit } from './sync'
 import { makeGeneratedFixture } from './test-fixture'
 
 const dirs: string[] = []
@@ -93,6 +96,16 @@ describe('local mode commits every write, and only that file', () => {
     expect(((await res.json()) as { warning: string }).warning).toContain("didn't commit")
   })
 
+  test('without a git name and email, the warning says the two commands that fix it', async () => {
+    const root = vault()
+    const noIdentity: RunGit = async (_cwd, args) =>
+      args[0] === 'commit' ? { code: 128, out: '\n*** Please tell me who you are.\n\nRun\n\n  git config --global user.email "you@example.com"\n\nfatal: unable to auto-detect email address' } : { code: 0, out: '' }
+    const msg = await commitLocal(readEnv({ VAULT_PATH: root }), noIdentity, 'a.md', 'soii: test')
+    expect(msg).toStartWith('Saved, but git didn\'t commit it')
+    expect(msg).toContain('git config --global user.name "Your Name"')
+    expect(msg).toContain('git config --global user.email "you@example.com"')
+  })
+
   test('Add in a folder that is not a git repo still saves', async () => {
     const root = mkdtempSync(join(tmpdir(), 'soii-lc-nogit-'))
     dirs.push(root)
@@ -107,7 +120,7 @@ describe('local mode commits every write, and only that file', () => {
     expect(res.status).toBe(201)
     expect(((await res.json()) as { warning: string }).warning).toContain('Committed')
     expect(lastMessage(root)).toBe('soii: capture "Ask Anna about the trip"')
-    expect(lastFiles(root)).toEqual(['00-Inbox/2026-10-16-ask-anna-about-the-trip.md'])
+    expect(lastFiles(root)).toEqual(['00-Inbox/Ask Anna about the trip.md'])
     expect(status(root)).toEqual([...LOOSE].sort())
   })
 

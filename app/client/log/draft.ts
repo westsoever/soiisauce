@@ -3,15 +3,12 @@
 // reload or closing the tab never loses what you typed. One draft at a time.
 import { readJson, removeKey, storageKeys, writeJson } from '../lib/storage'
 
-export type LogTarget = { mode: 'new'; title: string } | { mode: 'append'; path: string; title: string }
-
 export interface LogDraft {
   kind: string
-  target: LogTarget | null
+  title: string
   values: Record<string, string>
   text: string
   date: string
-  how: string | null
 }
 
 export function parseDraft(raw: unknown): LogDraft | null {
@@ -22,19 +19,15 @@ export function parseDraft(raw: unknown): LogDraft | null {
     d.values && typeof d.values === 'object' && !Array.isArray(d.values)
       ? (Object.fromEntries(Object.entries(d.values).filter(([, v]) => typeof v === 'string')) as Record<string, string>)
       : {}
+  // Drafts from before the Log only created notes kept { target: { mode, title } }; a new one's title carries over.
   const t = d.target && typeof d.target === 'object' ? (d.target as Record<string, unknown>) : null
-  let target: LogTarget | null = null
-  if (t && typeof t.title === 'string') {
-    if (t.mode === 'new') target = { mode: 'new', title: t.title }
-    else if (t.mode === 'append' && typeof t.path === 'string') target = { mode: 'append', path: t.path, title: t.title }
-  }
-  return { kind: d.kind, target, values, text: d.text, date: d.date, how: typeof d.how === 'string' ? d.how : null }
+  const title = typeof d.title === 'string' ? d.title : t?.mode === 'new' && typeof t.title === 'string' ? t.title : ''
+  return { kind: d.kind, title, values, text: d.text, date: d.date }
 }
 
 /** A draft is worth keeping once it holds anything beyond the kind's defaults. */
 export function isWorthKeeping(d: LogDraft, defaults: Record<string, string>): boolean {
-  if (d.text.trim()) return true
-  if (d.target && (d.target.mode === 'append' || d.target.title.trim())) return true
+  if (d.text.trim() || d.title.trim()) return true
   return Object.entries(d.values).some(([k, v]) => v !== '' && v !== (defaults[k] ?? ''))
 }
 

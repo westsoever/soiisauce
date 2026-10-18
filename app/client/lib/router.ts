@@ -6,6 +6,7 @@
 //   /vault                 → folder tree + recent notes
 //   /skills                → the Claude Code skills in the vault, and the soii commands
 //   /log[/<kind>]          → the Log (pick a kind, then the form)
+//   /speed                 → the speed reader (paste a text, set the WPM, read it a word at a time)
 import { useMemo, useSyncExternalStore } from 'react'
 import { decodePath } from '../../lib/paths'
 
@@ -16,6 +17,7 @@ export type Route =
   | { page: 'vault' }
   | { page: 'skills' }
   | { page: 'log'; kind?: string }
+  | { page: 'speed' }
   | { page: 'not-found' }
 
 const listeners = new Set<() => void>()
@@ -64,6 +66,7 @@ export function parseRoute(pathname: string): Route {
   const [head, ...rest] = parts
   if (head === 'vault' && rest.length === 0) return { page: 'vault' }
   if (head === 'skills' && rest.length === 0) return { page: 'skills' }
+  if (head === 'speed' && rest.length === 0) return { page: 'speed' }
   if (head === 'log' && rest.length <= 1) {
     if (rest.length === 0) return { page: 'log' }
     const kind = decodePath(rest[0])

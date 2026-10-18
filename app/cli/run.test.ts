@@ -74,6 +74,8 @@ test('soii run serves the vault, picks up a new note and a new skill, and stays 
   try {
     expect(await waitFor(async () => (await noteCount()) === 1, 60_000)).toBe(true)
     expect(output).toContain('(local mode)')
+    // Every line in the service log says when it was written, the server's own lines included.
+    expect(output).toMatch(/^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d soii: .*\(local mode\)$/m)
 
     writeFileSync(join(vault, 'Notes', 'Two.md'), '---\ntype: note\n---\nSecond.\n')
     expect(await waitFor(async () => (await noteCount()) === 2, 30_000)).toBe(true)

@@ -4,15 +4,16 @@
 import { formatCss, oklch, wcagLuminance } from 'culori'
 import type { WorkspaceTheme } from '../../lib/types'
 
-const FONTS: Record<string, { sans: string; mono: string; query?: string }> = {
-  sans: { sans: 'system-ui', mono: 'Geist Mono', query: 'Geist+Mono:wght@400;500' },
-  serif: { sans: 'Literata', mono: 'Geist Mono', query: 'Literata:wght@400;600;700&family=Geist+Mono:wght@400;500' },
-  mono: { sans: 'Geist Mono', mono: 'Geist Mono', query: 'Geist+Mono:wght@400;500;600' },
-  geometric: { sans: 'Manrope', mono: 'Geist Mono', query: 'Manrope:wght@400;500;600&family=Geist+Mono:wght@400;500' },
-  rounded: { sans: 'SN Pro', mono: 'Geist Mono', query: 'SN+Pro:wght@400;500;600&family=Geist+Mono:wght@400;500' },
-  blobby: { sans: 'Sour Gummy', mono: 'Azeret Mono', query: 'Sour+Gummy:wght@400;500;600&family=Azeret+Mono:wght@400;500' },
-  awkward: { sans: 'Averia Sans Libre', mono: 'Azeret Mono', query: 'Averia+Sans+Libre:wght@400;500;600&family=Azeret+Mono:wght@400;500' },
-  comic: { sans: 'Comic Sans MS, Comic Sans, cursive', mono: 'Geist Mono', query: 'Geist+Mono:wght@400;500' }
+// sheets: the font ids soii serves from /fonts/<id>.css (app/lib/fonts.ts); nothing is fetched from Google.
+const FONTS: Record<string, { sans: string; mono: string; sheets: string[] }> = {
+  sans: { sans: 'system-ui', mono: 'Geist Mono Variable', sheets: ['geist-mono'] },
+  serif: { sans: "'Literata Variable'", mono: 'Geist Mono Variable', sheets: ['literata', 'geist-mono'] },
+  mono: { sans: "'Geist Mono Variable'", mono: 'Geist Mono Variable', sheets: ['geist-mono'] },
+  geometric: { sans: "'Manrope Variable'", mono: 'Geist Mono Variable', sheets: ['manrope', 'geist-mono'] },
+  rounded: { sans: "'SN Pro Variable'", mono: 'Geist Mono Variable', sheets: ['sn-pro', 'geist-mono'] },
+  blobby: { sans: "'Sour Gummy Variable'", mono: 'Azeret Mono Variable', sheets: ['sour-gummy', 'azeret-mono'] },
+  awkward: { sans: "'Averia Sans Libre'", mono: 'Azeret Mono Variable', sheets: ['averia-sans-libre', 'azeret-mono'] },
+  comic: { sans: 'Comic Sans MS, Comic Sans, cursive', mono: 'Geist Mono Variable', sheets: ['geist-mono'] }
 }
 
 const RADII: Record<string, string> = { squishy: '0.875rem', soft: '0.625rem', subtle: '0.375rem', square: '0' }
@@ -81,11 +82,12 @@ export function applyWorkspaceTheme(theme: WorkspaceTheme | undefined): void {
   const font = FONTS[theme?.font ?? 'sans'] ?? FONTS.sans
   vars['--sans'] = `${font.sans}, var(--default-sans)`
   vars['--mono'] = `'${font.mono}', var(--default-mono)`
-  if (font.query && !loadedFonts.has(font.query)) {
-    loadedFonts.add(font.query)
+  for (const sheet of font.sheets) {
+    if (loadedFonts.has(sheet)) continue
+    loadedFonts.add(sheet)
     const link = document.createElement('link')
     link.rel = 'stylesheet'
-    link.href = `https://fonts.googleapis.com/css2?family=${font.query}&display=swap`
+    link.href = `/fonts/${sheet}.css`
     document.head.appendChild(link)
   }
 

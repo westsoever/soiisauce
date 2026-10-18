@@ -1,6 +1,9 @@
 // app/client/components/MobileNav.tsx
 // Below md: the bottom bar. The first three workspaces, a raised Log button in the middle, and
 // More (an update notice when there is one, other workspaces, Skills, Vault, Search). Padded for the iPhone home indicator.
+// The bar is its own layer (relative z-20): the Log button rises out of it into the page, and a
+// positioned page (WorkspaceScreen's relative <main>) would otherwise paint over that raised part.
+// Above sticky z-10 headers, below z-40 sheets and z-50 menus and toasts.
 import { IconDots, IconPlus } from '@tabler/icons-react'
 import type { VaultIndex, WorkspaceConfig } from '../../lib/types'
 import { iconFor } from '../lib/icons'
@@ -35,9 +38,9 @@ export function MobileNav({ index }: { index: VaultIndex }) {
   const rest = workspaces.slice(3)
   const current = route.page === 'workspace' ? route.workspace : null
   const update = useAvailableUpdate()
-  const moreActive = route.page === 'vault' || route.page === 'skills' || (current !== null && rest.some(w => w.id === current))
+  const moreActive = route.page === 'vault' || route.page === 'skills' || route.page === 'speed' || (current !== null && rest.some(w => w.id === current))
   return (
-    <nav aria-label="Main" className="flex shrink-0 items-stretch border-t bg-background pb-[env(safe-area-inset-bottom)] md:hidden">
+    <nav aria-label="Main" className="relative z-20 flex shrink-0 items-stretch border-t bg-background pb-[env(safe-area-inset-bottom)] md:hidden">
       {first && <WorkspaceItem workspace={first} active={current === first.id} />}
       {second && <WorkspaceItem workspace={second} active={current === second.id} />}
       <div className="flex flex-1 items-center justify-center">
@@ -77,6 +80,9 @@ export function MobileNav({ index }: { index: VaultIndex }) {
           {rest.length > 0 && <DropdownMenuSeparator />}
           <DropdownMenuItem className="min-h-11" onClick={() => navigate('/skills')}>
             Skills
+          </DropdownMenuItem>
+          <DropdownMenuItem className="min-h-11" onClick={() => navigate('/speed')}>
+            Speed reader
           </DropdownMenuItem>
           <DropdownMenuItem className="min-h-11" onClick={() => navigate('/vault')}>
             Vault

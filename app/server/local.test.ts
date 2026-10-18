@@ -42,8 +42,10 @@ describe('bindProblem', () => {
     expect(bindProblem(readEnv({ SOII_LOCAL: '1', SOII_LOCAL_FORCE: '1' }), '0.0.0.0')).toBeNull()
   })
 
-  test('outside local mode there is no opinion', () => {
-    expect(bindProblem(readEnv({}), '0.0.0.0')).toBeNull()
+  test('plain dev mode refuses a non-loopback host too: it has no sign-in either', () => {
+    expect(bindProblem(readEnv({}), '0.0.0.0')).toMatch(/localhost only/)
+    expect(bindProblem(readEnv({}), 'localhost')).toBeNull()
+    expect(bindProblem(readEnv({ SOII_LOCAL_FORCE: '1' }), '0.0.0.0')).toBeNull()
   })
 })
 
@@ -80,8 +82,31 @@ describe('the app in local mode', () => {
     expect(res.status).toBe(200)
   })
 
-  test('outside local mode the Host header is not checked', async () => {
+  test('plain dev mode (`bun run dev`) rejects a foreign Host header too: DNS rebinding reaches it as well', async () => {
+    const dev = createSoiiApp({ env: { VAULT_PATH: '/tmp/none' }, generatedDir: dir })
+    for (const path of ['/api/vault', '/api/health', '/api/capabilities']) {
+      const res = await dev.request(`http://soii.test${path}`, { headers: { Host: 'soii.test:13390' } })
+      expect(res.status).toBe(403)
+      expect(await res.json()).toEqual({ error: 'bad_host' })
+    }
+    const write = await dev.request('http://soii.test:13390/api/notes', {
+      method: 'POST',
+      headers: { Host: 'soii.test:13390', Origin: 'http://soii.test:13390', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'book', values: { title: 'Rebind' } })
+    })
+    expect(write.status).toBe(403)
+    expect((await dev.request('http://localhost:13390/api/vault', { headers: { Host: 'localhost:13390' } })).status).toBe(200)
+    expect((await dev.request('http://127.0.0.1:13390/api/vault', { headers: { Host: '127.0.0.1:13390' } })).status).toBe(200)
+  })
+
+  test('a request with no Host header at all is not a browser, so it is not a rebinding attack', async () => {
     const dev = createSoiiApp({ env: {}, generatedDir: dir })
+    expect((await dev.request('http://soii.test/api/vault')).status).toBe(200)
+    expect((await dev.request('http://soii.test/api/vault', { headers: { Host: '' } })).status).toBe(403)
+  })
+
+  test('SOII_LOCAL_FORCE=1 turns the Host check off in dev mode as well', async () => {
+    const dev = createSoiiApp({ env: { SOII_LOCAL_FORCE: '1' }, generatedDir: dir })
     expect((await dev.request('http://soii.test/api/vault', { headers: { Host: 'soii.test' } })).status).toBe(200)
   })
 
@@ -98,7 +123,7 @@ describe('the app in local mode', () => {
       const res = await a.request(`http://${host}/api/sync`, { method: 'POST', headers: { Host: host, Origin: `http://${host}` } })
       return { status: res.status, calls }
     }
-    expect(await run({ SOII_LOCAL: '1' }, 'localhost:5011')).toEqual({ status: 200, calls: ['pull', 'rev-list', 'push', 'ls-remote'] }) // the last one: Sync also looks for a newer soii release
-    expect(await run({}, 'localhost:13390')).toEqual({ status: 200, calls: ['pull'] })
+    expect(await run({ SOII_LOCAL: '1' }, 'localhost:5011')).toEqual({ status: 200, calls: ['rev-parse', 'pull', 'rev-list', 'push', 'ls-remote'] }) // the last one: Sync also looks for a newer soii release
+    expect(await run({}, 'localhost:13390')).toEqual({ status: 200, calls: ['rev-parse', 'pull'] })
   })
 })

@@ -106,7 +106,7 @@ Rules for the proposal:
 | `type` | the folder mapping (`--type`) | the note has no type; an existing type is never changed |
 | `author` | a `Title — Author` file name (spaced em or en dash, the tail reads as a name) | the key is missing or empty |
 | `last_contact` | the newest dated list item (`- 2026-09-24: …`) not in the future | the key is missing or empty |
-| `cadence` | the relationship's default (friend → `monthly`, D65) | the key is missing; a bare `cadence:` is kept, it means "use the default" |
+| `cadence` | the relationship's default (friend → `monthly`) | the key is missing; a bare `cadence:` is kept, it means "use the default" |
 | `created` | the first git commit that added the file | the key is missing |
 
 It never overwrites a value, never guesses `status`, `rating`, `price`, `amount` or any date, never writes `title` (soii takes it from the file name, and a stored copy goes stale when a note is renamed), and never touches body text unless `--sections` is given. It does not commit.

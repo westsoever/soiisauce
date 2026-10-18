@@ -38,6 +38,8 @@ export interface LogKind {
   howOptions?: string[]
   /** Listed under "More" in the picker. */
   secondary?: boolean
+  /** Not offered by the Log, which only creates notes; still accepted by POST /api/log for appends. */
+  hidden?: boolean
   placeholder: string
 }
 
@@ -121,6 +123,7 @@ export const LOG_KINDS: LogKind[] = [
     defaults: {},
     newAs: 'person',
     howOptions: ['met', 'call', 'text'],
+    hidden: true,
     placeholder: 'What did you talk about?'
   },
   PERSON,
@@ -171,6 +174,23 @@ export const LOG_KINDS: LogKind[] = [
 ]
 
 const BY_ID = new Map(LOG_KINDS.map(k => [k.id, k]))
+
+/** What the Log offers: every kind that can create a note. */
+export const PICKER_KINDS = LOG_KINDS.filter(k => !k.hidden)
+
+/** A Note needs no name: an empty title takes the text's first line. */
+export function titleOptional(kind: LogKind): boolean {
+  return kind.id === 'note' || kind.id === 'expense'
+}
+
+/** The first line of the text, cut at a word near 60 characters, as a name for an untitled note. */
+export function titleFromText(text: string): string {
+  const line = text.replace(/\r\n?/g, '\n').split('\n').map(l => l.replace(/^\s*(?:#+|[-*>]|\d+[.)])\s+/, '').replace(/\s+/g, ' ').trim()).find(Boolean) ?? ''
+  if (line.length <= 60) return line
+  const cut = line.slice(0, 60)
+  const space = cut.lastIndexOf(' ')
+  return `${(space > 30 ? cut.slice(0, space) : cut).trimEnd()}…`
+}
 
 export function kindById(id: string): LogKind | null {
   return BY_ID.get(id) ?? null
@@ -256,10 +276,13 @@ function personBody(title: string, input: NewLogInput, text: string): string {
 }
 
 /** The file a new log creates. Values are one line each, so nothing typed can add frontmatter keys. */
-export function buildNewNote(input: NewLogInput): { path: string; content: string; title: string } {
+/** `copy` 2, 3… names it "Title 2", "Title 3", for when the plain name is taken. */
+export function buildNewNote(input: NewLogInput, copy = 1): { path: string; content: string; title: string } {
   const kind = creatingKind(input.kind)
   const values = autoDates(kind, input.values, input.date)
-  const title = collapse(input.title) || (kind.id === 'expense' ? collapse(values.category ?? '') || 'Expense' : 'Untitled')
+  const fromText = !collapse(input.title) && kind.id !== 'expense' ? titleFromText(input.text) : ''
+  const base = collapse(input.title) || (kind.id === 'expense' ? collapse(values.category ?? '') || 'Expense' : fromText || 'Untitled')
+  const title = copy > 1 ? `${base} ${copy}` : base
   const fm: string[] = []
   if (kind.type) fm.push(`type: ${kind.type}`)
   for (const field of [...kind.quick, ...kind.more]) {
@@ -281,7 +304,9 @@ export function buildNewNote(input: NewLogInput): { path: string; content: strin
   } else {
     fm.push(`created: ${input.date}`)
   }
-  const text = input.text.replace(/\r\n?/g, '\n').trim()
+  let text = input.text.replace(/\r\n?/g, '\n').trim()
+  // A first line that became the title whole isn't repeated under it.
+  if (fromText && !fromText.endsWith('…')) text = text.split('\n').slice(1).join('\n').trim()
   const body = kind.id === 'person' ? personBody(title, input, text) : `# ${title}\n${text ? `\n${text}\n` : ''}`
   const name = fileNameFor(title)
   const file = kind.id === 'expense' ? `${input.date} ${name}` : name

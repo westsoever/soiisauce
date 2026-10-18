@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import { parseArgs, type Command } from './args'
 import * as commands from './commands'
 import { realCtx, type Ctx } from './context'
+import { flushNotes } from './notes'
 import { view } from './view'
 
 export const HELP = `soii: your vault, as an app, on this machine.
@@ -80,5 +81,7 @@ export async function main(argv: string[], ctx: Ctx = realCtx()): Promise<number
   } catch (err) {
     ctx.err(`soii: ${err instanceof Error ? err.message : String(err)}`)
     return 1
+  } finally {
+    flushNotes(ctx) // what the person still has to do goes last
   }
 }

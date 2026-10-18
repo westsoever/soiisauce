@@ -15,6 +15,7 @@ import { navigate, useRoute, workspacePath } from './lib/router'
 import { applyWorkspaceTheme } from './lib/theme'
 import { NoteReader } from './reader/NoteReader'
 import { SkillsPage } from './skills/SkillsPage'
+import { SpeedReader } from './speed/SpeedReader'
 import { Skeleton } from './ui/skeleton'
 import { VaultPage } from './vault/VaultPage'
 
@@ -69,6 +70,7 @@ export function App() {
           {route.page === 'vault' && <VaultPage index={index} />}
           {route.page === 'skills' && <SkillsPage index={index} />}
           {route.page === 'log' && <LogScreen index={index} kindId={route.kind} />}
+          {route.page === 'speed' && <SpeedReader />}
           {route.page === 'not-found' && <NothingHere />}
         </div>
         {/* The Log is a full-screen flow with its own Close/Back. */}

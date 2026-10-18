@@ -42,10 +42,14 @@ export function useSearch(q: string) {
 export interface Capabilities {
   write: boolean
   sync: boolean
+  /** Where Sync pulls from and pushes to (no credentials), or null when the vault isn't connected to one yet. */
+  remote?: string | null
 }
 
+export const fetchCapabilities = () => api<Capabilities>('/api/capabilities')
+
 export function useCapabilities() {
-  return useQuery({ queryKey: keys.capabilities, queryFn: () => api<Capabilities>('/api/capabilities'), staleTime: Infinity, retry: false })
+  return useQuery({ queryKey: keys.capabilities, queryFn: fetchCapabilities, staleTime: Infinity, retry: false })
 }
 
 const HALF_HOUR = 30 * 60_000

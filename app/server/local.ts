@@ -1,5 +1,6 @@
 // app/server/local.ts
-// Local mode (SOII_LOCAL=1) has no sign-in, so its only protection is that nothing but this machine can reach it.
+// soii has no sign-in, in local mode (SOII_LOCAL=1) and in dev mode (`bun run dev`) alike, so its only protection
+// is that nothing but this machine can reach it. SOII_LOCAL_FORCE=1 switches the guards off, in either mode.
 import type { SoiiEnv } from './env'
 
 export function isLoopbackHost(host: string): boolean {
@@ -7,10 +8,10 @@ export function isLoopbackHost(host: string): boolean {
   return h === 'localhost' || h === '::1' || /^127\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(h)
 }
 
-/** Why the server must not bind `host` in local mode, or null if it may. */
+/** Why the server must not bind `host`, or null if it may. */
 export function bindProblem(env: SoiiEnv, host: string): string | null {
-  if (!env.local || env.localForce || isLoopbackHost(host)) return null
-  return `soii: local mode serves localhost only, and HOST=${host} would put your vault on the network without a sign-in. Use HOST=127.0.0.1, or set SOII_LOCAL_FORCE=1 if you really mean it.`
+  if (env.localForce || isLoopbackHost(host)) return null
+  return `soii: it serves localhost only, and HOST=${host} would put your vault on the network without a sign-in. Use HOST=127.0.0.1, or set SOII_LOCAL_FORCE=1 if you really mean it.`
 }
 
 /**

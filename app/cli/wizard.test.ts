@@ -58,6 +58,7 @@ function rig(answers: string[], o: { platform?: NodeJS.Platform; cwd?: string; m
     out: m => out.push(m),
     err: m => err.push(m),
     interactive: true,
+    portInUse: async () => false, // never the real machine's ports (a running soii holds 5011 on a maintainer's Mac)
     prompter: () => scriptedPrompter(answers, asked),
     exec: async (cmd, args, opts) => {
       if (cmd === 'bun') return o.missing === 'bun' ? { code: 127, out: '' } : { code: 0, out: '1.3.0' }

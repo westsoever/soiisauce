@@ -1,8 +1,9 @@
 // app/client/log/KindPicker.tsx
 // /log: big tiles for the everyday kinds, chips for the rest, and the unsent draft (if any).
+// Each opens a new note, ready to type in.
 import { IconX } from '@tabler/icons-react'
 import { useState } from 'react'
-import { kindById, LOG_KINDS } from '../../lib/log'
+import { kindById, PICKER_KINDS } from '../../lib/log'
 import { goBack, logPath, navigate } from '../lib/router'
 import { readJson, storageKeys, writeJson } from '../lib/storage'
 import { Button } from '../ui/button'
@@ -14,6 +15,7 @@ export function KindPicker() {
   const [draft, setDraft] = useState(() => loadDraft())
   const last = readJson<string | null>(storageKeys.lastLogKind, null)
   const draftKind = draft ? kindById(draft.kind) : null
+  const draftShown = draftKind && !draftKind.hidden ? draftKind : null
   const open = (id: string) => {
     writeJson(storageKeys.lastLogKind, id)
     navigate(logPath(id))
@@ -30,13 +32,13 @@ export function KindPicker() {
         {/* Desktop: equal flexible rows above and below pin the tile grid's middle to the screen's middle. */}
         <div className="mx-auto grid max-w-xl gap-6 p-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] md:min-h-full md:grid-rows-[1fr_auto_1fr]">
           <div className="self-end max-md:empty:hidden">
-          {draft && draftKind && (
+          {draft && draftShown && (
             <div className="flex items-center gap-2 rounded-xl border px-3 py-2">
               <div className="min-w-0 flex-1 text-sm">
-                <div className="font-medium">Unsent {draftKind.label.toLowerCase()}</div>
-                <div className="truncate text-muted-foreground">{draft.target?.title || draft.text.slice(0, 60) || 'Draft'}</div>
+                <div className="font-medium">Unsent {draftShown.label.toLowerCase()}</div>
+                <div className="truncate text-muted-foreground">{draft.title || draft.text.slice(0, 60) || 'Draft'}</div>
               </div>
-              <Button size="sm" onClick={() => navigate(logPath(draftKind.id))}>
+              <Button size="sm" onClick={() => navigate(logPath(draftShown.id))}>
                 Continue
               </Button>
               <Button
@@ -53,7 +55,7 @@ export function KindPicker() {
           )}
           </div>
           <div className="grid grid-cols-3 gap-3">
-            {LOG_KINDS.filter(k => !k.secondary).map(k => {
+            {PICKER_KINDS.filter(k => !k.secondary).map(k => {
               const Icon = kindIcon(k.id)
               return (
                 <button
@@ -74,7 +76,7 @@ export function KindPicker() {
           <div className="grid gap-2 self-start">
             <h2 className="text-xs font-medium text-muted-foreground">More</h2>
             <div className="flex flex-wrap gap-2">
-              {LOG_KINDS.filter(k => k.secondary).map(k => {
+              {PICKER_KINDS.filter(k => k.secondary).map(k => {
                 const Icon = kindIcon(k.id)
                 return (
                   <button key={k.id} type="button" onClick={() => open(k.id)} className="flex h-11 items-center gap-2 rounded-full border px-4 text-sm hover:bg-accent md:h-8 md:px-3">

@@ -71,13 +71,13 @@ One field per job:
 | `category` | its subject (a **subcategory**) | list, usually one | `[Biographies]` |
 | `tags` | free cross-cutting labels only | list | `[founder-mindset]` |
 
-Without `collection`, soii uses a tag that names a folder in the note's path below its Library folder, else that nearest folder (`Books/ReadingList/…` → ReadingList). A note with neither is in the **No collection** section. A missing `category` is **Uncategorized**. Values are matched case-insensitively and shown humanised (`ReadingList` → "Reading List"); the files are never rewritten. Log and Add write both as block lists (the same style as the rest of the vault), at most 5 values of at most 60 characters. The Log shows them up front for every Library kind: on a new note to fill in, on an existing one pre-filled with what the Library shows, and changing them there patches the note.
+Without `collection`, soii uses a tag that names a folder in the note's path below its Library folder, else that nearest folder (`Books/ReadingList/…` → ReadingList). A note with neither is in the **No collection** section. A missing `category` is **Uncategorized**. Values are matched case-insensitively and shown humanised (`ReadingList` → "Reading List"); the files are never rewritten. Log and Add write both as block lists (the same style as the rest of the vault), at most 5 values of at most 60 characters. The Log shows them up front for every Library kind.
 
-"Has my notes" in the Library means the body has any words outside headings: a single Log entry counts, a bare `# Title` or an empty template does not.
+"Has my notes" in the Library means the body has any words outside headings: a single line of text counts, a bare `# Title` or an empty template does not.
 
-## Log entries
+## Notes made with the Log
 
-Log adds one bullet per entry, dated, at the end of a section: `## Notes & dated interactions` for people and `## Log` for everything else. The section is created if it's missing. Longer text continues on indented lines under the same bullet. Field changes made while logging (a book's status, a rating) are written into the frontmatter in place; other keys, comments and quotes are left as they were.
+The Log always creates a new note, in the folder for its kind (a plain Note goes to `00-Inbox`). The text you write is the body under the `# Title`; for a person it is one dated bullet under `## Notes & dated interactions`, and longer text continues on indented lines under the same bullet. Fields you fill in (a book's status, a rating) go into the frontmatter. A Note needs no title: with none, the first line of the text becomes it and is not repeated below. If a note with that name exists, the new one is saved as `Name 2`; nothing is overwritten or appended to.
 
 ## Hiding a note
 
@@ -108,7 +108,7 @@ Optional, at the vault root. It's merged over the built-in defaults:
 title: My brain
 home: library                 # workspace opened at "/"
 exclude: ["**/Templates/**", "Private/**"]
-obsidianVault: cos            # only if your Obsidian vault name differs from the folder/repo name
+obsidianVault: my-notes      # only if your Obsidian vault name differs from the folder/repo name
 types:
   book: [book, books, novel]  # replaces the default alias list for "book"
 workspaces:
@@ -133,7 +133,7 @@ workspaces:
 
 ## Editing in Obsidian
 
-soii is read-only. A note you open has an **Open in Obsidian** button at the right of the reader's top bar. The Today feeds (Daily brief, Weekly review) show only **Open note**, which goes to the reader. The button opens the note through an `obsidian://open?vault=…&file=…` link. The vault name is the vault's folder name (`VAULT_PATH`). Set `obsidianVault` if your Obsidian vault is called something else. Known issue: Vivaldi (8.2.x, macOS) crashes when the same note's button is clicked a second time. That's a Vivaldi bug, not soii's (D66).
+Reading a note in soii never changes it: to edit its text, use Obsidian (or any editor). What soii itself writes is small and explicit: Log, Add and property edits become local git commits (see [setup.md](setup.md#writing-from-soii-and-sync)). A note you open has an **Open in Obsidian** button at the right of the reader's top bar. The Today feeds (Daily brief, Weekly review) show only **Open note**, which goes to the reader. The button opens the note through an `obsidian://open?vault=…&file=…` link. The vault name is the vault's folder name (`VAULT_PATH`). Set `obsidianVault` if your Obsidian vault is called something else. Known issue: Vivaldi (8.2.x, macOS) crashes when the same note's button is clicked a second time. That's a Vivaldi bug, not soii's.
 
 An open soii page checks for a new build every 5 seconds while it's visible, and when you switch back to it, then refreshes in place. soii rebuilds about a second after you save, so the page catches up within about 6 seconds.
 

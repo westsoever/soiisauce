@@ -60,7 +60,7 @@ function AddNoteForm({ spec, notes, onDone }: { spec: NewNoteSpec; notes: NoteMe
     setSaving(true)
     try {
       const saved = await api<{ path: string; warning?: string | null }>('/api/notes', { method: 'POST', body: { type: spec.type, values } })
-      toast(localAddedMessage(saved.path, saved.warning, Boolean(capabilities?.sync)), 'success')
+      toast(localAddedMessage(saved.path, saved.warning, Boolean(capabilities?.remote)), 'success')
       onDone()
     } catch (err) {
       toast(err instanceof Error ? err.message : "Couldn't save the note.", 'error')

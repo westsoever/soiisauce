@@ -9,6 +9,6 @@ import { LogForm } from './LogForm'
 export function LogScreen({ index, kindId }: { index: VaultIndex; kindId?: string }) {
   if (!kindId) return <KindPicker />
   const kind = kindById(kindId)
-  if (!kind) return <NothingHere message={`There's nothing called “${kindId}” to log.`} />
+  if (!kind || kind.hidden) return <NothingHere message={`There's nothing called “${kindId}” to log.`} />
   return <LogForm key={kind.id} kind={kind} index={index} />
 }

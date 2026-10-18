@@ -1,6 +1,6 @@
 // app/lib/log.test.ts
 import { describe, expect, test } from 'bun:test'
-import { autoDates, buildNewNote, creatingKind, fieldsFor, formatEntry, kindById, LOG_KINDS, localDay, numberValue, relationshipOptions, type LogKind } from './log'
+import { autoDates, buildNewNote, creatingKind, fieldsFor, formatEntry, kindById, LOG_KINDS, localDay, numberValue, PICKER_KINDS, relationshipOptions, titleFromText, type LogKind } from './log'
 
 const kind = (id: string): LogKind => {
   const k = kindById(id)
@@ -9,12 +9,24 @@ const kind = (id: string): LogKind => {
 }
 const D = '2026-10-12'
 
+describe('titleFromText', () => {
+  test('the first non-empty line, without list or heading marks, cut near 60 characters', () => {
+    expect(titleFromText('\n\n# Idea for the weekend\nHike.')).toBe('Idea for the weekend')
+    expect(titleFromText('- buy oat milk')).toBe('buy oat milk')
+    expect(titleFromText('   ')).toBe('')
+    const long = titleFromText('A thought that keeps going and going well past the sixty character mark for sure')
+    expect(long).toBe('A thought that keeps going and going well past the sixty…')
+    expect(buildNewNote({ kind: kind('note'), title: ' ', values: {}, text: 'Call the bank', date: D }).path).toBe('00-Inbox/Call the bank.md')
+  })
+})
+
 describe('kinds', () => {
   test('ids are unique; the picker starts with the everyday kinds', () => {
     const ids = LOG_KINDS.map(k => k.id)
     expect(new Set(ids).size).toBe(ids.length)
-    expect(LOG_KINDS.filter(k => !k.secondary).map(k => k.id)).toEqual(['conversation', 'person', 'book', 'movie', 'goal', 'expense', 'note'])
-    expect(LOG_KINDS.filter(k => k.secondary).map(k => k.id)).toEqual(['audiobook', 'documentary', 'video', 'article', 'research'])
+    expect(PICKER_KINDS.filter(k => !k.secondary).map(k => k.id)).toEqual(['person', 'book', 'movie', 'goal', 'expense', 'note'])
+    expect(PICKER_KINDS.every(k => creatingKind(k).folder)).toBe(true)
+    expect(PICKER_KINDS.filter(k => k.secondary).map(k => k.id)).toEqual(['audiobook', 'documentary', 'video', 'article', 'research'])
     expect(kindById('__proto__')).toBeNull()
     expect(kindById('constructor')).toBeNull()
   })

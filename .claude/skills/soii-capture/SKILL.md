@@ -15,7 +15,7 @@ The vault's Inbox folder: `00-Inbox/` in soii's template. If the vault has no su
 
 Take what the user gave you and write one note:
 
-File: `<Inbox>/YYYY-MM-DD-<slug>.md`, today's date and a short lowercase slug from the first few words. If that name exists, add `-2`, `-3`. Never overwrite.
+File: `<Inbox>/<Title>.md`, named after the first line of what they gave you (the date goes in `created`, not the file name). Leave out characters a file name can't hold (`\ / : * ? " < > | # ^ [ ]`). If that name exists, add ` 2`, ` 3`. Never overwrite.
 
 ```markdown
 ---
@@ -24,9 +24,9 @@ tags:
   - inbox
 ---
 
-# <Title: the first words, as a person would write them>
+# <Title: the first line, as given>
 
-<The content as given. Don't interpret, restructure or summarise. A pasted link stays a bare link.>
+<Everything after the first line, as given. Don't interpret, restructure or summarise. A pasted link stays a bare link. A single line has no body.>
 ```
 
 If what they gave you is clearly an idea ("what if we…", "idea:"), add `idea` to the tags. Nothing else.

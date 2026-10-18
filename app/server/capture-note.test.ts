@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFil
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { createSoiiApp } from './app'
-import { buildCapture, captureNote, captureSlug, captureTitle } from './capture-note'
+import { buildCapture, captureNote, capturePath, splitCapture } from './capture-note'
 import { readEnv } from './env'
 import { MAX_TEXT } from './log-note'
 import type { RunGit } from './sync'
@@ -15,48 +15,57 @@ const vault = () => mkdtempSync(join(tmpdir(), 'soii-capture-'))
 const capture = (root: string, body: unknown) => captureNote(readEnv({ VAULT_PATH: root }), body, noGit)
 
 describe('the note', () => {
-  test('matches /soii-capture: created, the inbox tag, a title, then the text as typed', () => {
-    const text = 'Call the bakery about Saturday\n\n  - ask about gluten-free\n- and the price'
-    expect(buildCapture(text, DATE)).toEqual({
+  test('the first line is the title, the lines after it the body; the day is only in `created`', () => {
+    expect(buildCapture('Call the bakery about Saturday\n  - ask about gluten-free\n- and the price', DATE)).toEqual({
       title: 'Call the bakery about Saturday',
-      content: `---\ncreated: ${DATE}\ntags:\n  - inbox\n---\n\n# Call the bakery about Saturday\n\n${text}\n`
+      content: `---\ncreated: ${DATE}\ntags:\n  - inbox\n---\n\n# Call the bakery about Saturday\n\n  - ask about gluten-free\n- and the price\n`
     })
   })
 
-  test('the title is the first few words of the first line, without a heading mark', () => {
-    expect(captureTitle('\n\n# An idea: what if   soii could listen')).toBe('An idea: what if soii could listen')
-    expect(captureTitle('one two three four five six seven eight nine ten')).toBe('one two three four five six seven eight')
-    expect(captureTitle('x'.repeat(200)).length).toBe(80)
+  test('a one-line capture is just its title', () => {
+    expect(buildCapture('Remember the milk', DATE).content).toBe(`---\ncreated: ${DATE}\ntags:\n  - inbox\n---\n\n# Remember the milk\n`)
   })
 
-  test('the slug is short, lowercase and plain', () => {
-    expect(captureSlug('Café résumé: what IF?! soii could listen to me')).toBe('cafe-resume-what-if-soii-could')
-    expect(captureSlug('🌱🌱')).toBe('capture')
-    expect(captureSlug('../../etc/passwd')).toBe('etc-passwd')
+  test('blank lines before the title or before the body are dropped; a heading mark is not part of the title', () => {
+    expect(splitCapture('\n\n#  An idea:   what if\n\n\n  indented first body line\nmore')).toEqual({ title: 'An idea: what if', body: '  indented first body line\nmore' })
+  })
+
+  test('the whole first line is the title, however long', () => {
+    const line = 'one two three four five six seven eight nine ten eleven twelve'
+    expect(splitCapture(`${line}\nbody`).title).toBe(line)
+  })
+
+  test('the file name is the title, cleaned like any soii note name', () => {
+    expect(capturePath('Call the bakery about Saturday')).toBe('00-Inbox/Call the bakery about Saturday.md')
+    expect(capturePath('a/b: c?')).toBe('00-Inbox/a b c.md')
+    expect(capturePath('../../etc/passwd')).toBe('00-Inbox/etc passwd.md')
+    expect(capturePath('...')).toBe('00-Inbox/Untitled.md')
+    expect(capturePath('Milk', 3)).toBe('00-Inbox/Milk 3.md')
+    expect(capturePath('x'.repeat(300))).toBe(`00-Inbox/${'x'.repeat(120)}.md`)
   })
 
   test('Windows line endings become plain newlines', () => {
-    expect(buildCapture('a\r\nb\rc', DATE).content.endsWith('# a\n\na\nb\nc\n')).toBe(true)
+    expect(buildCapture('a\r\nb\rc', DATE).content.endsWith('# a\n\nb\nc\n')).toBe(true)
   })
 })
 
 describe('writing it', () => {
-  test('lands in the Inbox as <date>-<slug>.md', async () => {
+  test('lands in the Inbox as <first line>.md', async () => {
     const root = vault()
-    const result = await capture(root, { text: 'Remember the milk', date: DATE })
-    expect(result).toEqual({ ok: true, path: `00-Inbox/${DATE}-remember-the-milk.md`, warning: expect.any(String) })
-    expect(readFileSync(join(root, '00-Inbox', `${DATE}-remember-the-milk.md`), 'utf8')).toContain('# Remember the milk\n\nRemember the milk\n')
+    const result = await capture(root, { text: 'Remember the milk\nand the eggs', date: DATE })
+    expect(result).toEqual({ ok: true, path: '00-Inbox/Remember the milk.md', warning: expect.any(String) })
+    expect(readFileSync(join(root, '00-Inbox', 'Remember the milk.md'), 'utf8')).toEndWith('# Remember the milk\n\nand the eggs\n')
   })
 
-  test('a taken name gets -2, -3, and the existing note is never touched', async () => {
+  test('a taken name gets " 2", " 3", and the existing note is never touched', async () => {
     const root = vault()
     mkdirSync(join(root, '00-Inbox'))
-    writeFileSync(join(root, '00-Inbox', `${DATE}-milk.md`), 'mine\n')
+    writeFileSync(join(root, '00-Inbox', 'Milk.md'), 'mine\n')
     const a = await capture(root, { text: 'Milk', date: DATE })
-    const b = await capture(root, { text: 'milk!', date: DATE })
-    expect(a.ok && a.path).toBe(`00-Inbox/${DATE}-milk-2.md`)
-    expect(b.ok && b.path).toBe(`00-Inbox/${DATE}-milk-3.md`)
-    expect(readFileSync(join(root, '00-Inbox', `${DATE}-milk.md`), 'utf8')).toBe('mine\n')
+    const b = await capture(root, { text: 'Milk\nagain', date: DATE })
+    expect(a.ok && a.path).toBe('00-Inbox/Milk 2.md')
+    expect(b.ok && b.path).toBe('00-Inbox/Milk 3.md')
+    expect(readFileSync(join(root, '00-Inbox', 'Milk.md'), 'utf8')).toBe('mine\n')
   })
 
   test('empty, too long, malformed or without a valid date is refused and writes nothing', async () => {
@@ -78,7 +87,7 @@ describe('writing it', () => {
   test('the body cannot choose the path', async () => {
     const root = vault()
     const result = await capture(root, { text: 'hi', date: DATE, path: '../evil.md' })
-    expect(result.ok && result.path).toBe(`00-Inbox/${DATE}-hi.md`)
+    expect(result.ok && result.path).toBe('00-Inbox/hi.md')
     expect(readdirSync(root)).toEqual(['00-Inbox'])
   })
 
@@ -108,7 +117,7 @@ describe('POST /api/capture', () => {
     const app = createSoiiApp({ env: { VAULT_PATH: vault() } })
     const res = await app.fetch(post({ text: 'hi there', date: DATE }))
     expect(res.status).toBe(201)
-    expect(await res.json()).toEqual({ path: `00-Inbox/${DATE}-hi-there.md`, warning: expect.stringContaining('not a git repository') })
+    expect(await res.json()).toEqual({ path: '00-Inbox/hi there.md', warning: expect.stringContaining('not a git repository') })
     const bad = await app.fetch(post({ text: '', date: DATE }))
     expect(bad.status).toBe(400)
     expect(await bad.json()).toEqual({ error: 'empty', message: 'Write something first.' })

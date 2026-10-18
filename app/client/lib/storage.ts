@@ -7,6 +7,7 @@ export const storageKeys = {
   logDraft: 'soii:log-draft',
   lastLogKind: 'soii:log-kind',
   currency: 'soii:currency',
+  speedWpm: 'soii:speed-wpm',
   browseLayout: (workspace: string, tab: string) => `soii:browse-layout:${workspace}/${tab}`
 }
 

@@ -37,6 +37,21 @@ function fakeBun(version: string): string {
   return dir
 }
 
+/** PATH with a `ps` that says the terminal this shell is on is `device` (the name under /dev), as `ps -o tty=` does. */
+function fakePs(device: string): string {
+  const dir = toolbox(`ps-${device}`, ['git', 'bun', 'mktemp', 'rm'])
+  writeFileSync(join(dir, 'ps'), `#!/bin/sh\necho ${device}\n`)
+  chmodSync(join(dir, 'ps'), 0o755)
+  return dir
+}
+/** The stand-in /usr/bin/git on a Mac that has no command line tools: it only complains. */
+function xcodeShimGit(): string {
+  const dir = toolbox('git-shim', ['bun', 'mktemp', 'rm'])
+  writeFileSync(join(dir, 'git'), `#!/bin/sh\necho "xcode-select: note: No developer tools were found, requesting install." >&2\nexit 1\n`)
+  chmodSync(join(dir, 'git'), 0o755)
+  return dir
+}
+
 /**
  * A git repo shaped like soii for the script's purposes: bin/soii.ts writes argv, stdin, cwd and whether the packages were
  * installed to $FAKE_OUT. Its package.json has a postinstall that leaves an `installed` marker, so a test can see that
@@ -77,6 +92,7 @@ process.exit(Number(process.env.FAKE_EXIT ?? 0))
   git('branch', 'v9.9.9')
   return `file://${dir}`
 }
+const PS_NULL = fakePs('null')
 const FAKE = fakeRepo('fake-soii')
 /** package.json asks for a package bun.lock doesn't have: `--frozen-lockfile` fails, a plain `bun install` works. */
 const STALE_LOCK = fakeRepo('fake-soii-stale-lock', { other: 'file:./other' })
@@ -197,6 +213,25 @@ describe('install.sh', () => {
     })
   })
 
+  describe('the keyboard', () => {
+    // Bun's readline hangs on the /dev/tty alias on macOS (and fails with "EINVAL: kqueue" on Bun 1.4), so soii is handed
+    // the terminal's own device. `ps` names it; /dev/null is a character device that stands in for a real terminal here.
+    test("soii reads the terminal's real device (not /dev/tty) when it is piped into bash", () => {
+      const r = run([], { stdin: 'echo from the pipe', path: PS_NULL, env: { SOII_TTY: '' } })
+      expect(r.err).toBe('')
+      expect(r.code).toBe(0)
+      expect(r.soii?.argv).toEqual(['install'])
+      expect(r.soii?.stdin).toBe('')
+    })
+
+    test('SOII_TTY still names the keyboard explicitly', () => {
+      const keyboard = join(root, 'keyboard2.txt')
+      writeFileSync(keyboard, 'x\n')
+      const r = run([], { stdin: 'echo from the pipe', path: PS_NULL, env: { SOII_TTY: keyboard } })
+      expect(r.soii?.stdin).toBe('x\n')
+    })
+  })
+
   describe('prerequisites', () => {
     test('missing Bun: says so with the install command, and clones nothing', () => {
       const r = run(['--yes'], { path: NO_BUN })
@@ -214,6 +249,12 @@ describe('install.sh', () => {
       const r = run(['--yes'], { path: NO_BUN, home })
       expect(r.err).toBe('')
       expect(r.code).toBe(0)
+      // This terminal doesn't have ~/.bun/bin on PATH yet, so the `soii` command it sets up isn't found here: say so last.
+      expect(r.out.trimEnd().split('\n').pop()).toContain('new terminal')
+    })
+
+    test('no such note when Bun was already on PATH', () => {
+      expect(run(['--yes']).out).not.toContain('new terminal')
     })
 
     test('a Bun older than soii needs: says which, and how to update, and clones nothing', () => {
@@ -231,6 +272,15 @@ describe('install.sh', () => {
         expect(r.err).toBe('')
         expect(r.code).toBe(0)
       }
+    })
+
+    test('the Mac stand-in for git (no command line tools yet): says to run xcode-select, not to check the connection', () => {
+      const r = run(['--yes'], { path: xcodeShimGit() })
+      expect(r.code).toBe(1)
+      expect(r.err).toContain('xcode-select --install')
+      expect(r.err).not.toContain('online')
+      expect(r.soii).toBeNull()
+      expect(r.leftovers).toEqual([])
     })
 
     test('missing git: says so', () => {

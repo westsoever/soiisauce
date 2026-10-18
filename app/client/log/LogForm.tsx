@@ -1,39 +1,29 @@
 // app/client/log/LogForm.tsx
-// /log/<kind>: pick the note (or a new one), a few chips, the text, Log it. The draft is saved
-// as you type and cleared only by a 201. "Log it" sits in the header so the iOS keyboard never
-// hides it, and again at the end of the form.
+// /log/<kind>: a new note, the cursor already in it. A name, a few chips, the text, Log it. The
+// draft is saved as you type and cleared only by a 201. "Log it" sits in the header so the iOS
+// keyboard never hides it, and again at the end of the form.
 import { IconChevronLeft, IconCopy } from '@tabler/icons-react'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { facetSuggestions, libraryRoot, noteCategories, noteCollections } from '../../lib/collections'
-import { buildNewNote, creatingKind, fieldsFor, formatEntry, localDay, relationshipOptions, type LogField, type LogKind, type LogRequestBody, type LogResponse } from '../../lib/log'
-import type { NoteMeta, VaultIndex } from '../../lib/types'
-import { api, HttpError } from '../lib/http'
+import { facetSuggestions } from '../../lib/collections'
+import { buildNewNote, creatingKind, localDay, relationshipOptions, titleOptional, type LogField, type LogKind, type LogRequestBody, type LogResponse } from '../../lib/log'
+import type { VaultIndex } from '../../lib/types'
+import { api } from '../lib/http'
 import { useCapabilities } from '../lib/queries'
 import { logPath, navigate } from '../lib/router'
 import { toast } from '../lib/toast'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { Textarea } from '../ui/textarea'
-import { clearDraft, loadDraft, saveDraft, type LogDraft, type LogTarget } from './draft'
-import { Chips, FieldInput, WhenInput } from './FieldInput'
+import { clearDraft, loadDraft, saveDraft, type LogDraft } from './draft'
+import { FieldInput, WhenInput } from './FieldInput'
 import { LogDone } from './LogDone'
-import { TargetPicker } from './TargetPicker'
-
-const asString = (v: unknown) => (typeof v === 'string' || typeof v === 'number' ? String(v) : '')
-
-/** What a field shows when logging on an existing note: list fields resolve like the Library does. */
-function baseline(note: NoteMeta | null | undefined, f: LogField): string {
-  if (!note) return ''
-  if (f.kind !== 'list') return asString(note.frontmatter[f.key])
-  return (f.key === 'collection' ? noteCollections(note, libraryRoot(note.type)) : noteCategories(note)).join(', ')
-}
 
 function freshDraft(kind: LogKind): LogDraft {
-  // Kinds that never append (Expense) start as a new note with their defaults.
-  return kind.section
-    ? { kind: kind.id, target: null, values: {}, text: '', date: localDay(), how: null }
-    : { kind: kind.id, target: { mode: 'new', title: '' }, values: { ...kind.defaults }, text: '', date: localDay(), how: null }
+  return { kind: kind.id, title: '', values: { ...creatingKind(kind).defaults }, text: '', date: localDay() }
 }
+
+const NAME_LABEL: Record<string, string> = { person: 'Name', expense: 'What for?' }
+const NAME_PLACEHOLDER: Record<string, string> = { note: 'Optional, the first line if empty', expense: 'Optional, e.g. Groceries', person: 'Their name' }
 
 function Section({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -53,16 +43,18 @@ export function LogForm({ kind, index }: { kind: LogKind; index: VaultIndex }) {
   const [draft, setDraft] = useState<LogDraft>(initial.draft)
   const [showRestored, setShowRestored] = useState(initial.restored)
   const [saving, setSaving] = useState(false)
-  const [existsPath, setExistsPath] = useState<string | null>(null)
   const [result, setResult] = useState<{ response: LogResponse; title: string } | null>(null)
   // A ref, not just state: two quick taps must never send two logs.
   const savingRef = useRef(false)
+  const textRef = useRef<HTMLTextAreaElement>(null)
+  const titleRef = useRef<HTMLInputElement>(null)
 
-  const defaults = creatingKind(kind).defaults
-  const suggestions = useMemo(() => {
-    const type = creatingKind(kind).type
-    return { collection: facetSuggestions(index.notes, type, 'collection'), category: facetSuggestions(index.notes, type, 'category') }
-  }, [kind, index.notes])
+  const creates = creatingKind(kind)
+  const defaults = creates.defaults
+  const suggestions = useMemo(
+    () => ({ collection: facetSuggestions(index.notes, creates.type, 'collection'), category: facetSuggestions(index.notes, creates.type, 'category') }),
+    [creates, index.notes]
+  )
   const suggestionsFor = (f: LogField) => (f.kind === 'list' ? suggestions[f.key === 'collection' ? 'collection' : 'category'] : undefined)
   // Relationship offers the generic choices plus the ones this vault's people already have.
   const relationships = useMemo(() => relationshipOptions(index.notes), [index.notes])
@@ -73,62 +65,34 @@ export function LogForm({ kind, index }: { kind: LogKind; index: VaultIndex }) {
     return () => clearTimeout(t)
   }, [draft, defaults, result])
 
-  const target = draft.target
-  const mode = target?.mode ?? null
-  const targetNote = target?.mode === 'append' ? (index.notes.find(n => n.path === target.path) ?? null) : null
-  const appendFields = fieldsFor(kind, 'append')
-  const quick = (mode === 'new' ? creatingKind(kind).quick : mode === 'append' ? appendFields : []).map(withVaultOptions)
-  const more = (mode === 'new' ? creatingKind(kind).more : []).map(withVaultOptions)
-  const changed =
-    mode === 'append'
-      ? Object.fromEntries(
-          Object.entries(draft.values).filter(([k, v]) => {
-            const f = appendFields.find(x => x.key === k)
-            return f !== undefined && v !== baseline(targetNote, f)
-          })
-        )
-      : draft.values
+  const quick = creates.quick.map(withVaultOptions)
+  const more = creates.more.map(withVaultOptions)
+  // A Note is mostly its text: the cursor goes there, and the text comes before the chips.
+  const textFirst = kind.id === 'note'
 
   const set = (patch: Partial<LogDraft>) => setDraft(d => ({ ...d, ...patch }))
   const setValue = (key: string, value: string) => setDraft(d => ({ ...d, values: { ...d.values, [key]: value } }))
 
-  function chooseTarget(next: LogTarget | null) {
-    setExistsPath(null)
-    if (!next) return set({ target: null, values: {} })
-    if (next.mode === 'new') return set({ target: next, values: { ...creatingKind(kind).defaults } })
-    const note = index.notes.find(n => n.path === next.path)
-    set({ target: next, values: Object.fromEntries(appendFields.map(f => [f.key, baseline(note, f)])) })
-  }
-
   const ready =
-    mode === 'new'
-      ? kind.id === 'expense'
-        ? Boolean(draft.values.amount?.trim())
-        : Boolean(target?.title.trim())
-      : mode === 'append'
-        ? Boolean(draft.text.trim() || Object.keys(changed).length)
-        : false
+    kind.id === 'expense'
+      ? Boolean(draft.values.amount?.trim())
+      : titleOptional(kind)
+        ? Boolean(draft.title.trim() || draft.text.trim())
+        : Boolean(draft.title.trim())
   const canSubmit = ready && !saving
 
-  function requestBody(): LogRequestBody | null {
-    if (!target) return null
-    const common = { kind: kind.id, values: changed, text: draft.text, date: draft.date, how: draft.how }
-    return target.mode === 'new' ? { mode: 'new', title: target.title, ...common } : { mode: 'append', path: target.path, ...common }
-  }
-
   async function submit() {
-    const body = requestBody()
-    if (!ready || !body || savingRef.current) return
+    if (!ready || savingRef.current) return
+    const body: LogRequestBody = { mode: 'new', kind: kind.id, title: draft.title, values: draft.values, text: draft.text, date: draft.date, how: null }
     savingRef.current = true
     setSaving(true)
-    setExistsPath(null)
     try {
       const response = await api<LogResponse>('/api/log', { method: 'POST', body })
       clearDraft()
-      setResult({ response, title: target?.title || kind.label })
+      // The file's name is the title it got ("Dune 2" when Dune was taken), less an expense's date.
+      const name = (response.path.split('/').pop() ?? '').replace(/\.md$/, '').replace(/^\d{4}-\d{2}-\d{2} /, '')
+      setResult({ response, title: name || kind.label })
     } catch (err) {
-      const data = err instanceof HttpError ? (err.body as { error?: string; path?: string } | null) : null
-      if (data?.error === 'exists' && data.path && index.notes.some(n => n.path === data.path)) setExistsPath(data.path)
       toast(err instanceof Error ? err.message : "Couldn't log it.", 'error')
     } finally {
       savingRef.current = false
@@ -137,11 +101,7 @@ export function LogForm({ kind, index }: { kind: LogKind; index: VaultIndex }) {
   }
 
   async function copy() {
-    if (!target) return
-    const out =
-      target.mode === 'new'
-        ? buildNewNote({ kind, title: target.title, values: draft.values, text: draft.text, date: draft.date, how: draft.how }).content
-        : formatEntry({ date: draft.date, text: draft.text, how: draft.how, changes: draft.text.trim() ? undefined : changed })
+    const out = buildNewNote({ kind, title: draft.title, values: draft.values, text: draft.text, date: draft.date }).content
     try {
       await navigator.clipboard.writeText(out)
       toast('Copied', 'success')
@@ -167,6 +127,9 @@ export function LogForm({ kind, index }: { kind: LogKind; index: VaultIndex }) {
   }
 
   const write = capabilities?.write ?? false
+  const text = (
+    <Textarea ref={textRef} aria-label="Text" autoFocus={textFirst} className="min-h-40 md:text-base" placeholder={kind.placeholder} value={draft.text} onChange={e => set({ text: e.target.value })} />
+  )
   return (
     <div className="flex h-full flex-col">
       <header className="flex h-14 shrink-0 items-center gap-2 px-2 md:h-12 md:px-3">
@@ -180,7 +143,7 @@ export function LogForm({ kind, index }: { kind: LogKind; index: VaultIndex }) {
             {saving ? 'Saving…' : 'Log it'}
           </Button>
         ) : (
-          <Button size="sm" variant="outline" disabled={!target} onClick={() => void copy()}>
+          <Button size="sm" variant="outline" disabled={!ready} onClick={() => void copy()}>
             <IconCopy stroke={1.75} />
             Copy
           </Button>
@@ -205,6 +168,7 @@ export function LogForm({ kind, index }: { kind: LogKind; index: VaultIndex }) {
                   clearDraft()
                   setDraft(freshDraft(kind))
                   setShowRestored(false)
+                  ;(textFirst ? textRef : titleRef).current?.focus()
                 }}
               >
                 Discard
@@ -212,59 +176,35 @@ export function LogForm({ kind, index }: { kind: LogKind; index: VaultIndex }) {
             </div>
           )}
 
-          {kind.section ? (
-            <Section label={kind.type === 'person' ? 'Who?' : 'Which one?'}>
-              <TargetPicker kind={kind} notes={index.notes} target={target} onChange={chooseTarget} />
+          <Section label={NAME_LABEL[kind.id] ?? 'Title'}>
+            <Input
+              ref={titleRef}
+              aria-label={NAME_LABEL[kind.id] ?? 'Title'}
+              autoFocus={!textFirst}
+              enterKeyHint="next"
+              className="h-11 md:h-8"
+              placeholder={NAME_PLACEHOLDER[kind.id]}
+              value={draft.title}
+              onChange={e => set({ title: e.target.value })}
+              onKeyDown={e => {
+                // Return goes on to the text instead of logging a note that has only a name.
+                if (e.key !== 'Enter' || e.nativeEvent.isComposing) return
+                e.preventDefault()
+                textRef.current?.focus()
+              }}
+            />
+          </Section>
+          {textFirst && text}
+          {quick.map(f => (
+            <Section key={f.key} label={f.label}>
+              <FieldInput field={f} value={draft.values[f.key] ?? ''} onChange={v => setValue(f.key, v)} suggestions={suggestionsFor(f)} />
             </Section>
-          ) : (
-            <Section label="What for?">
-              <Input
-                aria-label="What for?"
-                className="h-11 md:h-8"
-                placeholder="Optional, e.g. Groceries"
-                value={target?.title ?? ''}
-                onChange={e => set({ target: { mode: 'new', title: e.target.value } })}
-              />
-            </Section>
-          )}
-
-          {existsPath && (
-            <div className="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm">
-              <span className="flex-1">A note with that name already exists.</span>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  const note = index.notes.find(n => n.path === existsPath)
-                  if (note) chooseTarget({ mode: 'append', path: note.path, title: note.title })
-                }}
-              >
-                Append to it instead
-              </Button>
-            </div>
-          )}
-
-          {mode && kind.howOptions && (
-            <Section label="How">
-              <Chips label="How" options={kind.howOptions} value={draft.how ?? ''} onChange={v => set({ how: v || null })} />
-            </Section>
-          )}
-          {mode &&
-            quick.map(f => (
-              <Section key={f.key} label={f.label}>
-                <FieldInput field={f} value={draft.values[f.key] ?? ''} onChange={v => setValue(f.key, v)} suggestions={suggestionsFor(f)} />
-              </Section>
-            ))}
-          {mode && (
-            <Section label="When">
-              <WhenInput value={draft.date} onChange={date => set({ date })} />
-            </Section>
-          )}
-          {mode && (
-            <Textarea aria-label="Text" className="min-h-40 md:text-base" placeholder={kind.placeholder} value={draft.text} onChange={e => set({ text: e.target.value })} />
-          )}
-          {mode && more.length > 0 && (
+          ))}
+          <Section label="When">
+            <WhenInput value={draft.date} onChange={date => set({ date })} />
+          </Section>
+          {!textFirst && text}
+          {more.length > 0 && (
             <details className="rounded-lg border px-3 py-2">
               <summary className="cursor-pointer py-1 text-sm font-medium text-muted-foreground">More details</summary>
               <div className="mt-3 grid gap-4">
@@ -276,14 +216,13 @@ export function LogForm({ kind, index }: { kind: LogKind; index: VaultIndex }) {
               </div>
             </details>
           )}
-          {mode &&
-            (write ? (
+          {write ? (
               <Button type="submit" size="lg" className="w-full max-md:h-12" disabled={!canSubmit}>
                 {saving ? 'Saving…' : 'Log it'}
               </Button>
             ) : (
               <p className="text-sm text-muted-foreground">Saving to the vault isn't set up, so Log copies the Markdown instead. See docs/setup.md.</p>
-            ))}
+            )}
         </form>
       </main>
     </div>

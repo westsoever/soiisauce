@@ -3,7 +3,7 @@
 # Finance, Goals, Projects).
 # A workspace listed here with the same id as a built-in one replaces it whole;
 # a new id adds a workspace after the built-ins. Reference: docs/frontmatter.md
-# and docs/workspaces.md in the soii repo.
+# and docs/workspaces.md, at https://github.com/westsoever/soiisauce/tree/main/docs
 title: Sam's vault
 home: today
 

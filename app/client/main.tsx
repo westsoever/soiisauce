@@ -1,5 +1,6 @@
 // app/client/main.tsx
 // Boot: render the app. soii runs on this machine only, so there is no sign-in.
+import './lib/zod-config'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'

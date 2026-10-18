@@ -20,14 +20,14 @@ function ctxWith(codes: number[]) {
 test('installs from the lockfile in the checkout', async () => {
   const { ctx, calls, errs } = ctxWith([0])
   expect(await installDeps(ctx, '/v/.soii/soii')).toBe(true)
-  expect(calls).toEqual([{ cmd: 'bun', args: ['install', '--frozen-lockfile'], cwd: '/v/.soii/soii' }])
+  expect(calls).toEqual([{ cmd: 'bun', args: ['install', '--frozen-lockfile', '--no-summary'], cwd: '/v/.soii/soii' }])
   expect(errs).toEqual([])
 })
 
 test('falls back to a plain install when the lockfile does not match', async () => {
   const { ctx, calls } = ctxWith([1, 0])
   expect(await installDeps(ctx, '/r')).toBe(true)
-  expect(calls.map(c => c.args)).toEqual([['install', '--frozen-lockfile'], ['install']])
+  expect(calls.map(c => c.args)).toEqual([['install', '--frozen-lockfile', '--no-summary'], ['install', '--no-summary']])
 })
 
 test('says where bun install failed when both attempts fail', async () => {

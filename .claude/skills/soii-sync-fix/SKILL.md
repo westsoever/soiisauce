@@ -5,7 +5,7 @@ description: Diagnose and fix a failed soii Sync (git pull) or a failed "Add to 
 
 # Fix a failed vault Sync or Add
 
-soii never merges or rebases. Its Sync button runs `git pull --ff-only` in the local vault and shows git's message if that fails. The fix is always in the **vault repo**, not in soii.
+soii never rebases. Its Sync button runs `git pull --ff-only` in the local vault; when both sides have new commits it merges GitHub's in only if the merge is clean (D125), and otherwise shows the conflicting files or git's message. The fix is always in the **vault repo**, not in soii.
 
 ## 1. Find the vault and look before touching
 
@@ -28,6 +28,7 @@ Read only `VAULT_PATH` from `.env.local`. Never print or log any `*TOKEN*` or `*
 | `Not possible to fast-forward` / `diverging branches` | Local commits not on GitHub (soii's own commits count) and GitHub commits not here | `git pull --rebase`, resolve conflicts if any, then `git push`. |
 | `Authentication failed` / `could not read Username` | The pull needs credentials soii can't prompt for | Ask the owner to run `git -C "$VAULT" pull` once in a terminal. You can't enter credentials. |
 | `not a git repository` | `VAULT_PATH` isn't a clone | Fix the path in `.env.local`, or ask the owner. |
+| `isn't connected to GitHub yet` / `isn't linked to GitHub yet` (Sync) | The vault has no remote (a vault made with `soii init` starts that way), or its branch tracks nothing. Nothing is broken | Ask for the repository URL (an empty one, made on GitHub), then `git -C "$VAULT" remote add origin <url> && git -C "$VAULT" push -u origin <branch>`; for a branch that tracks nothing, `git -C "$VAULT" push -u <remote> <branch>`. |
 | `already exists` (Add to vault) | That title is taken; nothing was overwritten | Suggest another title, or open the existing note. No git work needed. |
 
 ## 3. Conflicts

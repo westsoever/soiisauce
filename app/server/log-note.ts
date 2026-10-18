@@ -108,7 +108,8 @@ export function parseLogRequest(body: unknown): { ok: true; req: LogRequest } | 
     const title = typeof b.title === 'string' ? b.title.replace(/\s+/g, ' ').trim() : ''
     if (title.length > MAX_TITLE) return bad('bad_title', 'That name is too long.')
     if (k.id === 'expense' && !values.values.amount) return bad('amount_required', 'Add the amount first.')
-    if (k.id !== 'expense' && !title) return bad('title_required', 'Give it a name first.')
+    if (k.id === 'note' && !title && !text.trim()) return bad('empty', 'Write something first.')
+    if (k.id !== 'expense' && k.id !== 'note' && !title) return bad('title_required', 'Give it a name first.')
     return { ok: true, req: { mode: 'new', kind, title, values: values.values, text, date: b.date, how } }
   }
   if (!kind.section) return bad('cannot_append', `A ${kind.label.toLowerCase()} is always a new note.`)
@@ -137,17 +138,27 @@ function typedChanges(kind: LogKind, changes: Record<string, string>): Record<st
   )
 }
 
+/** Tries "Name", then "Name 2", "Name 3"…: a Log always makes a new note, never touches an old one. */
+const MAX_SUFFIX = 100
+
 async function logNew(env: SoiiEnv, req: Extract<LogRequest, { mode: 'new' }>, deps: LogDeps): Promise<LogResult> {
   const kind = creatingKind(req.kind)
-  const note = buildNewNote(req)
-  // buildNewNote only produces <folder>/<clean name>.md; this guards that promise.
-  if (!note.path.startsWith(`${kind.folder}/`) || note.path.split('/').includes('..') || !note.path.endsWith('.md')) {
-    return fail(400, 'bad_path', 'That name makes an invalid file name.')
+  const first = buildNewNote(req)
+  let note = first
+  let file: string | null = null
+  for (let n = 1; n <= MAX_SUFFIX; n++) {
+    if (n > 1) note = buildNewNote(req, n)
+    // buildNewNote only produces <folder>/<clean name>.md; this guards that promise.
+    if (!note.path.startsWith(`${kind.folder}/`) || note.path.split('/').includes('..') || !note.path.endsWith('.md')) {
+      return fail(400, 'bad_path', 'That name makes an invalid file name.')
+    }
+    file = inVault(env, note.path)
+    if (!file) return fail(400, 'bad_path', 'That name makes an invalid file name.')
+    if (!existsSync(file)) break
+    file = null
   }
+  if (!file) return fail(409, 'exists', `"${first.title}" already exists.`, first.path)
   const message = `soii log: ${kind.id} "${note.title}"`
-  const file = inVault(env, note.path)
-  if (!file) return fail(400, 'bad_path', 'That name makes an invalid file name.')
-  if (existsSync(file)) return fail(409, 'exists', `"${note.title}" already exists.`, note.path)
   mkdirSync(dirname(file), { recursive: true })
   writeFileSync(file, note.content, { flag: 'wx' })
   const warning = await commitLocal(env, deps.git, note.path, message)

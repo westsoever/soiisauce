@@ -1,0 +1,22 @@
+name: Feature or idea
+description: Something soii could do, or do better
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: The thing you can't do, or do badly, today. Start from that rather than from the solution.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like soii to do?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What do you do instead today?
+      description: Another way you tried, or work around it.

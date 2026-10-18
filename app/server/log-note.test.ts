@@ -124,12 +124,26 @@ describe('logNote on local disk', () => {
     ])
   })
 
-  test('new: never overwrites', async () => {
+  test('new: never overwrites, takes the next free name instead', async () => {
     const v = vault(false)
     v.put('03-Areas/Goals/Run.md', 'mine')
+    v.put('03-Areas/Goals/Run 2.md', 'mine too')
     const r = await logNote(v.env, { mode: 'new', kind: 'goal', title: 'Run', date: D }, { git: noGit, notes: () => NOTES })
-    expect(r).toMatchObject({ ok: false, status: 409, error: 'exists', path: '03-Areas/Goals/Run.md' })
+    expect(r).toMatchObject({ ok: true, mode: 'new', path: '03-Areas/Goals/Run 3.md' })
     expect(readFileSync(join(v.root, '03-Areas/Goals/Run.md'), 'utf8')).toBe('mine')
+    expect(readFileSync(join(v.root, '03-Areas/Goals/Run 3.md'), 'utf8')).toContain('# Run 3')
+  })
+
+  test('new: a Note without a title is named after its first line', async () => {
+    const v = vault(false)
+    const r = await logNote(v.env, { mode: 'new', kind: 'note', title: '', text: '# Idea for the weekend\nHike up the hill.', date: D }, { git: noGit, notes: () => NOTES })
+    expect(r).toMatchObject({ ok: true, mode: 'new', path: '00-Inbox/Idea for the weekend.md' })
+    expect(read(v, '00-Inbox/Idea for the weekend.md')).toEndWith('# Idea for the weekend\n\nHike up the hill.\n')
+    const again = await logNote(v.env, { mode: 'new', kind: 'note', title: '', text: 'Idea for the weekend\nSwim.', date: D }, { git: noGit, notes: () => NOTES })
+    expect(again).toMatchObject({ ok: true, path: '00-Inbox/Idea for the weekend 2.md' })
+    expect(read(v, '00-Inbox/Idea for the weekend 2.md')).toEndWith('# Idea for the weekend 2\n\nSwim.\n')
+    expect(await logNote(v.env, { mode: 'new', kind: 'note', title: '', text: '  ', date: D }, { git: noGit, notes: () => NOTES })).toMatchObject({ ok: false, error: 'empty' })
+    expect(await logNote(v.env, { mode: 'new', kind: 'book', title: '', text: 'x', date: D }, { git: noGit, notes: () => NOTES })).toMatchObject({ ok: false, error: 'title_required' })
   })
 
   test('append: adds the bullet at the end of its section', async () => {
@@ -185,6 +199,6 @@ describe('logNote on local disk', () => {
     const git: RunGit = async (_cwd, args) => (args[0] === 'commit' ? { code: 1, out: 'fatal: unable to auto-detect email address' } : { code: 0, out: '' })
     const r = await logNote(v.env, appendBody(), { git, notes: () => NOTES })
     expect(r).toMatchObject({ ok: true })
-    expect(r.ok && r.warning).toContain('unable to auto-detect email')
+    expect(r.ok && r.warning).toContain('git config --global user.email')
   })
 })

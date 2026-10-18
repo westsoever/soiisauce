@@ -23,15 +23,15 @@ describe('POST /api/log', () => {
     expect(existsSync(join(root, '04-Resources'))).toBe(false)
   })
 
-  test('creates a note, then refuses to create it twice', async () => {
+  test('creates a note, then a second one beside it', async () => {
     const root = mkdtempSync(join(tmpdir(), 'soii-logroute-'))
     const app = createSoiiApp({ env: { VAULT_PATH: root }, generatedDir: makeGeneratedFixture() })
     const res = await app.fetch(post(book))
     expect(res.status).toBe(201)
     expect(await res.json()).toMatchObject({ path: '04-Resources/Library/Books/Dune.md', mode: 'new' })
     const again = await app.fetch(post(book))
-    expect(again.status).toBe(409)
-    expect(await again.json()).toMatchObject({ error: 'exists', path: '04-Resources/Library/Books/Dune.md' })
+    expect(again.status).toBe(201)
+    expect(await again.json()).toMatchObject({ path: '04-Resources/Library/Books/Dune 2.md', mode: 'new' })
   })
 
   test('appends to a note from the compiled index', async () => {

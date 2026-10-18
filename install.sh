@@ -9,19 +9,35 @@
 #
 # Anything after `bash -s --` goes to soii: `... | bash -s -- --no-service`, `... | bash -s -- init ~/my-vault`.
 # Environment, for testing: SOII_REPO (owner/name), SOII_CLONE_URL (replaces the GitHub URL), SOII_REF (branch or tag),
-# SOII_TTY (the keyboard device, /dev/tty).
+# SOII_TTY (the keyboard device, normally found by itself).
 set -euo pipefail
+fresh_path=""
 
 REPO="${SOII_REPO:-westsoever/soiisauce}"
 URL="${SOII_CLONE_URL:-https://github.com/$REPO.git}"
 REF="${SOII_REF:-}"
-TTY="${SOII_TTY:-/dev/tty}"
+TTY_OVERRIDE="${SOII_TTY:-}"
 FETCH_HINT='Check that this computer is online and can reach github.com, then run this again. (A private fork of soii? Run `gh auth login` and then `gh auth setup-git` once so git can read it.)'
 
 say() { printf '%s\n' "$*"; }
 die() { printf 'soii install: %s\n' "$*" >&2; exit 1; }
 
-# A terminal to ask questions on. Piped into bash, stdin is this script, so use the keyboard (/dev/tty) instead.
+# The keyboard. Piped into bash, stdin is this script, so soii is given the terminal itself instead. Name its own device
+# (/dev/ttys003, /dev/pts/0), not the /dev/tty alias: a program that reads /dev/tty hangs on a Mac (Bun's readline stops after
+# the first answer, or fails with "EINVAL: kqueue"), and the device name works. /dev/tty is the fallback if ps can't say.
+terminal_device() {
+  local t
+  t="$(ps -o tty= -p $$ 2>/dev/null)" || t=""
+  t="${t// /}"
+  case "$t" in
+    '' | '?' | '??' | '-') ;;
+    *) if [ -c "/dev/$t" ]; then printf '/dev/%s' "$t"; return; fi ;;
+  esac
+  printf '/dev/tty'
+}
+TTY="${TTY_OVERRIDE:-$(terminal_device)}"
+
+# A terminal to ask questions on (the keyboard above, when stdin is the pipe).
 have_tty() { (: <"$TTY") 2>/dev/null; }
 
 # The command: install (default), or init/setup when it is the first word.
@@ -45,10 +61,19 @@ fi
 
 # 1. Prerequisites. Collect every problem so one run shows them all.
 problems=()
-command -v git >/dev/null 2>&1 || problems+=("git is missing. On a Mac: xcode-select --install   (Linux: your package manager, e.g. apt install git)")
+git_ok=""
+if ! command -v git >/dev/null 2>&1; then
+  problems+=("git is missing. On a Mac: xcode-select --install   (Linux: your package manager, e.g. apt install git)")
+elif ! git --version >/dev/null 2>&1; then
+  # A Mac without Apple's command line tools has a stand-in /usr/bin/git that only offers to install them.
+  problems+=("git can't run yet: this Mac doesn't have Apple's command line tools. Run: xcode-select --install   (a window opens: click Install and wait until it finishes), then run this again.")
+else
+  git_ok=1
+fi
 
 if ! command -v bun >/dev/null 2>&1; then
   if [ -x "$HOME/.bun/bin/bun" ]; then
+    fresh_path=1
     export PATH="$HOME/.bun/bin:$PATH"
   elif [ "$asks" = 1 ] && have_tty; then
     printf 'soii needs Bun (https://bun.sh) and it is not installed. Install it now? [y/N] ' > "$TTY"
@@ -58,6 +83,7 @@ if ! command -v bun >/dev/null 2>&1; then
       y | Y | yes | YES)
         command -v curl >/dev/null 2>&1 || die "curl is missing, so Bun can't be installed for you. Install Bun from https://bun.sh and run this again."
         curl -fsSL https://bun.sh/install | bash || die "Bun's installer failed. Install Bun from https://bun.sh and run this again."
+        fresh_path=1
         export PATH="$HOME/.bun/bin:$PATH"
         ;;
     esac
@@ -84,7 +110,7 @@ if command -v bun >/dev/null 2>&1; then
   fi
 fi
 
-if command -v git >/dev/null 2>&1; then
+if [ -n "$git_ok" ]; then
   # Ask git itself: this is the one check that is true whichever way you signed in (gh, ssh, a token).
   if ! GIT_TERMINAL_PROMPT=0 git ls-remote --exit-code "$URL" HEAD >/dev/null 2>&1; then
     problems+=("git can't reach $URL. $FETCH_HINT")
@@ -116,8 +142,15 @@ say "Installing soii's packages (the first time this can take a minute or two)..
 
 # 3. Hand over to soii. It asks its questions on the keyboard, and the clone is deleted when it ends.
 # Not `exec`: the trap must run afterwards. Its exit code is ours.
+code=0
 if [ ! -t 0 ] && have_tty; then
-  bun "$tmp/soii/bin/soii.ts" "$cmd" "$@" < "$TTY"
+  bun "$tmp/soii/bin/soii.ts" "$cmd" "$@" < "$TTY" || code=$?
 else
-  bun "$tmp/soii/bin/soii.ts" "$cmd" "$@"
+  bun "$tmp/soii/bin/soii.ts" "$cmd" "$@" || code=$?
 fi
+# Bun was found or installed by this script, so this terminal's PATH doesn't have it (nor the `soii` command next to it) yet.
+if [ "$code" = 0 ] && [ -n "$fresh_path" ]; then
+  say ""
+  say "Open a new terminal window before you use \`soii\`: this one doesn't know about Bun yet."
+fi
+exit "$code"

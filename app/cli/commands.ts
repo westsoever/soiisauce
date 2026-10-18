@@ -1,6 +1,6 @@
 // app/cli/commands.ts
 // The commands of `soii`. Each takes a Ctx (see context.ts) so they can be driven from tests.
-import { chmodSync, existsSync, lstatSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { accessSync, chmodSync, constants, existsSync, lstatSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { basename, join, resolve } from 'node:path'
 import type { Flags } from './args'
 import { checkoutSoii, remoteUrl, soiiCheckout } from './checkout'
@@ -8,8 +8,10 @@ import type { Ctx } from './context'
 import { copyTemplate, NOT_FOR_VAULTS, syncSkills } from './copy'
 import { newChangelog } from './changelog'
 import { versionLine, updateLinks } from './messages'
+import { identityNote, isIdentityProblem } from './git-identity'
+import { addNote } from './notes'
 import { commitSoiiFiles } from './vault-commit'
-import { chooseShimDir, logPath, renderShim } from './paths'
+import { chooseShimDir, logPath, pathInstruction, renderShim, shimCandidates } from './paths'
 import { configDir, DEFAULT_PORT, readRegistry, removeRegistry, writeRegistry, type Registry } from './registry'
 import { runSupervisor } from './run'
 import { bootAtLogin, removeAgent, restartService, servicePid, startService, stopService, vaultCli, waitHealthy } from './service'
@@ -38,6 +40,18 @@ function needRegistry(ctx: Ctx): Registry {
   const reg = readRegistry(configDir(ctx.env))
   if (!reg) throw new Error('soii is not installed on this machine yet. Run `soii install` inside your vault, or `soii init <folder>` to start a new one.')
   return reg
+}
+
+/** Port taken by something else. `again` is how to try another port, in the words of the command the person is running. */
+export function portTakenMessage(port: number, o: { wrote: boolean }): string {
+  const next = port + 1
+  return `soii: port ${port} is already in use by another program (an older soii, or something else), so soii can't run there.${o.wrote ? '' : ' Nothing was changed.'}\nTo use another port, run the install again with --port ${next}: \`soii install --port ${next}\` (or, with the one-line install: \`curl -fsSL https://raw.githubusercontent.com/westsoever/soiisauce/main/install.sh | bash -s -- --port ${next}\`).`
+}
+
+/** Is the port soii is about to use held by something that isn't soii's own service? Asked before anything is written. */
+async function portHeldByOther(ctx: Ctx, port: number): Promise<boolean> {
+  if (await servicePid(ctx)) return false // our own service: it is stopped and started again below
+  return ctx.portInUse(port)
 }
 
 // ---- install ----
@@ -72,8 +86,10 @@ function prepareSoiiDir(ctx: Ctx, vault: string, flags: Flags): string {
  * The lockfile in the tag is the lock: every install of v0.1.0 gets the same packages.
  */
 export async function installDeps(ctx: Ctx, root: string): Promise<boolean> {
-  let deps = await ctx.stream('bun', ['install', '--frozen-lockfile'], { cwd: root })
-  if (deps !== 0) deps = await ctx.stream('bun', ['install'], { cwd: root })
+  // --no-summary: the one-line installer has just listed these packages once, while it installed them for itself; a second
+  // 40-line list is noise. The progress meter in a terminal, and any error, still show.
+  let deps = await ctx.stream('bun', ['install', '--frozen-lockfile', '--no-summary'], { cwd: root })
+  if (deps !== 0) deps = await ctx.stream('bun', ['install', '--no-summary'], { cwd: root })
   if (deps !== 0) ctx.err(`soii: \`bun install\` failed in ${root}.`)
   return deps === 0
 }
@@ -82,6 +98,14 @@ export async function install(ctx: Ctx, vaultArg: string | undefined, flags: Fla
   const vault = resolve(ctx.cwd, expandHome(ctx, vaultArg ?? ctx.cwd))
   if (!existsSync(vault) || !statSync(vault).isDirectory()) throw new Error(`${vault} is not a folder.`)
   const here = soiiDir(vault)
+  if (!flags.noService) {
+    const previous = readRegistry(configDir(ctx.env))
+    const port = flags.port ?? (previous && previous.vault === vault ? previous.port : DEFAULT_PORT)
+    if (await portHeldByOther(ctx, port)) {
+      ctx.err(portTakenMessage(port, { wrote: false }))
+      return 1
+    }
+  }
   mkdirSync(here, { recursive: true })
 
   const ref = prepareSoiiDir(ctx, vault, flags)
@@ -121,15 +145,21 @@ export async function install(ctx: Ctx, vaultArg: string | undefined, flags: Fla
   const message = `soii: ${ctx.env.SOII_UPDATE === '1' ? 'update to' : 'install'} ${ref}`
   const committed = await commitSoiiFiles(ctx, vault, { skills: skills.installed, removed: skills.removed, message })
   if (committed.committed) ctx.out(`Committed soii's files in the vault (${message}).`)
-  else if (committed.reason && committed.reason !== 'not a git repository') ctx.err(`soii: the vault was not committed (${committed.reason}). Commit .soii/package.json, .soii/.gitignore, .soii/skills.json and .claude/skills yourself.`)
+  else if (committed.reason && committed.reason !== 'not a git repository') {
+    if (isIdentityProblem(committed.reason)) {
+      const hasCommits = (await ctx.exec('git', ['rev-parse', '--verify', '-q', 'HEAD'], { cwd: vault })).code === 0
+      ctx.out("soii's files are in the vault but not committed yet: git doesn't know who you are (what to type is at the end).")
+      addNote(ctx, 'git-identity', identityNote(vault, { firstCommit: !hasCommits, message }))
+    } else ctx.err(`soii: the vault was not committed (${committed.reason}). Commit .soii/package.json, .soii/.gitignore, .soii/skills.json and .claude/skills yourself.`)
+  }
 
   if (flags.noService) {
     ctx.out(`\nsoii ${ref} is installed in ${vault}. --no-service: no service was started and nothing outside the vault was changed (no \`soii\` command, no LaunchAgent, no registry).`)
     return 0
   }
   if (!boot) await removeAgent(ctx) // no LaunchAgent: soii runs now, and `soii start` runs it again later
-  if (!(await servicePid(ctx)) && (await ctx.healthy(port))) {
-    ctx.err(`soii: something else already answers on port ${port} (an old \`bun app/serve.ts\`?). Stop it, then run \`soii start\`.`)
+  if (await portHeldByOther(ctx, port)) {
+    ctx.err(portTakenMessage(port, { wrote: true }))
     return 1
   }
   const started = await restartService(ctx, vault)
@@ -161,11 +191,22 @@ export function notAnswering(ctx: Ctx, port: number, what: string): string {
   } catch {
     // no log yet
   }
+  // The server's own crash (a raw stack from Bun) says nothing a newcomer can use: say what happened and how to move on.
+  if (tail.includes('EADDRINUSE') && tail.includes(`port ${port}`)) return `soii: ${what}, but port ${port} is already in use by another program, so soii could not listen on it.\nUse another port with \`soii install --port ${port + 1}\`, or stop the other program and run \`soii restart\`.`
   return `soii: ${what}, but nothing answers on port ${port} after ${HEALTH_WAIT_MS / 1000} seconds.${tail ? `\nLast lines of ${file}:\n${tail.replace(/^/gm, '  ')}` : `\nNo log at ${file} yet.`}\nMore with \`soii logs\`.`
 }
 
-function installShim(ctx: Ctx, vault: string): void {
-  const choice = chooseShimDir({ home: ctx.home, pathEnv: ctx.env.PATH ?? '', exists: existsSync })
+const writable = (dir: string) => {
+  try {
+    accessSync(dir, constants.W_OK)
+    return true
+  } catch {
+    return false
+  }
+}
+
+export function installShim(ctx: Ctx, vault: string): void {
+  const choice = chooseShimDir({ home: ctx.home, pathEnv: ctx.env.PATH ?? '', exists: existsSync, writable })
   const file = join(choice.dir, 'soii')
   let ours = true
   try {
@@ -183,7 +224,8 @@ function installShim(ctx: Ctx, vault: string): void {
   writeFileSync(file, renderShim({ bun: ctx.bun, script: vaultCli(vault) }))
   chmodSync(file, 0o755)
   ctx.out(`Command: ${file}`)
-  if (!choice.onPath) ctx.out(`  ${choice.dir} is not on your PATH. Add this to your shell profile:\n    export PATH="${choice.dir}:$PATH"`)
+  // Said last, once, in the person's own shell's words (see notes.ts), not in the middle of the output.
+  if (!choice.onPath) addNote(ctx, 'path', pathInstruction({ dir: choice.dir, home: ctx.home, shell: ctx.env.SHELL ?? '', platform: ctx.platform }))
 }
 
 // ---- init ----
@@ -193,6 +235,14 @@ export async function init(ctx: Ctx, dirArg: string, flags: Flags, beforeCommit?
   const dest = resolve(ctx.cwd, expandHome(ctx, dirArg))
   const template = join(ctx.pkgRoot, 'template')
   if (!existsSync(template)) throw new Error(`This soii package has no template/ folder (looked in ${template}).`)
+  if (!flags.noService) {
+    // Before the vault is made: a taken port must not leave a half-made vault behind.
+    const port = flags.port ?? DEFAULT_PORT
+    if (await portHeldByOther(ctx, port)) {
+      ctx.err(portTakenMessage(port, { wrote: false }))
+      return 1
+    }
+  }
   copyTemplate(template, dest, { empty: !flags.samples, title: flags.title ?? basename(dest) })
   // The template pins a tag; point it at the version running now, and ignore soii's own folders, before the first commit.
   prepareSoiiDir(ctx, dest, { ...flags, from: flags.from ?? packageVersion(ctx.pkgRoot) ?? undefined })
@@ -204,7 +254,11 @@ export async function init(ctx: Ctx, dirArg: string, flags: Flags, beforeCommit?
     if (git.code === 0) {
       await ctx.exec('git', ['add', '-A'], { cwd: dest })
       const commit = await ctx.exec('git', ['commit', '-q', '-m', 'Initial vault from the soii template'], { cwd: dest })
-      ctx.out(commit.code === 0 ? 'Started a git repository and made the first commit.' : `Started a git repository. The first commit didn't happen (${commit.out.split('\n')[0]}); commit it yourself.`)
+      if (commit.code === 0) ctx.out('Started a git repository and made the first commit.')
+      else if (isIdentityProblem(commit.out)) {
+        ctx.out("Started a git repository. The first commit has to wait: git doesn't know who you are yet (what to type is at the end).")
+        addNote(ctx, 'git-identity', identityNote(dest, { firstCommit: true, message: '' }))
+      } else ctx.out(`Started a git repository. The first commit didn't happen (${commit.out.split('\n')[0]}); commit it yourself.`)
     }
   }
   return install(ctx, dest, flags)
@@ -216,7 +270,7 @@ export async function start(ctx: Ctx): Promise<number> {
   const reg = needRegistry(ctx)
   if (!existsSync(vaultCli(reg.vault))) throw new Error(`${reg.vault} has no soii installed (.soii/soii is missing). Run \`soii install\` there.`)
   if (!(await servicePid(ctx)) && (await ctx.healthy(reg.port))) {
-    ctx.err(`soii: something else already answers on port ${reg.port}. Stop it first.`)
+    ctx.err(`soii: port ${reg.port} is already in use by another program. Stop that program, or move soii to another port with \`soii install --port ${reg.port + 1}\`.`)
     return 1
   }
   const r = await startService(ctx, reg.vault)
@@ -347,7 +401,7 @@ export async function uninstall(ctx: Ctx): Promise<number> {
   const reg = readRegistry(configDir(ctx.env))
   await removeAgent(ctx)
   const choice = chooseShimDir({ home: ctx.home, pathEnv: ctx.env.PATH ?? '', exists: existsSync })
-  for (const dir of new Set([choice.dir, join(ctx.home, '.bun', 'bin'), join(ctx.home, '.local', 'bin')])) {
+  for (const dir of new Set([choice.dir, ...shimCandidates(ctx.home)])) {
     const file = join(dir, 'soii')
     try {
       if (!lstatSync(file).isSymbolicLink() && readFileSync(file, 'utf8').includes(SHIM_MARKER)) rmSync(file)
@@ -357,7 +411,7 @@ export async function uninstall(ctx: Ctx): Promise<number> {
   }
   removeRegistry(configDir(ctx.env))
   ctx.out('soii is stopped and no longer starts at login. The `soii` command is removed.')
-  if (reg) ctx.out(`Your notes and ${soiiDir(reg.vault)} are untouched. Delete .soii/ yourself if you want it gone.`)
+  if (reg) ctx.out(`Your notes are untouched, and so are soii's own files in ${reg.vault}: the .soii/ folder and the soii skills in .claude/skills/ (soii-*, skillfactory, unbox). Delete them yourself if you want them gone.`)
   return 0
 }
 

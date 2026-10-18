@@ -1,6 +1,7 @@
 // app/cli/context.ts
 // Everything the commands touch outside their own arguments, in one object so tests can swap it.
 import { execFile, spawn } from 'node:child_process'
+import { createServer } from 'node:net'
 import { homedir, platform } from 'node:os'
 import { dirname, join } from 'node:path'
 import { readlinePrompter, type Prompter } from './prompt'
@@ -33,6 +34,8 @@ export interface Ctx {
   prompter(): Prompter
   /** Does something answer /api/health on this port? */
   healthy(port: number): Promise<boolean>
+  /** Is anything at all listening on this port (on this computer's loopback)? */
+  portInUse(port: number): Promise<boolean>
 }
 
 export function realCtx(): Ctx {
@@ -61,6 +64,13 @@ export function realCtx(): Ctx {
       }),
     interactive: Boolean(process.stdin.isTTY && process.stdout.isTTY),
     prompter: () => readlinePrompter(process.stdin, process.stdout),
+    portInUse: port =>
+      new Promise(resolve => {
+        const server = createServer()
+        server.once('error', err => resolve((err as NodeJS.ErrnoException).code === 'EADDRINUSE'))
+        server.once('listening', () => server.close(() => resolve(false)))
+        server.listen(port, '127.0.0.1')
+      }),
     healthy: async port => {
       try {
         const res = await fetch(`http://127.0.0.1:${port}/api/health`, { signal: AbortSignal.timeout(1500) })

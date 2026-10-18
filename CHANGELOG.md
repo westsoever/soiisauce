@@ -2,6 +2,21 @@
 
 What's new in each soii release, newest first. `soii update` prints the sections that are newer than the version you had.
 
+## v0.2.5
+
+soii has a new speed reader, a Log button that always starts a new note, and a clearer install. Captures are named after their first line, and Sync can now merge a vault that has diverged cleanly.
+
+- A new speed reader at `/speed`: paste in a text, set the words per minute, and read it one word at a time.
+- The Log button always creates a new note, with the cursor ready to type.
+- The first line of an Option-P or `/soii-capture` note is its title and file name; the rest is the body.
+- When your vault and GitHub have both moved on and the changes don't clash, Sync merges them instead of stopping.
+- Sync asks before its first push to a new remote, and says plainly when the vault isn't connected to GitHub.
+- `/unbox` clips pages with Defuddle instead of WebFetch.
+- The one-line install no longer hangs on macOS, and its messages for a missing git identity or PATH say the exact fix.
+- A new `SOII_OFFLINE=1` setting means soii asks for nothing on its own (see the privacy page).
+- Fixed an endless rebuild loop when a note links a large attachment.
+- On Linux, `soii run` notices newly added skill folders.
+
 ## v0.2.4
 
 Press Option-P anywhere in soii to jot a thought straight into your Inbox, without leaving what you're doing.

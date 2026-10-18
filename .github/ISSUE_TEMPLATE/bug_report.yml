@@ -1,0 +1,59 @@
+name: Bug report
+description: Something in soii doesn't work, or breaks
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting it. **Security problems: don't file them here**, use the private report described in [SECURITY.md](https://github.com/westsoever/soiisauce/security/policy).
+        Please don't paste your notes. The log can contain note names and paths: look at it first and cut what you'd rather not share.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you did, what you expected, what you got instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: The shortest way to see it. If it only happens with a certain kind of note, a made-up example of that note helps.
+  - type: input
+    id: version
+    attributes:
+      label: soii version
+      description: Run `soii --version`.
+      placeholder: 0.2.3
+    validations:
+      required: true
+  - type: dropdown
+    id: system
+    attributes:
+      label: System
+      options:
+        - macOS
+        - Linux
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: bun
+    attributes:
+      label: Bun version
+      description: Run `bun --version`.
+  - type: dropdown
+    id: how
+    attributes:
+      label: How it was installed
+      options:
+        - The install one-liner (install.sh)
+        - soii install from a checkout
+        - bun run dev
+        - Other
+  - type: textarea
+    id: status
+    attributes:
+      label: soii status and log
+      description: The output of `soii status`, and the end of `soii logs` if it's about the service or a build.
+      render: text

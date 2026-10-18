@@ -28,7 +28,7 @@ Run **`/soii-setup`** in Claude Code from inside your new vault and point it at 
 
 1. **Open soii** (`soii open`) next to Obsidian. Write in Obsidian as you always do; the change shows up in soii within a second or two.
 2. **Browse the workspaces** in the sidebar: *Today* (daily brief and weekly review), *Library* (books, films, videos, papers), *People* (who you haven't seen in a while), *Finance*, *Goals*, *Projects*. A note lands in a workspace by its `type` property. Click any note to read it, with its properties and backlinks, and an *Open in Obsidian* button.
-3. **Log** is the quick way in: "had coffee with Ana", "finished Dune", "spent 120 kr on books". Each one adds a dated line to the right note (or creates it) and is saved as a commit in this vault.
+3. **Log** is the quick way in: "an idea for the weekend", "finished Dune", "spent 120 kr on books". Pick a kind and fill in the form. Each one becomes a new note in the right folder and is saved as a commit in this vault. A plain Note needs no title: start typing and the first line becomes it.
 4. **Add** creates a note, such as a book with its cover, from a form.
 5. **Edit properties** in a note's side panel: status, rating, dates, how often you want to see someone.
 6. **Sync** pulls changes from the vault's remote and pushes yours, if you gave the vault one. It never merges or forces. Without a remote everything simply stays on your computer.

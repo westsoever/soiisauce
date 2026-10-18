@@ -6,6 +6,7 @@ import { join, normalize, resolve } from 'node:path'
 import { readEnv } from './server/env'
 import { bindProblem } from './server/local'
 import { readPort } from './server/port'
+import { API_HEADERS, htmlHeaders } from './server/security-headers'
 
 const ROOT = join(import.meta.dir, '..')
 // Where the build wrote dist/ and api/_generated/: the repo, or SOII_OUT_DIR (soii installed in a vault builds into .soii/build).
@@ -30,6 +31,14 @@ type Entry = { createSoiiApp: (opts?: { generatedDir?: string; env?: Record<stri
 const { createSoiiApp } = (await import(entry)) as Entry
 const app = createSoiiApp({ env: process.env, generatedDir: join(OUT, 'api', '_generated', 'vault') })
 
+// SOII_OFFLINE=1: soii makes no outside requests, and the page's policy then forbids them too.
+const PAGE_HEADERS = htmlHeaders(readEnv(process.env).offline)
+
+/** index.html, and any other page: with the content policy. Everything else gets the plain headers. */
+function page(file: string): Response {
+  return new Response(Bun.file(file), { headers: { 'Cache-Control': 'no-cache', ...PAGE_HEADERS } })
+}
+
 function staticFile(pathname: string): Response | null {
   let rel: string
   try {
@@ -40,8 +49,9 @@ function staticFile(pathname: string): Response | null {
   if (rel.startsWith('..')) return null
   const path = join(DIST, rel)
   if (!rel || !existsSync(path) || !statSync(path).isFile()) return null
+  if (/\.html?$/i.test(rel)) return page(path)
   return new Response(Bun.file(path), {
-    headers: { 'Cache-Control': rel.startsWith('assets/') ? 'public, max-age=31536000, immutable' : 'no-cache' }
+    headers: { 'Cache-Control': rel.startsWith('assets/') ? 'public, max-age=31536000, immutable' : 'no-cache', ...API_HEADERS }
   })
 }
 
@@ -55,7 +65,7 @@ Bun.serve({
   fetch(req) {
     const { pathname } = new URL(req.url)
     if (pathname.startsWith('/api/')) return app.fetch(req)
-    return staticFile(pathname) ?? new Response(Bun.file(join(DIST, 'index.html')), { headers: { 'Cache-Control': 'no-cache' } })
+    return staticFile(pathname) ?? page(join(DIST, 'index.html'))
   }
 })
 

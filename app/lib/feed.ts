@@ -21,7 +21,8 @@ export interface FeedOptions {
 // The error is a ZodError so FeedView can show it with Core's OptionsError like every other view (D36.6).
 export type FeedOptionsResult = { ok: true; value: FeedOptions } | { ok: false; error: z.ZodError }
 
-export const BRIEF_EMPTY = 'Briefs appear here when notes have `type: daily-brief` or live in a `daily_report` folder.'
+export const BRIEF_EMPTY =
+  'No briefs yet. Briefs are daily summary notes that an agent (or you) writes; they show up here under their date. Just exploring? Use Log in the sidebar to add a first note, or run `/soii-intro` in Claude Code for a short tour. To make a note a brief, give it `type: daily-brief`.'
 export const GENERIC_EMPTY =
   'Notes appear here once they match this tab and have a date — a `date` in the frontmatter or a YYYY-MM-DD file name.'
 
