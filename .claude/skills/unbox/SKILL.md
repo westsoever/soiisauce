@@ -1,6 +1,6 @@
 ---
 name: unbox
-description: "Unboxes the Inbox: takes everything out and puts it where it belongs in the vault. Reads every note in 00-Inbox/ (clippings and any agent-queue/ above all), fetches linked pages the way the Obsidian Web Clipper does, files each item as a typed note (article, video, research) in 04-Resources/Library/, parks 'check this out' items and job posts in 04-Resources/Backlog/, archives the handled queue notes, and, only if you use Todoist with an agent that queues tasks into your Inbox, marks those tasks complete (Todoist is optional: without it that step never runs). Shows the plan before it writes and never pushes. Run it whenever, not just weekly. Use when the owner says 'clean up the inbox', 'empty the inbox', 'process the agent queue', 'file my clippings', 'unbox the inbox', or types /unbox."
+description: "Unboxes the Inbox: takes everything out and puts it where it belongs in the vault. Reads every note in 00-Inbox/ (clippings and any agent-queue/ above all), fetches linked pages the way the Obsidian Web Clipper does, files each item as a typed note (article, video, research) in 04-Resources/Library/, parks 'check this out' items and job posts in 04-Resources/Backlog/, archives the handled queue notes, and, only if you use Todoist with an agent that queues tasks into your Inbox, marks those tasks complete once filed, because the vault owns the task list (Todoist is optional: without it that step never runs). Shows the plan before it writes and never pushes. Run it whenever, not just weekly. Use when the owner says 'clean up the inbox', 'empty the inbox', 'process the agent queue', 'file my clippings', 'unbox the inbox', or types /unbox."
 ---
 
 # Unbox
@@ -107,7 +107,7 @@ Map: [[Areas and Resources]]
 
 Per type, use the fields in `.soii/soii/docs/frontmatter.md`: `research` takes `authors, year, venue, doi, arxiv, status: to-read`; `video` takes `channel` and `watched` (empty). Keep the title and the description to one line each, and put them in double quotes (escape any `"` inside) when they contain ` #`, `: ` or a quote mark.
 
-If a fetch fails, is login-walled (Instagram usually is) or paywalled: don't retry, don't try workarounds. Keep the URL, write the note with a body line `Not clipped: <reason>`, and for an unreadable link file it in the Backlog (`kind: check-out`) rather than the Library.
+If a fetch fails, is login-walled (Instagram usually is) or paywalled: don't retry, don't try workarounds. Keep the URL, write the note with a body line `Not clipped: <reason>`, and for an unreadable link file it in the Backlog (`kind: check-out`) rather than the Library. When the task can't be done without the page, also set `blocked: "<the same reason>"` and `lane: hold` (only the owner can open it). When the task doesn't need the page itself (for example testing a browser plugin on it), set `lane: hold` but no `blocked:`.
 
 Leave out the `Map:` line, here and in the Backlog notes, when the vault has no "Areas and Resources" note (soii's template has no maps folder).
 
@@ -118,12 +118,14 @@ Leave out the `Map:` line, here and in the Backlog notes, when the vault has no 
 ```markdown
 ---
 status: backlog
-kind: job | check-out | task
+kind: job | check-out | task | idea
+lane:
+blocked:
 url: <url>
 source: todoist
 todoist_task_id: "<id>"
 created: <today>
-due: <date from the task, else empty>
+due: <a deadline the task text states, else empty>
 ---
 Map: [[Areas and Resources]]
 
@@ -132,9 +134,14 @@ Map: [[Areas and Resources]]
 <The original task text, as written.>
 ```
 
+- `status` is the note's lifecycle: `backlog` (open) → `doing` → `done` (with `done: YYYY-MM-DD`), or `dropped`. New notes are always `backlog`.
+- `lane:` stays empty (untriaged) unless the plan says otherwise; `hold` means it needs the owner. `blocked:` stays empty unless the page couldn't be read and the task needs it (step 3).
+- `issue:`, `pr:`, `result:` and `done:` are added later, by whoever does the work (an agent or the owner), not here.
+- `due:` is not Todoist's date: Todoist stamps the capture day, which is not a deadline. Leave it empty unless the task text names one.
+
 ## 5. Show the plan, ask
 
-One table: *queue/clipping → destination → type/kind → Todoist action*. Say what will be fetched, what can't be, and what stays in the Inbox. Ask with AskUserQuestion: **Go / Change something**. Write nothing before a Go.
+One table: *queue/clipping → destination → type/kind (and `blocked:` reason, if any) → Todoist action*. Say what will be fetched, what can't be, and what stays in the Inbox. Ask with AskUserQuestion: **Go / Change something**. Write nothing before a Go.
 
 ## 6. Do it
 
@@ -142,7 +149,7 @@ One table: *queue/clipping → destination → type/kind → Todoist action*. Sa
 2. If `07-Maps/Areas and Resources.md` exists, add each new note to it under a `Library` or `Backlog` heading (create the heading if missing; follow the link style already in the file). Otherwise skip this step.
 3. Archive each handled queue note: `git mv` it to `08-Archive/agent-queue/`, set `status: done`, add `filed_to: "[[<new note>]]"`.
 4. Commit only the paths you touched: `git add <paths> && git commit -m "unbox: file N inbox items"`. Don't push.
-5. Skip this step when no handled note has a `todoist_task_id`. Only after the commit, mark Todoist tasks complete: load `mcp__claude_ai_Todoist__complete-tasks` through ToolSearch and pass the `todoist_task_id`s. **Complete a task when its result is now collected in the Library or a requested note exists.** Leave open the tasks parked in the Backlog (the action, like applying, is still to do) unless the owner said otherwise in the plan. If Todoist can't be reached, print the ids instead.
+5. Skip this step when no handled note has a `todoist_task_id`. Only after the commit, mark Todoist tasks complete: load `mcp__claude_ai_Todoist__complete-tasks` through ToolSearch and pass the `todoist_task_id`s. **Complete every task that is now filed**, in the Library, as a requested note, or parked in the Backlog. Todoist only captured the task; the vault owns the task list from here, and the Backlog note's `status:` tracks whether the work is done. Leave open only the tasks whose item stays in the Inbox. If Todoist can't be reached, print the ids instead.
 
 ## 7. Report
 

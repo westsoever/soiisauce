@@ -24,6 +24,8 @@ soii reads ordinary Obsidian notes. Workspaces pick notes up by their frontmatte
 | `expense` | `purchase` |
 | `daily-brief` | `daily-report`, `morning-briefing` |
 | `weekly-review` | `weekly-report`, `weekly-synthesis` |
+| `capacity` | — |
+| `leak` | `leaks` |
 
 ## Fields per type
 
@@ -59,6 +61,51 @@ finished: 2026-03-01
 **Dates** are `YYYY-MM-DD`. **Images** (`cover`, `image`, `poster`, `thumbnail`) are a URL or a vault file. Quote `"[[file.png]]"`, though soii also understands the unquoted form. Numbers like `price: "25,00 kr."` are read leniently.
 
 Quote titles that contain ` #` (a space, then `#`): YAML reads it as the start of a comment and drops the rest, e.g. `title: "Ægir's Saga #1"`.
+
+## Backlog notes
+
+Notes in `04-Resources/Backlog/` need no `type`: the Backlog board picks them by folder (see [workspaces.md](workspaces.md#backlog)).
+
+| Field | Values |
+|---|---|
+| `status` | `backlog`, `doing`, `done`, `dropped`: the board column. Missing or anything else shows as `backlog`. |
+| `kind` | `job`, `check-out`, `task`, `idea` |
+| `lane` | `research`, `build`, `hold` (it needs you). Empty means untriaged. |
+| `blocked` | Why it's stuck, as free text |
+| `done` | `YYYY-MM-DD`, set with `status: done` (moving a card to done sets it) |
+| `issue`, `pr`, `result` | An issue id (`ABC-16`), a pull request URL, a `"[[wikilink]]"` to the result |
+| `url`, `source`, `created`, `due`, `repo` | What the item points at, where it came from (`todoist`, `soii`), when it was filed, a deadline, a repository |
+
+## Capacity and leaks
+
+The Capacity workspace ([workspaces.md](workspaces.md#capacity)) reads two types of its own.
+
+**`type: capacity`** is one settings note: `target`, `ceiling`, `base`, `meetings` and `felt` (lists of dated lines such as `"2026-10-21: 17.5"`), `weight_<input>` overrides and `checklist`. Quote the dated lines: YAML reads `- 2026-10-21: 17.5` unquoted as a small map, which soii also understands, but quoted lines are what soii writes.
+
+**`type: leak`** is something small that costs capacity every day and keeps doing it, one note each:
+
+| Field | Values |
+|---|---|
+| `verdict` | `open` (not decided), `fix`, `accept` or `delete` |
+| `cost` | % of a day, a number. Only accepted leaks count towards the score. |
+| `fix` | One line: the fix, or why it's accepted |
+
+## Subprojects
+
+A project note with `parent: "[[Parent project]]"` is a subproject of that project. The parent's page lists its subprojects, open ones first, each with its `status`, `due` and `progress`, and says how many are done. A subproject's page shows its parents above the title. A subproject is a project like any other, so it has its own card on the Projects board. The card shows "↳ Parent" under the title, linking to the parent, and the parent's card shows "1 of 3 subprojects done".
+
+```markdown
+---
+type: project
+status: active
+parent: "[[Balcony garden]]"
+---
+# Raised beds
+```
+
+- Quote the link, as above; soii also reads it unquoted, or as a plain note name.
+- A subproject can have subprojects of its own. The trail above its title shows all of its parents, outermost first.
+- `parent` only counts on `type: project` notes. The checker reports one that points to a note that doesn't exist (`broken-parent`) and parents that loop back (`parent-cycle`); soii stops the trail at the loop, so the page still opens.
 
 ## Collections and categories
 
@@ -182,6 +229,8 @@ Research notes show their links (`url`, `doi`, `arxiv`) above the body. Books wi
 | warning | `date-format` | A date field (`started`, `finished`, `due`, `renews`, `last_contact`, `birthday`…) that isn't `YYYY-MM-DD` |
 | warning | `number-format` | `rating` (1–5), `progress` (0–100), `price`, `balance`, `amount`, `pages` or `year` that isn't a number |
 | warning | `broken-link` | `[[wikilinks]]` to notes or files that don't exist, listed per note |
+| warning | `broken-parent` | A project's `parent` isn't a link, or points to a note that doesn't exist, so no parent project is shown |
+| warning | `parent-cycle` | A project's `parent` links lead back to the project itself (`A → B → A`) |
 | warning | `duplicate-note` | Two files with the same note id (`Dup.md` and `Dup.MD`); soii keeps the first |
 | info | `enum-case` | A value that only differs in capitalisation (`Finished`). soii reads it, but lowercase is the documented form |
 | info | `missing-type` | A note without `type` in a folder where most notes have the same one ("probably `type: book`") |

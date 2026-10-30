@@ -22,6 +22,10 @@ describe('the note', () => {
     })
   })
 
+  test('a time of entry goes in `time`, quoted so YAML keeps it a string', () => {
+    expect(buildCapture('20 pushups', DATE, '07:32').content).toBe(`---\ncreated: ${DATE}\ntime: "07:32"\ntags:\n  - inbox\n---\n\n# 20 pushups\n`)
+  })
+
   test('a one-line capture is just its title', () => {
     expect(buildCapture('Remember the milk', DATE).content).toBe(`---\ncreated: ${DATE}\ntags:\n  - inbox\n---\n\n# Remember the milk\n`)
   })
@@ -57,6 +61,14 @@ describe('writing it', () => {
     expect(readFileSync(join(root, '00-Inbox', 'Remember the milk.md'), 'utf8')).toEndWith('# Remember the milk\n\nand the eggs\n')
   })
 
+  test('the time the sender gives is written; without one there is no `time`', async () => {
+    const root = vault()
+    expect(await capture(root, { text: '20 pushups', date: DATE, time: '18:45' })).toMatchObject({ ok: true, path: '00-Inbox/20 pushups.md' })
+    expect(readFileSync(join(root, '00-Inbox', '20 pushups.md'), 'utf8')).toContain(`created: ${DATE}\ntime: "18:45"\n`)
+    await capture(root, { text: 'no time', date: DATE, time: null })
+    expect(readFileSync(join(root, '00-Inbox', 'no time.md'), 'utf8')).not.toContain('time:')
+  })
+
   test('a taken name gets " 2", " 3", and the existing note is never touched', async () => {
     const root = vault()
     mkdirSync(join(root, '00-Inbox'))
@@ -77,7 +89,10 @@ describe('writing it', () => {
       [['hi'], 'bad_request'],
       [null, 'bad_request'],
       [{ text: 'hi', date: '2026-02-30' }, 'bad_date'],
-      [{ text: 'hi' }, 'bad_date']
+      [{ text: 'hi' }, 'bad_date'],
+      [{ text: 'hi', date: DATE, time: '24:00' }, 'bad_time'],
+      [{ text: 'hi', date: DATE, time: '7:30' }, 'bad_time'],
+      [{ text: 'hi', date: DATE, time: 730 }, 'bad_time']
     ] as const) {
       expect(await capture(root, body)).toMatchObject({ ok: false, status: 400, error })
     }

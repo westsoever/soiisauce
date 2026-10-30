@@ -41,6 +41,8 @@ Go through the session and list, each with a one-line source ("we agreed X"):
 | **Learning** (a fact, a method, something that worked) | a dated line on the related project, book, article or topic note; a new note only if nothing fits |
 | **Session itself** | one line in today's daily note |
 
+**The day's number.** If the vault has a note with `type: capacity`, it's after 18:00 and its `felt:` list has no line for today, add one question to the plan: "How full was today, 1 to 10?" (8 is the line, 10 is flat out). Offer `7`, `8`, `9` and `10`, with Other for anything lower, and **mark none as recommended**: it's the owner's number, never yours. Their answer is one more plan line, `EDIT <capacity note>  felt + "YYYY-MM-DD: felt N"`. No answer, no line. If the capacity note asks for something else (meeting hours, say) and you have what it needs, add that too.
+
 Skip small talk, dead ends, and anything private-looking the owner didn't mean to record (credentials, tokens, other people's secrets). Never write tokens or passwords into a note.
 
 ## 3. Match to existing notes

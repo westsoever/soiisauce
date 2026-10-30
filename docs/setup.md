@@ -110,6 +110,7 @@ soii open       # http://localhost:5011
 | `soii logs -f` | Shows the log; on a Mac it is `~/Library/Logs/soii.log` |
 | `soii update` | Moves to the newest release and prints what's new from `CHANGELOG.md`: see [updating.md](updating.md) |
 | `soii check` | Checks your notes' properties and structure |
+| `soii recall` | Reviews the flashcards in your notes in the terminal: `- Front :: Back` lines under a `## Cards` heading (`:::` makes one card each way). `soii recall list` and `soii recall due` show them; `soii recall review spanish` reviews only notes whose path has "spanish" in it. Your answers go in `.soii/cards.json`; notes are never changed |
 | `soii uninstall` | Removes the service and the `soii` command. Your notes and `.soii/` stay |
 
 Edit notes in Obsidian, in Claude Code or in soii, and soii picks the change up within a second or two. It watches the vault; there is nothing to rebuild by hand. Changes inside dot-folders (`.obsidian`, `.git`, `.soii`) are ignored.

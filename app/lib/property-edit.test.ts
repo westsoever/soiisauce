@@ -112,3 +112,33 @@ describe('setProperty', () => {
     expect(r.ok && r.content).toBe('---\na: 1\nDue date: 2026-11-01\n---\n')
   })
 })
+
+// A Backlog note as /unbox writes it: empty `url: ` (trailing space) and `due:`, a quoted id (D126).
+const BACKLOG = [
+  '---',
+  'status: backlog',
+  'kind: job',
+  'url: ',
+  'source: todoist',
+  'todoist_task_id: "abc123"',
+  'created: 2026-10-13',
+  'due:',
+  '---',
+  '# Studio North - Product Designer',
+  ''
+].join('\n')
+
+describe('setProperty on a Backlog note (a board move)', () => {
+  test('status changes in place and done is added; every other line stays as it was', () => {
+    const moved = setProperty(BACKLOG, 'status', 'done')
+    expect(moved).toEqual({ ok: true, content: BACKLOG.replace('status: backlog', 'status: done') })
+    if (!moved.ok) return
+    const stamped = setProperty(moved.content, 'done', '2026-10-20')
+    expect(stamped.ok && stamped.content).toBe(BACKLOG.replace('status: backlog', 'status: done').replace('due:\n---', 'due:\ndone: 2026-10-20\n---'))
+  })
+
+  test('clearing done leaves a bare key, as an emptied property always does', () => {
+    const r = setProperty(BACKLOG.replace('due:\n', 'due:\ndone: 2026-10-20\n'), 'done', null)
+    expect(r.ok && r.content).toBe(BACKLOG.replace('due:\n', 'due:\ndone:\n'))
+  })
+})

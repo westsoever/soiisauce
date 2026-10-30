@@ -28,7 +28,10 @@ export const DEFAULT_CONFIG: SoiiConfig = {
     // Transcripts of recorded video log entries. Not `journal`: vaults use that for daily notes.
     'video-log': ['video-log', 'vlog', 'video-journal'],
     'daily-brief': ['daily-brief', 'daily-report', 'morning-briefing'],
-    'weekly-review': ['weekly-review', 'weekly-report', 'weekly-synthesis']
+    'weekly-review': ['weekly-review', 'weekly-report', 'weekly-synthesis'],
+    // The Capacity workspace's settings note and its leak register (D129).
+    capacity: ['capacity'],
+    leak: ['leak', 'leaks']
   },
   workspaces: [
     {
@@ -201,6 +204,146 @@ export const DEFAULT_CONFIG: SoiiConfig = {
           view: 'board',
           query: { type: 'project' },
           options: { groupBy: 'status', groups: ['idea', 'active', 'done'], subtitle: 'area' }
+        }
+      ]
+    },
+    {
+      // The folder /unbox parks tasks, job posts and "check this out" links in. Picked by folder:
+      // Backlog notes have no `type`. Moving a card writes its `status` (D126).
+      id: 'backlog',
+      title: 'Backlog',
+      icon: 'kanban',
+      tabs: [
+        {
+          id: 'board',
+          title: 'Board',
+          view: 'board',
+          query: { path: '04-Resources/Backlog/**' },
+          // Done newest first; the other columns have no `done`, so they fall through to newest created.
+          sort: [{ field: 'done', dir: 'desc' }, { field: 'created', dir: 'desc' }, { field: 'title', dir: 'asc' }],
+          options: {
+            groupBy: 'status',
+            groups: ['backlog', 'doing', 'done', 'dropped'],
+            fallback: 'backlog',
+            subtitle: 'kind',
+            badges: ['lane'],
+            flag: 'blocked',
+            links: ['issue', 'pr', 'result'],
+            filters: [{ field: 'lane', none: 'Needs triage' }, 'kind', 'source'],
+            move: true,
+            stamp: { done: 'done' }
+          }
+        }
+      ]
+    },
+    {
+      // The shared task system agents and people work from: one note per task in
+      // 03-Areas/Tasks/{backlog,completed}/, with a `status` and an `owner` (D132).
+      // Review and Done are the two lists a person checks: what waits for approval, what is finished.
+      id: 'tasks',
+      title: 'Tasks',
+      icon: 'checklist',
+      tabs: [
+        {
+          id: 'all',
+          title: 'All',
+          view: 'board',
+          query: { path: '03-Areas/Tasks/**' },
+          // Lowest priority number first, then oldest, the order agents pick tasks in. Done newest first.
+          sort: [{ field: 'done', dir: 'desc' }, { field: 'priority', dir: 'asc' }, { field: 'created', dir: 'asc' }, { field: 'title', dir: 'asc' }],
+          options: {
+            groupBy: 'status',
+            groups: ['todo', 'in_progress', 'blocked', 'review', 'done'],
+            fallback: 'todo',
+            subtitle: 'owner',
+            badges: ['lane'],
+            flag: 'blocked',
+            links: ['issue', 'pr', 'result'],
+            filters: ['owner', { field: 'lane', none: 'Needs triage' }, 'kind'],
+            move: true,
+            stamp: { done: 'done' }
+          }
+        },
+        {
+          id: 'review',
+          title: 'Review',
+          view: 'table',
+          query: { path: '03-Areas/Tasks/**', where: { status: 'review' } },
+          sort: [{ field: 'updated', dir: 'desc' }, { field: 'title', dir: 'asc' }],
+          options: { columns: ['title', 'owner', 'priority', { field: 'pr', label: 'PR', format: 'link' }, 'updated'] }
+        },
+        {
+          id: 'done',
+          title: 'Done',
+          view: 'table',
+          query: { path: '03-Areas/Tasks/**', where: { status: 'done' } },
+          sort: [{ field: 'done', dir: 'desc' }, { field: 'updated', dir: 'desc' }, { field: 'title', dir: 'asc' }],
+          options: { columns: ['title', 'owner', 'tags', { field: 'done', format: 'date' }, 'updated'] }
+        }
+      ]
+    },
+    {
+      // How full the week is against an 80% line (D129). Counts come from notes the other
+      // workspaces already read; meeting hours, a fixed load and the daily `felt` number live on
+      // one optional `type: capacity` note, which can also override every weight.
+      id: 'capacity',
+      title: 'Capacity',
+      icon: 'gauge',
+      tabs: [
+        {
+          id: 'load',
+          title: 'Load',
+          view: 'capacity',
+          query: { type: 'capacity' },
+          options: {
+            target: 80,
+            ceiling: 100,
+            newProject: 'projects',
+            inputs: [
+              {
+                id: 'projects',
+                label: 'Active projects',
+                query: { type: 'project', where: { status: 'active' } },
+                weight: 15,
+                field: 'load',
+                hint: 'Notes with type: project and status: active. A load: on a project replaces the weight.'
+              },
+              {
+                id: 'doing',
+                label: 'Backlog in progress',
+                query: { path: '04-Resources/Backlog/**', where: { status: 'doing' } },
+                weight: 5,
+                field: 'load',
+                hint: 'Backlog notes with status: doing.'
+              },
+              { id: 'requests', label: 'Inbox', query: { path: '00-Inbox/**' }, weight: 1, hint: 'Requests and captures not filed yet.' },
+              {
+                id: 'meetings',
+                label: 'Meetings, next 7 days',
+                value: 'meetings',
+                weight: 2,
+                unit: 'h',
+                hint: 'Hours, from meetings: on the capacity note.'
+              },
+              { id: 'base', label: 'Fixed load', value: 'base', weight: 1, unit: '%', hint: 'Work outside the vault, from base: on the capacity note.' },
+              {
+                id: 'leaks',
+                label: 'Accepted leaks',
+                query: { type: 'leak', where: { verdict: 'accept' } },
+                weight: 1,
+                field: 'cost',
+                hint: 'Leak notes with verdict: accept, at their own cost.'
+              }
+            ]
+          }
+        },
+        {
+          id: 'leaks',
+          title: 'Leaks',
+          view: 'table',
+          query: { type: 'leak' },
+          sort: [{ field: 'verdict', dir: 'asc' }, { field: 'title', dir: 'asc' }],
+          options: { columns: ['title', 'verdict', { field: 'cost', label: 'Cost (% a day)' }, 'fix'] }
         }
       ]
     }

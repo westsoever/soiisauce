@@ -1,7 +1,7 @@
 // app/client/reader/PropertyEditor.tsx
 // Editing frontmatter from the reader (D62): one editor per property, an "Add property" row,
 // and the save that sends one property to POST /api/notes/properties (one commit per save).
-import { useQueryClient } from '@tanstack/react-query'
+import { useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { IconPlus, IconX } from '@tabler/icons-react'
 import { useId, useState, type KeyboardEvent } from 'react'
 import { localDay } from '../../lib/log'
@@ -26,12 +26,21 @@ import { Spinner } from '../ui/spinner'
 import { Switch } from '../ui/switch'
 import { labelFor } from '../views/cells'
 
-interface SavedProperty {
+export interface SavedProperty {
   path: string
   warning: string | null
 }
 
 const same = (a: unknown, b: unknown) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null)
+
+/** Write one property, then show it in the cached vault and note at once. Throws what the server said on failure. */
+export async function postProperty(queryClient: QueryClient, note: NoteMeta, key: string, value: PropertyValue): Promise<SavedProperty> {
+  const saved = await api<SavedProperty>('/api/notes/properties', { method: 'POST', body: { path: note.path, key, value, date: localDay() } })
+  const patch = <T extends NoteMeta>(n: T): T => (n.path === note.path ? { ...n, frontmatter: { ...n.frontmatter, [key]: value } } : n)
+  queryClient.setQueryData<VaultIndex>(keys.vault, index => index && { ...index, notes: index.notes.map(patch) })
+  queryClient.setQueryData<NoteDoc>(keys.note(note.id), doc => doc && patch(doc))
+  return saved
+}
 
 /** Save one property; resolves true when it was written. Shows the new value at once, then catches up with the rebuild. */
 export function useSaveProperty(note: NoteMeta) {
@@ -40,10 +49,7 @@ export function useSaveProperty(note: NoteMeta) {
   const saveOne = async (key: string, value: PropertyValue): Promise<boolean> => {
     try {
       const before = await builtAt()
-      const saved = await api<SavedProperty>('/api/notes/properties', { method: 'POST', body: { path: note.path, key, value, date: localDay() } })
-      const patch = <T extends NoteMeta>(n: T): T => (n.path === note.path ? { ...n, frontmatter: { ...n.frontmatter, [key]: value } } : n)
-      queryClient.setQueryData<VaultIndex>(keys.vault, index => index && { ...index, notes: index.notes.map(patch) })
-      queryClient.setQueryData<NoteDoc>(keys.note(note.id), doc => doc && patch(doc))
+      const saved = await postProperty(queryClient, note, key, value)
       const label = labelFor(key)
       const extra = saved.warning && !saved.warning.startsWith('Committed') ? ` ${saved.warning}` : ''
       toast(`Saved ${label}.${extra}`, extra ? 'info' : 'success')

@@ -283,6 +283,66 @@ describe('config handling', () => {
   })
 })
 
+describe('subproject parents', () => {
+  const project = (fm: string) => note(`type: project\nstatus: active\n${fm}`)
+  const parentFindings = async (files: Record<string, string>) => {
+    const dir = makeVault(files)
+    try {
+      return (await checkVault(dir)).filter(f => f.rule === 'broken-parent' || f.rule === 'parent-cycle')
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  }
+
+  test('a parent that resolves, an empty one and a non-project note with `parent` are fine', async () => {
+    expect(
+      await parentFindings({
+        '02-Projects/Balcony garden.md': project(''),
+        '02-Projects/Raised beds.md': project('parent: "[[Balcony garden]]"'),
+        '02-Projects/Vesting.md': project('parent: [[Raised beds]]'),
+        '02-Projects/Blank.md': project('parent:'),
+        'Notes/Meeting.md': note('type: meeting\nparent: "[[Nowhere]]"')
+      })
+    ).toEqual([])
+  })
+
+  test('a parent that does not exist is a warning, with the nearest note name as the fix', async () => {
+    const found = await parentFindings({ 'Balcony garden.md': project(''), 'Beds.md': project('parent: "[[Balcony gardn]]"') })
+    expect(found).toHaveLength(1)
+    expect(found[0]).toMatchObject({ path: 'Beds.md', severity: 'warning', rule: 'broken-parent', field: 'parent', fix: 'parent: "[[Balcony garden]]"' })
+  })
+
+  test('a parent that is not a link to a note is reported', async () => {
+    const found = await parentFindings({ 'Beds.md': project('parent: https://example.com/garden') })
+    expect(found.map(f => f.rule)).toEqual(['broken-parent'])
+    expect(found[0].message).toContain("isn't a link to a note")
+  })
+
+  test('a loop is reported on each note in it, a self-parent too, but not on a note below it', async () => {
+    const found = await parentFindings({
+      'A.md': project('parent: "[[B]]"'),
+      'B.md': project('parent: "[[C]]"'),
+      'C.md': project('parent: "[[A]]"'),
+      'Tail.md': project('parent: "[[A]]"'),
+      'Me.md': project('parent: "[[Me]]"')
+    })
+    expect(found.map(f => `${f.path} ${f.rule}`)).toEqual(['A.md parent-cycle', 'B.md parent-cycle', 'C.md parent-cycle', 'Me.md parent-cycle'])
+    expect(found[0].message).toContain('A → B → C → A')
+    expect(found.at(-1)?.message).toContain('Me → Me')
+  })
+
+  test('the report lists them with their fix', async () => {
+    const dir = makeVault({ 'Beds.md': project('parent: "[[Balcony gardn]]"'), 'Balcony garden.md': project('') })
+    try {
+      const report = formatReport(await inspectVault(dir))
+      expect(report).toContain('`broken-parent`')
+      expect(report).toContain('Fix: `parent: "[[Balcony garden]]"`')
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+})
+
 describe('CLI', () => {
   test('--json prints an array and exits 1 when there are errors', () => {
     const dir = makeVault({ 'Encoded.md': ENCODED, 'Ok.md': '# Ok\n' })

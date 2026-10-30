@@ -7,6 +7,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { buildFeed } from '../lib/feed'
 import { canonicalType, runTab } from '../lib/query'
+import { doneCount, subprojectsOf } from '../lib/subprojects'
 import { TYPE_FIELDS } from '../lib/type-fields'
 import type { TabConfig, VaultIndex } from '../lib/types'
 import { inspectVault } from '../../scripts/check-vault'
@@ -44,14 +45,21 @@ describe('template', () => {
     expect(index.warnings).toEqual([])
   })
 
-  test('keeps the built-in workspaces and adds Projects', () => {
-    expect(index.config.workspaces.map(w => w.id)).toEqual(['inbox', 'today', 'library', 'people', 'finance', 'goals', 'projects'])
+  test('keeps the built-in workspaces, Projects and Backlog included', () => {
+    expect(index.config.workspaces.map(w => w.id)).toEqual(['inbox', 'today', 'library', 'people', 'finance', 'goals', 'projects', 'backlog', 'tasks', 'capacity'])
     expect(index.config.workspaces.find(w => w.id === 'today')?.tabs.map(t => t.id)).toEqual(['brief', 'weekly', 'journal'])
   })
 
   test('every tab of every workspace has notes', () => {
     const empty = index.config.workspaces.flatMap(w => w.tabs.filter(t => runTab(t, index).length === 0).map(t => `${w.id}.${t.id}`))
     expect(empty).toEqual([])
+  })
+
+  test('Portfolio redesign has two sample subprojects, one of them done', () => {
+    const parent = index.notes.find(n => n.title === 'Portfolio redesign')!
+    const subs = subprojectsOf(parent, index.notes)
+    expect(subs.map(n => n.title)).toEqual(['Onboarding case study', 'Pick three case studies'])
+    expect(doneCount(subs)).toBe(1)
   })
 
   test('templates and the vault README stay out', () => {
@@ -112,6 +120,12 @@ describe('template', () => {
     expect(lea?.lastSeen).toBe('2026-09-20')
     expect(notesOf('people', 'friends').length).toBeGreaterThanOrEqual(5)
     expect(notesOf('people', 'network').map(n => n.title)).toEqual(expect.arrayContaining(['Anders Bak', 'Priya Shah', 'Freja Nørgaard']))
+  })
+
+  test('Tasks: All holds open and finished tasks, Review and Done only their status', () => {
+    expect(notesOf('tasks', 'all').map(n => n.title)).toHaveLength(4)
+    expect(notesOf('tasks', 'review').map(n => n.title)).toEqual(['Summarise the tenancy agreement'])
+    expect(notesOf('tasks', 'done').map(n => n.title)).toEqual(['Renew the library card'])
   })
 
   test('Finance and Goals cover every status and both currencies', () => {

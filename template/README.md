@@ -61,6 +61,8 @@ There are more: `/soii-capture`, `/unbox` (files everything in your Inbox where 
 | `04-Resources/Library/` | books, audiobooks, films, videos, papers, articles | Library |
 | `04-Resources/Library/Recipes/` | `type: recipe` with an `image` and a `description` | Library → Recipes |
 | `04-Resources/Library/Journal/` | Video log transcripts, `type: video-log` | Library → Journal |
+| `04-Resources/Backlog/` | Tasks, job posts and links to check out, with a `status` (no `type`) | Backlog |
+| `03-Areas/Tasks/` | One note per task, `backlog/` open and `completed/` done, with a `status` and an `owner` | Tasks |
 | `05-Knowledge/People/` | `type: person` | People |
 | `05-Knowledge/Topics/` | Evergreen notes | Projects → Knowledge |
 | `06-Wiki/daily_report/` | Briefs, `type: daily-brief` | Today → Daily brief |

@@ -3,7 +3,7 @@
 // same code as the app's /api/views (app/server/edit-views.ts), so the two can't drift (D101).
 import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join, resolve } from 'node:path'
+import { join } from 'node:path'
 import { parse } from 'yaml'
 import { querySchema, tabSchema } from '../lib/config-schema'
 import { DEFAULT_CONFIG } from '../lib/default-config'
@@ -17,30 +17,10 @@ import { runGit } from '../server/sync'
 import { compileVault } from '../vault/compile'
 import type { Flags } from './args'
 import type { Ctx } from './context'
-import { configDir, readRegistry } from './registry'
+import { ArgError, vaultDir } from './vault-dir'
 
 const PORT = 5011
 const USAGE = 'Usage: soii view fields|preview|add|filter|sort|remove|list … (see `soii help`)'
-
-class ArgError extends Error {}
-
-const VAULT_MARKERS = ['soii.config.yml', 'soii.config.yaml', '.soii', '.obsidian']
-const isVault = (dir: string) => VAULT_MARKERS.some(n => existsSync(join(dir, n)))
-const notAVault = (dir: string) => new ArgError(`${dir} is not a soii vault (no soii.config.yml, .soii/ or .obsidian/ in it). Run this inside your vault, or pass --vault <folder>.`)
-
-/** Which vault to work on. It must look like one: a write must never create soii.config.yml in a random folder. */
-function vaultDir(ctx: Ctx, flags: Flags): string {
-  if (flags.vault) {
-    const dir = resolve(ctx.cwd, flags.vault)
-    if (!isVault(dir)) throw notAVault(dir)
-    return dir
-  }
-  if (isVault(ctx.cwd)) return ctx.cwd
-  const reg = readRegistry(configDir(ctx.env))
-  if (!reg) throw new ArgError('No vault here. Run this inside your vault, or pass --vault <folder>.')
-  if (!isVault(reg.vault)) throw notAVault(reg.vault)
-  return reg.vault
-}
 
 function json<T>(raw: string | undefined, name: string): T {
   if (raw === undefined) throw new ArgError(`--${name} is required.`)

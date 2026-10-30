@@ -2,6 +2,19 @@
 
 What's new in each soii release, newest first. `soii update` prints the sections that are newer than the version you had.
 
+## v0.2.6
+
+soii has three new workspaces: a Backlog board, a Tasks workspace for the task notes in `03-Areas/Tasks/`, and a Capacity view that shows how full your week is. Projects can now have subprojects, and `soii recall` reviews flashcards from your notes in the terminal.
+
+- A new Backlog workspace shows `04-Resources/Backlog/` as a board by status. Drag a card, or use its Move to menu, to change its status.
+- A new Tasks workspace for the task notes in `03-Areas/Tasks/`: All is a board by status (todo, in progress, blocked, review, done) where you can drag a card to approve it; Review and Done list the tasks waiting for you and the finished ones.
+- A new Capacity workspace scores your week as a % of capacity against an 80% line, from your meetings, projects, Backlog and Inbox. It asks one question a day, "How full was today?", and shows where the week is expected to end and what to cut to get back to 80%.
+- Give a project `parent: "[[Other project]]"` to make it a subproject. The parent's page lists its subprojects, and the Projects board links them both ways.
+- `soii recall` reviews flashcards in your terminal: write `Front :: Back` lines under a `## Cards` heading in any note, and soii spaces the reviews out over days.
+- Captures from Option-P and Raycast record the time you typed them, and a goal with `progress_day` shows 0% again the next day.
+- `/unbox` gives Backlog notes a lane and a blocked field, and marks Todoist tasks complete once it has filed them.
+- Fixed a moved card or an edited property jumping back after a rebuild.
+
 ## v0.2.5
 
 soii has a new speed reader, a Log button that always starts a new note, and a clearer install. Captures are named after their first line, and Sync can now merge a vault that has diverged cleanly.

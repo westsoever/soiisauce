@@ -40,7 +40,7 @@ A tab draft is JSON:
 ```json
 { "title": "Sci-fi books", "view": "board", "query": { "type": "book", "where": { "category": "Science Fiction" } }, "sort": [{ "field": "title", "dir": "asc" }], "options": { "groupBy": "status" } }
 ```
-Layouts: `list` (option `subtitle`), `table` (`columns`), `gallery`, `board` (`groupBy`, `groups`), and for owners who ask for them `stats` (tiles), `pulse`, `feed`, `showcase`. Options for each are in `docs/workspaces.md` of the soii repo (in a vault: `.soii/soii/docs/workspaces.md`). Several OR groups are a list of clauses: `"query": [{…}, {…}]`.
+Layouts: `list` (option `subtitle`), `table` (`columns`), `gallery`, `board` (`groupBy`, `groups`), and for owners who ask for them `stats` (tiles), `pulse`, `feed`, `showcase`, `capacity` (weighted inputs against a line). Options for each are in `docs/workspaces.md` of the soii repo (in a vault: `.soii/soii/docs/workspaces.md`). Several OR groups are a list of clauses: `"query": [{…}, {…}]`.
 
 ## 4. Preview, and reuse before adding
 

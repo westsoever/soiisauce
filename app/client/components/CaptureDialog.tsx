@@ -3,7 +3,7 @@
 // (POST /api/capture), Shift-Enter adds a line, Esc closes. Mounted once in App.tsx, like SearchPalette.
 import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
-import { localDay } from '../../lib/log'
+import { localDay, localTime } from '../../lib/log'
 import { api } from '../lib/http'
 import { toast } from '../lib/toast'
 import { builtAt, waitForRebuild } from '../lib/use-fresh-vault'
@@ -32,7 +32,7 @@ export function CaptureDialog() {
     setSaving(true)
     try {
       const before = await builtAt()
-      const saved = await api<{ path: string; warning: string | null }>('/api/capture', { method: 'POST', body: { text, date: localDay() } })
+      const saved = await api<{ path: string; warning: string | null }>('/api/capture', { method: 'POST', body: { text, date: localDay(), time: localTime() } })
       toast(capturedMessage(saved.path, saved.warning), 'success')
       setText('')
       setOpen(false)

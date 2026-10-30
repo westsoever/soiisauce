@@ -1,6 +1,7 @@
 // app/client/reader/NoteReader.tsx
 // /n/<id>: breadcrumb, title (or a matching reader header), properties, body,
-// backlinks, outline (spec §9). A stale link to a moved or deleted note gets a friendly 404.
+// backlinks, outline (spec §9). A project also shows its parents and subprojects (D127).
+// A stale link to a moved or deleted note gets a friendly 404.
 import { IconArrowLeft } from '@tabler/icons-react'
 import { useEffect } from 'react'
 import type { NoteDoc, NoteId } from '../../lib/types'
@@ -16,6 +17,7 @@ import { NoteBody } from './NoteBody'
 import { OpenInObsidian } from './OpenInObsidian'
 import { Outline } from './Outline'
 import { PropertiesPanel } from './PropertiesPanel'
+import { ParentTrail, Subprojects } from './Subprojects'
 import { TexArticle } from './TexArticle'
 import { hideDuplicateTitle } from './title'
 
@@ -42,8 +44,10 @@ function Article({ doc }: { doc: NoteDoc }) {
   return (
     <div className="mx-auto flex max-w-5xl gap-10 px-4 py-6 md:px-8 md:py-10">
       <article className="min-w-0 max-w-3xl flex-1">
+        <ParentTrail note={doc} />
         {header ? <header.Component note={doc} /> : <h1 className="text-2xl font-medium tracking-tight">{doc.title}</h1>}
         <PropertiesPanel note={doc} hide={header?.hideFields ?? []} />
+        <Subprojects note={doc} />
         <NoteBody doc={doc} className={hideDuplicateTitle(doc) ? 'soii-hide-first-h1' : undefined} />
         <Backlinks ids={doc.backlinks} />
       </article>

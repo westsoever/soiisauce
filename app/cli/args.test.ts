@@ -101,6 +101,16 @@ describe('soii view', () => {
     expect(parseArgs(['status', '--json'])).toMatchObject({ ok: false })
   })
 })
+describe('soii recall', () => {
+  test('takes a subcommand, a filter, --vault and --json', () => {
+    expect(parseArgs(['recall'])).toMatchObject({ ok: true, command: 'recall', positional: [] })
+    expect(parseArgs(['recall', 'review', 'spanish', '--vault=/v', '--json'])).toMatchObject({ ok: true, command: 'recall', positional: ['review', 'spanish'], flags: { vault: '/v', json: true } })
+  })
+  test("view's other options and unknown ones are errors", () => {
+    expect(parseArgs(['recall', '--bogus'])).toEqual({ ok: false, error: 'Unknown option "--bogus" for `soii recall`.' })
+    expect(parseArgs(['recall', 'list', '--tab', '{}'])).toMatchObject({ ok: false })
+  })
+})
 
 test('install takes --yes (and -y); setup takes the install options but no vault and no --yes', () => {
   expect(parseArgs(['install', '--yes'])).toMatchObject({ ok: true, command: 'install', flags: { yes: true } })

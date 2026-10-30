@@ -3,6 +3,7 @@
 import type { ComponentType } from 'react'
 import type { ViewName, ViewProps } from '../../lib/types'
 import { BoardView } from './BoardView'
+import { CapacityView } from './CapacityView'
 import { FeedView } from './FeedView'
 import { GalleryView } from './GalleryView'
 import { ListView } from './ListView'
@@ -19,9 +20,11 @@ export const views: Record<ViewName, ComponentType<ViewProps>> = {
   stats: StatsView,
   feed: FeedView,
   pulse: PulseView,
-  showcase: ShowcaseView
+  showcase: ShowcaseView,
+  capacity: CapacityView
 }
 
 // Views that render their own empty state. WorkspaceScreen mounts them even when the
 // tab matches no notes, instead of showing the generic EmptyTab. Plan 4 adds 'feed' (spec §13).
-export const handlesEmpty: ReadonlySet<ViewName> = new Set<ViewName>(['feed'])
+// 'capacity' counts notes all over the vault; its own query only finds the optional settings note (D129).
+export const handlesEmpty: ReadonlySet<ViewName> = new Set<ViewName>(['feed', 'capacity'])

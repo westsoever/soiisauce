@@ -94,7 +94,7 @@ export interface SortKey {
   dir: 'asc' | 'desc'
 }
 
-export const VIEW_NAMES = ['list', 'table', 'gallery', 'board', 'stats', 'feed', 'pulse', 'showcase'] as const
+export const VIEW_NAMES = ['list', 'table', 'gallery', 'board', 'stats', 'feed', 'pulse', 'showcase', 'capacity'] as const
 export type ViewName = (typeof VIEW_NAMES)[number]
 
 export interface TabConfig {

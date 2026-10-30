@@ -1,7 +1,8 @@
 // app/server/capture-note.ts
 // POST /api/capture: quick capture from the Option-P box, the Raycast extension and the Apple Notes job. Writes one note
-// into the Inbox: the first line is its title (file name and `# heading`), the lines after it are the body, and the day
-// lives in the `created` property. The browser sends only {text, date}; the file name is built here, so nothing typed can
+// into the Inbox: the first line is its title (file name and `# heading`), the lines after it are the body, the day
+// lives in the `created` property and the local time of entry, when the sender gives one, in `time` (a count goal's log
+// reads it). The browser sends only {text, date, time?}; the file name is built here, so nothing typed can
 // choose where a file lands, and an existing note is never overwritten (a clash becomes "Title 2", "Title 3"…).
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { dirname } from 'node:path'
@@ -40,27 +41,32 @@ export function capturePath(title: string, n = 1): string {
   return `${INBOX_FOLDER}/${name}${n > 1 ? ` ${n}` : ''}.md`
 }
 
-/** The note: `created` and the `inbox` tag, `# title`, then the body as typed (line endings normalised). */
-export function buildCapture(text: string, date: string): { title: string; content: string } {
+/** HH:MM, 24-hour: the local time a capture was typed. */
+const TIME = /^([01]\d|2[0-3]):[0-5]\d$/
+
+/** The note: `created` (and `time`, quoted so YAML keeps it a string) and the `inbox` tag, `# title`, then the body as typed (line endings normalised). */
+export function buildCapture(text: string, date: string, time: string | null = null): { title: string; content: string } {
   const { title, body } = splitCapture(text)
-  return { title, content: `---\ncreated: ${date}\ntags:\n  - inbox\n---\n\n# ${title}\n${body ? `\n${body}\n` : ''}` }
+  const at = time ? `time: "${time}"\n` : ''
+  return { title, content: `---\ncreated: ${date}\n${at}tags:\n  - inbox\n---\n\n# ${title}\n${body ? `\n${body}\n` : ''}` }
 }
 
-export function parseCapture(body: unknown): { ok: true; text: string; date: string } | Extract<CaptureResult, { ok: false }> {
+export function parseCapture(body: unknown): { ok: true; text: string; date: string; time: string | null } | Extract<CaptureResult, { ok: false }> {
   if (!body || typeof body !== 'object' || Array.isArray(body)) return fail(400, 'bad_request', 'That capture could not be read.')
-  const { text, date } = body as Record<string, unknown>
+  const { text, date, time } = body as Record<string, unknown>
   if (typeof text !== 'string') return fail(400, 'bad_request', 'That capture could not be read.')
   if (!text.trim()) return fail(400, 'empty', 'Write something first.')
   if (text.length > MAX_TEXT) return fail(400, 'too_long', 'That is too long for a quick capture.')
   if (!isDay(date)) return fail(400, 'bad_date', 'That capture could not be read.')
-  return { ok: true, text, date }
+  if (time !== undefined && time !== null && (typeof time !== 'string' || !TIME.test(time))) return fail(400, 'bad_time', 'That capture could not be read.')
+  return { ok: true, text, date, time: typeof time === 'string' ? time : null }
 }
 
 export async function captureNote(env: SoiiEnv, body: unknown, git: RunGit): Promise<CaptureResult> {
   const input = parseCapture(body)
   if (!input.ok) return input
   if (!canWrite(env)) return fail(501, 'write_not_configured', WRITE_NOT_CONFIGURED)
-  const note = buildCapture(input.text, input.date)
+  const note = buildCapture(input.text, input.date, input.time)
   for (let n = 1; n <= MAX_CLASHES; n++) {
     const path = capturePath(note.title, n)
     const file = inVault(env, path)

@@ -46,7 +46,7 @@ function mentionsAuthor(description: string, authors: string[]): boolean {
 export type Match = { kind: 'match' | 'review'; candidate: Candidate } | { kind: 'none' }
 
 /**
- * Title-only search is ambiguous for short titles (Drive, Peak, Who), so a match must have the same
+ * Title-only search is ambiguous for short titles (Drive, Dune, Who), so a match must have the same
  * main title and a cover, and a short title also needs the description to name the author.
  * Anything less certain goes to the review list.
  */

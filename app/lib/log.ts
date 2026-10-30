@@ -211,6 +211,11 @@ export function fieldsFor(kind: LogKind, mode: 'new' | 'append'): LogField[] {
 }
 
 /** YYYY-MM-DD in the browser's (or server's) own time zone, so a late-evening log keeps its day. */
+/** HH:MM in this device's time zone, for a capture's `time`. */
+export function localTime(d: Date = new Date()): string {
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+}
+
 export function localDay(d: Date = new Date()): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }

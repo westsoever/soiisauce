@@ -6,6 +6,7 @@ import { parseArgs, type Command } from './args'
 import * as commands from './commands'
 import { realCtx, type Ctx } from './context'
 import { flushNotes } from './notes'
+import { recall } from './recall'
 import { view } from './view'
 
 export const HELP = `soii: your vault, as an app, on this machine.
@@ -24,6 +25,9 @@ Usage: soii <command> [options]
   check                Check the vault's frontmatter and structure
   view fields|preview|add|filter|sort|remove|list
                        Read and change views (tabs) in soii.config.yml; used by /soii-view. --vault <dir>, --json
+  recall [review|list|due] [filter]
+                       Review the "Front :: Back" cards in your notes' "## Cards" sections, spaced out over days.
+                       filter: part of a note's path. --vault <dir>, --json
   uninstall            Stop it, remove the LaunchAgent and the soii command (notes untouched)
 
 Options: --port <n>, --from <tag> (install, setup, init), --title <name> (init), --yes (install: never ask), --no-service (install, setup, init, update:
@@ -71,6 +75,7 @@ export async function main(argv: string[], ctx: Ctx = realCtx()): Promise<number
     uninstall: () => commands.uninstall(ctx),
     run: () => commands.run(ctx),
     view: () => view(ctx, positional, flags),
+    recall: () => recall(ctx, positional, flags),
     version: () => {
       ctx.out(`soii ${commands.cliVersion(ctx)}`)
       return 0

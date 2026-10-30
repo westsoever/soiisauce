@@ -1,6 +1,6 @@
 // app/cli/args.ts
 // `soii <command> [args] [options]`. Pure: argv in, a parsed command or an error message out.
-export const COMMANDS = ['install', 'setup', 'start', 'stop', 'restart', 'status', 'open', 'logs', 'update', 'init', 'check', 'uninstall', 'run', 'view', 'help', 'version'] as const
+export const COMMANDS = ['install', 'setup', 'start', 'stop', 'restart', 'status', 'open', 'logs', 'update', 'init', 'check', 'uninstall', 'run', 'view', 'recall', 'help', 'version'] as const
 export type Command = (typeof COMMANDS)[number]
 
 export interface Flags {
@@ -17,7 +17,7 @@ export interface Flags {
   /** Set by the install wizard, not by an option: false = run in the background but not at login; undefined = keep what the machine has. */
   boot?: boolean
   help: boolean
-  /** `soii view`: the vault folder, the tab / query / sort as JSON, the type to list fields for, and machine-readable output. */
+  /** `soii view` (and `soii recall`: --vault, --json): the vault folder, the tab / query / sort as JSON, the type to list fields for, and machine-readable output. */
   vault?: string
   tab?: string
   query?: string
@@ -47,6 +47,7 @@ const OPTIONS: Record<Command, readonly string[]> = {
   uninstall: [],
   run: [],
   view: ['--vault', '--tab', '--query', '--sort', '--type', '--json'],
+  recall: ['--vault', '--json'],
   help: [],
   version: []
 }
@@ -111,7 +112,7 @@ export function parseArgs(argv: string[], env: Record<string, string | undefined
       if (positional.length === 0) return { ok: false, error: '`soii init` needs a directory, e.g. `soii init ~/my-vault`.' }
       if (positional.length > 1) return { ok: false, error: '`soii init` takes exactly one directory.' }
     }
-    if (command !== 'install' && command !== 'init' && command !== 'view' && positional.length > 0) return { ok: false, error: `\`soii ${command}\` takes no arguments.` }
+    if (command !== 'install' && command !== 'init' && command !== 'view' && command !== 'recall' && positional.length > 0) return { ok: false, error: `\`soii ${command}\` takes no arguments.` }
   }
   return { ok: true, command, positional, flags }
 }

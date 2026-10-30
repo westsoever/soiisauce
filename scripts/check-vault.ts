@@ -17,6 +17,7 @@ import { CADENCE_CHOICES, ownCadence } from '../app/lib/people'
 import { parseMonthDay } from '../app/lib/person'
 import { DATE_KEYS, NUMBER_KEYS } from '../app/lib/properties'
 import { canonicalType } from '../app/lib/query'
+import { ancestors, parentName, parentOf, type ProjectNode } from '../app/lib/subprojects'
 import { expectedFields } from '../app/lib/type-fields'
 import type { SoiiConfig } from '../app/lib/types'
 import { loadConfig } from '../app/vault/compile'
@@ -38,6 +39,8 @@ export type Rule =
   | 'date-format'
   | 'number-format'
   | 'broken-link'
+  | 'broken-parent'
+  | 'parent-cycle'
   | 'missing-type'
   | 'missing-field'
 
@@ -311,6 +314,8 @@ export async function inspectVault(root: string): Promise<VaultCheck> {
     if (!linkNames.has(name.toLowerCase())) linkNames.set(name.toLowerCase(), name)
   }
 
+  // Every note by id, with its frontmatter once it has been read, for the `parent` checks below.
+  const nodes = new Map<string, ProjectNode>(markdown.map(p => [stripMd(p), { id: stripMd(p), frontmatter: {} }]))
   let notes = 0
   const typed: { path: string; type: string | null; readable: boolean }[] = []
   for (const path of markdown) {
@@ -343,6 +348,7 @@ export async function inspectVault(root: string): Promise<VaultCheck> {
       checkMissingFields(parsed.data, fields.type, push)
     }
     typed.push({ path, type: fields.type, readable: !parsed.error })
+    if (!parsed.error) nodes.set(stripMd(path), { id: stripMd(path), frontmatter: parsed.data })
 
     const { missing } = renderMarkdown(parsed.body, { fromPath: path, resolve, noteInfo, tooLarge: () => false })
     const targets = [...new Set(missing.filter(Boolean))]
@@ -359,6 +365,34 @@ export async function inspectVault(root: string): Promise<VaultCheck> {
         message: `${targets.length} broken link${targets.length === 1 ? '' : 's'}: ${listed}${more}`,
         targets,
         ...(suggestions.length ? { fix: suggestions.slice(0, MAX_LISTED_LINKS).join('; ') } : {})
+      })
+    }
+  }
+
+  // A subproject's `parent` has to be a note, and the parents must not loop back.
+  const all = [...nodes.values()]
+  for (const t of typed) {
+    const node = nodes.get(stripMd(t.path))
+    if (t.type !== 'project' || !t.readable || !node || isBlank(node.frontmatter.parent)) continue
+    const name = parentName(node.frontmatter)
+    const push: Push = f => findings.push({ path: t.path, field: 'parent', ...f })
+    if (name === null) {
+      push({ severity: 'warning', rule: 'broken-parent', message: `\`parent: ${show(node.frontmatter.parent)}\` isn't a link to a note, so soii shows no parent project.`, fix: 'parent: "[[Parent project]]"' })
+    } else if (!parentOf(node, all)) {
+      const near = closest(posix.basename(name), linkNames.keys())
+      push({
+        severity: 'warning',
+        rule: 'broken-parent',
+        message: `\`parent: ${show(node.frontmatter.parent)}\` points to a note that doesn't exist, so soii shows no parent project.`,
+        ...(near ? { fix: `parent: "[[${linkNames.get(near)}]]"` } : {})
+      })
+    } else if (ancestors(node, all).cycle) {
+      const loop = [node, ...ancestors(node, all).chain, node].map(n => posix.basename(n.id))
+      push({
+        severity: 'warning',
+        rule: 'parent-cycle',
+        message: `The \`parent\` links loop back to this note (${loop.join(' → ')}).`,
+        fix: 'Remove `parent:` from one of the notes in the loop.'
       })
     }
   }

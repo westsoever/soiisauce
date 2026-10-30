@@ -36,7 +36,10 @@ describe('resolveConfig', () => {
       people: ['overview', 'friends', 'network', 'all'],
       finance: ['overview', 'subscriptions', 'accounts', 'expenses', 'notes'],
       goals: ['board', 'years', 'bucket'],
-      projects: ['board']
+      projects: ['board'],
+      backlog: ['board'],
+      tasks: ['all', 'review', 'done'],
+      capacity: ['load', 'leaks']
     })
     expect(DEFAULT_CONFIG.home).toBe('today')
   })
@@ -48,7 +51,7 @@ describe('resolveConfig', () => {
         { id: 'reading', title: 'Reading', tabs: [tab('now')] }
       ]
     })
-    expect(config.workspaces.map(w => w.id)).toEqual(['inbox', 'today', 'library', 'people', 'finance', 'goals', 'projects', 'reading'])
+    expect(config.workspaces.map(w => w.id)).toEqual(['inbox', 'today', 'library', 'people', 'finance', 'goals', 'projects', 'backlog', 'tasks', 'capacity', 'reading'])
     expect(config.workspaces[3].title).toBe('Contacts')
   })
 

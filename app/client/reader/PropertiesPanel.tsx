@@ -7,6 +7,7 @@ import { Fragment, useState } from 'react'
 import { formatDate } from '../../lib/format'
 import { notePath } from '../../lib/paths'
 import { PROTECTED_PROPERTIES, suggestKeys } from '../../lib/properties'
+import { findNote } from '../../lib/subprojects'
 import type { NoteMeta } from '../../lib/types'
 import { useCapabilities, useVault } from '../lib/queries'
 import { navigate } from '../lib/router'
@@ -15,13 +16,6 @@ import { Button } from '../ui/button'
 import { cn } from '../ui/utils'
 import { labelFor } from '../views/cells'
 import { AddProperty, CadenceField, PropertyField } from './PropertyEditor'
-
-function findNote(notes: NoteMeta[], name: string): NoteMeta | undefined {
-  const key = name.trim().toLowerCase().replace(/\.md$/, '')
-  return notes
-    .filter(n => n.id.toLowerCase() === key || n.id.toLowerCase().endsWith(`/${key}`))
-    .sort((a, b) => a.id.length - b.id.length)[0]
-}
 
 function NoteLink({ name, label }: { name: string; label?: string }) {
   const vault = useVault()
