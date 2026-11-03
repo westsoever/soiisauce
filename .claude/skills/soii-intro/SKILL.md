@@ -75,7 +75,7 @@ Group them by job and print each as `/name: <first sentence of its description, 
 
 - **Set up and keep tidy:** `soii-setup`, `soii-health`, `soii-sync-fix`
 - **Capture:** `soii-capture`, `unbox`, `soii-save`, `soii-wrap`
-- **Thinking:** `soii-synthesize`, `soii-panel`, `soii-chat`
+- **Thinking:** `soii-synthesize`, `soii-panel`, `soii-chat`, `soii-portfolio`
 - **Learning:** `soii-learn`, `soii-explore`
 - **Make your own:** `skillfactory`
 

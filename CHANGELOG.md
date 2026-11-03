@@ -2,6 +2,12 @@
 
 What's new in each soii release, newest first. `soii update` prints the sections that are newer than the version you had.
 
+## v0.2.7
+
+soii has a new skill, `/soii-portfolio`: an interview about the portfolio, career and skills you want, which turns your answers into a project with a plan.
+
+- `/soii-portfolio` asks one question at a time, in six rounds: the picture, the work that would prove it, the skills it needs (where you are now and where you need to be), what you do today, which of that work can train each gap, and a first step with a deadline. It writes a project note with a vision, a skill map and a plan, and keeps every question and answer in a dated interview note, so you can retell the process later. Say "pause" at any time; the next session picks up where you stopped.
+
 ## v0.2.6
 
 soii has three new workspaces: a Backlog board, a Tasks workspace for the task notes in `03-Areas/Tasks/`, and a Capacity view that shows how full your week is. Projects can now have subprojects, and `soii recall` reviews flashcards from your notes in the terminal.

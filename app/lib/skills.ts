@@ -95,7 +95,7 @@ const JOBS: { id: string; title: string; skills: string[] }[] = [
   { id: 'start', title: 'Start & setup', skills: ['soii-intro', 'soii-setup', 'soii-sync-fix'] },
   { id: 'health', title: 'Keep healthy', skills: ['soii-health'] },
   { id: 'capture', title: 'Capture & save', skills: ['soii-capture', 'unbox', 'soii-save', 'soii-wrap'] },
-  { id: 'think', title: 'Think & connect', skills: ['soii-chat', 'soii-synthesize', 'soii-panel'] },
+  { id: 'think', title: 'Think & connect', skills: ['soii-chat', 'soii-synthesize', 'soii-panel', 'soii-portfolio'] },
   { id: 'learn', title: 'Learn & explore', skills: ['soii-learn', 'soii-explore'] },
   { id: 'make', title: 'Make your own', skills: ['skillfactory', 'soii-view'] },
   // Not installed into vaults; it shows when the page runs against soii's own skills (a dev run).
